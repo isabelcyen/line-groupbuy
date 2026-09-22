@@ -667,8 +667,7 @@ async function init() {
   try {
     // 1. 從 URL 取得 Apps Script URL 和 LIFF ID
     const params   = new URLSearchParams(location.search);
-    state.apiBase  = 'https://line-group-buy.isabelcyen.workers.dev/https://line-group-buy.isabelcyen.workers.dev/'
-;     // 部署後填入 Apps Script Web App URL
+    state.apiBase  = 'https://line-group-buy.isabelcyen.workers.dev/';     // 部署後填入 Apps Script Web App URL
     state.liffId   = '2011684954-69W5ZbCT';
     const pid      = params.get('pid') || '';
     const action   = params.get('action') || '';
