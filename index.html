@@ -667,8 +667,9 @@ async function init() {
   try {
     // 1. 從 URL 取得 Apps Script URL 和 LIFF ID
     const params   = new URLSearchParams(location.search);
-    state.apiBase  = params.get('api') || '';     // 部署後填入 Apps Script Web App URL
-    state.liffId   = params.get('liffId') || '';
+    state.apiBase  = 'https://line-group-buy.isabelcyen.workers.dev/https://line-group-buy.isabelcyen.workers.dev/'
+;     // 部署後填入 Apps Script Web App URL
+    state.liffId   = '2011684954-69W5ZbCT';
     const pid      = params.get('pid') || '';
     const action   = params.get('action') || '';
 
@@ -699,9 +700,8 @@ async function init() {
 
   } catch (err) {
     console.error('init error:', err);
-    // 開發模式：使用 mock 資料
-    loadMockData();
-    document.getElementById('loading').style.display = 'none';
+    document.getElementById('loading').innerHTML =
+      `<div style="color:red;padding:32px;text-align:center">初始化失敗：${err.message}</div>`;
   }
 }
 
