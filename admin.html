@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>團購管理後台</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, sans-serif; background: #f5f5f5; color: #333; }
+
+  /* Login */
+  #login-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+  }
+  .login-card {
+    background: #fff; border-radius: 16px; padding: 40px 32px;
+    width: 100%; max-width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,.1);
+    text-align: center;
+  }
+  .login-card h1 { font-size: 22px; margin-bottom: 8px; }
+  .login-card p { color: #888; font-size: 14px; margin-bottom: 28px; }
+
+  /* Admin */
+  #admin-screen { display: none; }
+  .header {
+    background: #06C755; color: #fff;
+    padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+  }
+  .header h1 { font-size: 18px; flex: 1; }
+  .header button { background: rgba(255,255,255,.25); border: none; color: #fff;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+
+  .tabs { display: flex; background: #fff; border-bottom: 2px solid #eee; }
+  .tab { flex: 1; padding: 14px; text-align: center; cursor: pointer;
+    font-size: 14px; font-weight: 600; color: #888; border: none; background: none; }
+  .tab.active { color: #06C755; border-bottom: 2px solid #06C755; margin-bottom: -2px; }
+
+  .tab-content { display: none; padding: 20px; max-width: 600px; margin: 0 auto; }
+  .tab-content.active { display: block; }
+
+  /* Form */
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+  input, textarea, select {
+    width: 100%; padding: 10px 14px; border: 1.5px solid #ddd;
+    border-radius: 10px; font-size: 14px; outline: none; transition: border .2s;
+  }
+  input:focus, textarea:focus { border-color: #06C755; }
+  textarea { resize: vertical; min-height: 80px; }
+  .hint { font-size: 12px; color: #aaa; margin-top: 4px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Button */
+  .btn {
+    display: block; width: 100%; padding: 14px;
+    border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: opacity .2s;
+  }
+  .btn:active { opacity: .8; }
+  .btn-primary { background: #06C755; color: #fff; }
+  .btn-secondary { background: #eee; color: #555; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 8px;
+    border: none; cursor: pointer; font-weight: 600; }
+  .btn-confirm { background: #4CAF50; color: #fff; }
+  .btn-ship { background: #2196F3; color: #fff; }
+
+  /* Orders */
+  .order-card {
+    background: #fff; border-radius: 12px; padding: 16px;
+    margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .order-id { font-weight: 700; font-size: 14px; }
+  .badge {
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .badge-pending { background: #FFF3CD; color: #856404; }
+  .badge-reviewing { background: #CCE5FF; color: #004085; }
+  .badge-confirmed { background: #D4EDDA; color: #155724; }
+  .badge-shipped { background: #E2E3E5; color: #383d41; }
+  .order-info { font-size: 13px; color: #666; line-height: 1.8; }
+  .order-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #333; color: #fff; padding: 10px 20px;
+    border-radius: 24px; font-size: 14px; z-index: 999;
+    opacity: 0; transition: opacity .3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .loading { text-align: center; padding: 40px; color: #aaa; }
+  .empty { text-align: center; padding: 40px; color: #ccc; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- 登入畫面 -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🛒 團購管理後台</h1>
+    <p>請輸入管理員密碼</p>
+    <div class="form-group">
+      <input type="password" id="secret-input" placeholder="管理員密碼" />
+    </div>
+    <button class="btn btn-primary" onclick="login()">登入</button>
+  </div>
+</div>
+
+<!-- 管理員畫面 -->
+<div id="admin-screen">
+  <div class="header">
+    <h1>🛒 團購管理後台</h1>
+    <button onclick="logout()">登出</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('new-product')">＋ 開新團</button>
+    <button class="tab" onclick="switchTab('orders')">📋 訂單管理</button>
+  </div>
+
+  <!-- 開新團 -->
+  <div id="tab-new-product" class="tab-content active">
+    <div class="form-group">
+      <label>商品名稱 *</label>
+      <input type="text" id="p-name" placeholder="例：有機蜂蜜 500g" />
+    </div>
+    <div class="form-group">
+      <label>商品說明</label>
+      <textarea id="p-desc" placeholder="商品描述、注意事項等"></textarea>
+    </div>
+    <div class="row-2">
+      <div class="form-group">
+        <label>單價（元）*</label>
+        <input type="number" id="p-price" placeholder="300" />
+      </div>
+      <div class="form-group">
+        <label>單位</label>
+        <input type="text" id="p-unit" placeholder="瓶、份、盒" value="份" />
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="form-group">
+        <label>最低起訂量</label>
+        <input type="number" id="p-minqty" placeholder="1" value="1" />
+      </div>
+      <div class="form-group">
+        <label>截止日期 *</label>
+        <input type="date" id="p-deadline" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>規格／口味</label>
+      <input type="text" id="p-variants" placeholder="原味,龍眼,荔枝（逗號分隔，可空白）" />
+      <p class="hint">留空表示無規格選擇</p>
+    </div>
+    <div class="form-group">
+      <label>包裝方式</label>
+      <input type="text" id="p-packaging" placeholder="標準包裝,禮盒裝（逗號分隔）" value="標準包裝" />
+    </div>
+    <br>
+    <button class="btn btn-primary" onclick="createProduct()">🚀 開始揪團！</button>
+  </div>
+
+  <!-- 訂單管理 -->
+  <div id="tab-orders" class="tab-content">
+    <button class="btn btn-secondary" style="margin-bottom:16px" onclick="loadOrders()">🔄 重新整理</button>
+    <div id="orders-list"><div class="loading">載入中...</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://line-group-buy.isabelcyen.workers.dev';
+let adminSecret = '';
+
+// 登入
+function login() {
+  const s = document.getElementById('secret-input').value.trim();
+  if (!s) return showToast('請輸入密碼');
+  adminSecret = s;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-screen').style.display = 'block';
+  // 設定今天之後的日期為預設截止日
+  const d = new Date(); d.setDate(d.getDate() + 7);
+  document.getElementById('p-deadline').value = d.toISOString().split('T')[0];
+}
+
+function logout() {
+  adminSecret = '';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('secret-input').value = '';
+}
+
+// Tab 切換
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['new-product','orders'][i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'orders') loadOrders();
+}
+
+// 開新團
+async function createProduct() {
+  const name = document.getElementById('p-name').value.trim();
+  const price = document.getElementById('p-price').value.trim();
+  const deadline = document.getElementById('p-deadline').value;
+  if (!name || !price || !deadline) return showToast('請填寫必填欄位（名稱、單價、截止日）');
+
+  showToast('建立中...');
+  try {
+    const res = await apiPost({
+      action: 'create_product',
+      name,
+      description: document.getElementById('p-desc').value.trim(),
+      price: Number(price),
+      unit: document.getElementById('p-unit').value.trim() || '份',
+      minQty: Number(document.getElementById('p-minqty').value) || 1,
+      deadline,
+      variants: document.getElementById('p-variants').value.trim(),
+      packaging: document.getElementById('p-packaging').value.trim() || '標準包裝',
+    });
+    if (res.ok) {
+      showToast('✅ 開團成功！LINE 群組已收到公告');
+      // 清空表單
+      ['p-name','p-desc','p-price','p-variants'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('p-unit').value = '份';
+      document.getElementById('p-minqty').value = '1';
+      document.getElementById('p-packaging').value = '標準包裝';
+    } else {
+      showToast('❌ 失敗：' + (res.error || '未知錯誤'));
+    }
+  } catch(e) {
+    showToast('❌ 網路錯誤：' + e.message);
+  }
+}
+
+// 載入訂單
+async function loadOrders() {
+  document.getElementById('orders-list').innerHTML = '<div class="loading">載入中...</div>';
+  try {
+    const res = await apiPost({ action: 'list_orders' });
+    if (!res.ok) { showToast('❌ ' + res.error); return; }
+    const orders = res.data.orders || [];
+    if (!orders.length) {
+      document.getElementById('orders-list').innerHTML = '<div class="empty">目前沒有訂單</div>';
+      return;
+    }
+    // 最新的在前
+    orders.reverse();
+    document.getElementById('orders-list').innerHTML = orders.map(o => `
+      <div class="order-card">
+        <div class="order-header">
+          <span class="order-id">${o.order_id || ''}</span>
+          <span class="badge badge-${o.pay_status || 'pending'}">${statusLabel(o.pay_status)}</span>
+        </div>
+        <div class="order-info">
+          👤 ${o.member_name || ''} &nbsp;|&nbsp; 📦 ${o.variant || ''} ${o.packaging || ''} × ${o.qty || 1}<br>
+          💰 ${o.pay_method === 'transfer' ? '匯款' : '現場付款'} &nbsp;|&nbsp; 合計 $${o.total || ''}<br>
+          ${o.notes ? '📝 ' + o.notes : ''}
+        </div>
+        <div class="order-actions">
+          ${o.pay_status === 'reviewing' ? `<button class="btn-sm btn-confirm" onclick="confirmPayment('${o.order_id}')">✅ 確認付款</button>` : ''}
+          ${o.pay_status === 'confirmed' ? `<button class="btn-sm btn-ship" onclick="markShipping('${o.order_id}')">🚚 標記出貨</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    showToast('❌ 網路錯誤');
+  }
+}
+
+function statusLabel(s) {
+  return { pending:'待付款', reviewing:'審核中', confirmed:'已確認', shipped:'已出貨', cancelled:'已取消' }[s] || s || '待付款';
+}
+
+async function confirmPayment(orderId) {
+  if (!confirm(`確認付款：${orderId}？`)) return;
+  const res = await apiPost({ action: 'confirm_payment', orderId, adminSecret, verifiedBy: '管理員' });
+  showToast(res.ok ? '✅ 已確認付款' : '❌ ' + res.error);
+  if (res.ok) loadOrders();
+}
+
+async function markShipping(orderId) {
+  const note = prompt('物流單號（可空白）：') ?? '';
+  const res = await apiPost({ action: 'mark_shipping', orderId, adminSecret, trackingNote: note });
+  showToast(res.ok ? '🚚 已標記出貨' : '❌ ' + res.error);
+  if (res.ok) loadOrders();
+}
+
+// API 呼叫
+async function apiPost(body) {
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, adminSecret: adminSecret })
+  });
+  return r.json();
+}
+
+// Toast
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Enter 鍵登入
+document.getElementById('secret-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+</script>
+</body>
+</html>
