@@ -447,7 +447,7 @@ async function loadProducts() {
     '<div class="state-box"><div class="state-icon">⏳</div><p>載入中…</p></div>';
   try {
     const d = await api({ action: 'list_products' });
-    allProducts = d.ok ? (d.products || []) : [];
+    allProducts = d.ok ? (d.data?.products || d.products || []) : [];
     renderManageTable();
   } catch {
     document.getElementById('manage-body').innerHTML =
@@ -565,7 +565,7 @@ async function saveEdit() {
 }
 
 async function delProduct(productId, name) {
-  if (!confirm(`確定要刪除「${name}」�f此操作無法復原。`)) return;
+  if (!confirm(`確定要刪除「${name}」？此操作無法復原。`)) return;
   try {
     const d = await api({ action: 'delete_product', productId });
     if (d.ok) { toast('✅ 已刪除'); loadProducts(); }
@@ -584,8 +584,8 @@ async function loadOrdersTab() {
       api({ action: 'list_products' }),
       api({ action: 'list_orders' })
     ]);
-    allProducts = pD.ok ? (pD.products || []) : [];
-    allOrders   = oD.ok ? (oD.orders   || []) : [];
+    allProducts = pD.ok ? (pD.data?.products || pD.products || []) : [];
+    allOrders   = oD.ok ? (oD.data?.orders   || oD.orders   || []) : [];
     renderOrdProducts();
   } catch {
     document.getElementById('ord-products').innerHTML =
@@ -674,7 +674,7 @@ function ordBack() {
 }
 
 async function doNotify(orderId, lineUserId, productName, customerName) {
-  if (!confirm(`確定要通知 ${customerName||'這位客戶'} 來領取「${productName}」嗎？`)) return;
+  if (!confirm(`確定要通知 ${customerName||'這位客戶'} $��領取「${productName}」嗎？`)) return;
   try {
     const d = await api({ action: 'notify_pickup', orderId, lineUserId, productName });
     if (d.ok) toast('✅ 通知已發送！');
