@@ -320,8 +320,17 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
       <input type="text" id="e-name">
     </div>
     <div class="form-group">
-      <label class="field-label">商品說明</label>
-      <textarea id="e-desc"></textarea>
+      <label class="field-label">商品說明文字</label>
+      <textarea id="e-desc" placeholder="輸入商品說明、注意事項…"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="field-label">商品圖片 URL</label>
+      <input type="url" id="e-image-url" placeholder="https://…（貼上圖片網址）" oninput="updateImgPreview()">
+      <div id="img-preview-wrap" style="margin-top:10px;display:none">
+        <img id="img-preview" src="" alt="圖片預覽"
+          style="max-width:100%;border-radius:10px;border:1px solid var(--border);display:block">
+        <div id="desc-preview" style="margin-top:8px;font-size:.85rem;color:var(--muted);white-space:pre-wrap"></div>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -522,12 +531,28 @@ function fillModal(p, isNew) {
   document.getElementById('e-isNew').value      = isNew ? '1' : '0';
   document.getElementById('e-name').value       = p.name || '';
   document.getElementById('e-desc').value       = p.description || '';
+  document.getElementById('e-image-url').value  = p.image_url || '';
   document.getElementById('e-price').value      = p.price || '';
   document.getElementById('e-unit').value       = p.unit || '份';
   document.getElementById('e-minqty').value     = p.minQty || p.min_qty || 1;
   document.getElementById('e-deadline').value   = p.deadline || '';
   document.getElementById('e-variants').value   = varStr(p);
   document.getElementById('e-packaging').value  = pkgStr(p);
+  updateImgPreview();
+}
+function updateImgPreview() {
+  const url  = (document.getElementById('e-image-url').value || '').trim();
+  const desc = (document.getElementById('e-desc').value || '').trim();
+  const wrap = document.getElementById('img-preview-wrap');
+  const img  = document.getElementById('img-preview');
+  const dp   = document.getElementById('desc-preview');
+  if (url) {
+    img.src = url;
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+  dp.textContent = desc;
 }
 function closeModal() { document.getElementById('editModal').hidden = true; }
 
@@ -544,6 +569,7 @@ async function saveEdit() {
     action: isNew ? 'create_product' : 'update_product',
     name,
     description: document.getElementById('e-desc').value.trim(),
+    imageUrl: document.getElementById('e-image-url').value.trim(),
     price: Number(price),
     unit: document.getElementById('e-unit').value || '份',
     minQty: Number(document.getElementById('e-minqty').value) || 1,
@@ -674,7 +700,7 @@ function ordBack() {
 }
 
 async function doNotify(orderId, lineUserId, productName, customerName) {
-  if (!confirm(`確定要通知 ${customerName||'這位客戶'} $��領取「${productName}」嗎？`)) return;
+  if (!confirm(`確定要通知 ${customerName||'這位客戶'} 來領取「${productName}」嗎？`)) return;
   try {
     const d = await api({ action: 'notify_pickup', orderId, lineUserId, productName });
     if (d.ok) toast('✅ 通知已發送！');
