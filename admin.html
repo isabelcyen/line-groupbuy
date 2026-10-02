@@ -183,7 +183,8 @@ tr:hover td { background: var(--row-hover); }
   z-index: 1000; display: flex; align-items: center; justify-content: center;
   padding: 16px;
 }
-.modal-box {
+.modal-box
+{
   background: var(--card); border-radius: 18px;
   width: 100%; max-width: 520px; max-height: 88vh;
   overflow-y: auto; padding: 24px;
@@ -238,7 +239,16 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
       </div>
       <div class="form-group">
         <label class="field-label">商品說明</label>
-        <textarea id="c-desc" placeholder="產地、特色、注意事項…"></textarea>
+        <textarea id="c-desc" placeholder="產地、特色、注意事項…" oninput="updateCreateImgPreview()"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="field-label">商品圖片 URL</label>
+        <input type="url" id="c-image-url" placeholder="https://…（貼上圖片網址）" oninput="updateCreateImgPreview()">
+        <div id="c-img-preview-wrap" style="margin-top:10px;display:none">
+          <img id="c-img-preview" src="" alt="圖片預覽"
+            style="max-width:100%;border-radius:10px;border:1px solid var(--border);display:block">
+          <div id="c-desc-preview" style="margin-top:8px;font-size:.85rem;color:var(--muted);white-space:pre-wrap"></div>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -415,8 +425,9 @@ async function api(body) {
 
 /* ── 開新團 ── */
 function clearCreate() {
-  ['c-name','c-desc','c-price','c-variants'].forEach(id =>
+  ['c-name','c-desc','c-image-url','c-price','c-variants'].forEach(id =>
     document.getElementById(id).value = '');
+  document.getElementById('c-img-preview-wrap').style.display = 'none';
   document.getElementById('c-unit').value    = '份';
   document.getElementById('c-minqty').value  = '1';
   document.getElementById('c-deadline').value = '';
@@ -437,6 +448,7 @@ async function createProduct() {
     const d = await api({
       action: 'create_product', name,
       description: document.getElementById('c-desc').value.trim(),
+      imageUrl: document.getElementById('c-image-url').value.trim(),
       price: Number(price),
       unit: document.getElementById('c-unit').value || '份',
       minQty: Number(document.getElementById('c-minqty').value) || 1,
@@ -552,6 +564,16 @@ function updateImgPreview() {
   } else {
     wrap.style.display = 'none';
   }
+  dp.textContent = desc;
+}
+function updateCreateImgPreview() {
+  const url  = (document.getElementById('c-image-url').value || '').trim();
+  const desc = (document.getElementById('c-desc').value || '').trim();
+  const wrap = document.getElementById('c-img-preview-wrap');
+  const img  = document.getElementById('c-img-preview');
+  const dp   = document.getElementById('c-desc-preview');
+  if (url) { img.src = url; wrap.style.display = 'block'; }
+  else { wrap.style.display = 'none'; }
   dp.textContent = desc;
 }
 function closeModal() { document.getElementById('editModal').hidden = true; }
