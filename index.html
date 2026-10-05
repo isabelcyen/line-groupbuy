@@ -448,11 +448,10 @@ textarea.remark-input:focus { border-color: var(--green); }
       <div class="nav-title" id="s1-title">商品詳情</div>
     </div>
     <div class="scroll-body" id="s1-body">
-      <!-- 動態填入 -->
       <div style="text-align:center;padding:40px 0;color:var(--text-3)">載入商品中…</div>
     </div>
     <div class="bottom-bar">
-      <!-- ✅ 改呼叫 joinGroup()，由函式檢查截止後再進 s2 -->
+      <!-- ✅ joinGroup() 負責截止檢查後才進 s2 -->
       <button class="btn-primary" id="s1-btn" onclick="joinGroup()">我要參團</button>
     </div>
   </div>
@@ -527,7 +526,7 @@ textarea.remark-input:focus { border-color: var(--green); }
           <div class="pay-icon">💵</div>
           <div>
             <div class="pay-name">現場繳款</div>
-            <div class="pay-desc">取貨當面付款</div>
+            <div class="pay-desc">取貨時當面付款</div>
           </div>
           <div class="pay-radio"></div>
         </div>
@@ -625,9 +624,7 @@ textarea.remark-input:focus { border-color: var(--green); }
 
       <div class="card">
         <div class="section-label" style="margin-bottom:14px">配送進度</div>
-        <div class="timeline" id="timeline">
-          <!-- 動態填入 -->
-        </div>
+        <div class="timeline" id="timeline"></div>
       </div>
 
       <div class="card" id="cancel-hint" style="display:none">
@@ -651,39 +648,36 @@ textarea.remark-input:focus { border-color: var(--green); }
 // ── 狀態 ─────────────────────────────────────────────────────────────────────
 const state = {
   liffId: '',
-  apiBase: '',           // Apps Script doGet URL
+  apiBase: '',
   lineUserId: '',
   displayName: '',
-  product: null,         // 後端商品資料
-  currentOrderId: '',    // 下單成功後記錄
+  product: null,
+  currentOrderId: '',
   qty: 1,
   selectedVariant: '',
   selectedPackaging: '',
   payMethod: 'transfer',
-  uploadedFile: null,    // File object
+  uploadedFile: null,
   uploadedBase64: '',
 };
 
 // ── 初始化 ────────────────────────────────────────────────────────────────────
 async function init() {
   try {
-    // 1. 從 URL 取得 Apps Script URL 和 LIFF ID
     const params   = new URLSearchParams(location.search);
-    state.apiBase  = 'https://line-group-buy.isabelcyen.workers.dev/';     // 部署後填入 Apps Script Web App URL
+    state.apiBase  = 'https://line-group-buy.isabelcyen.workers.dev/';
     state.liffId   = '2011684954-69W5ZbCT';
     const pid      = params.get('pid') || '';
     const action   = params.get('action') || '';
 
-    // 2. 初始化 LIFF
     await liff.init({ liffId: state.liffId || '____YOUR_LIFF_ID____' });
 
     if (liff.isLoggedIn()) {
-      const profile    = await liff.getProfile();
-      state.lineUserId = profile.userId;
+      const profile     = await liff.getProfile();
+      state.lineUserId  = profile.userId;
       state.displayName = profile.displayName;
     }
 
-    // 3. 若為追蹤模式直接跳到 s5
     if (action === 'track') {
       const oid = params.get('oid') || '';
       if (oid) {
@@ -694,9 +688,7 @@ async function init() {
       }
     }
 
-    // 4. 載入商品
     await loadProduct(pid);
-
     document.getElementById('loading').style.display = 'none';
 
   } catch (err) {
@@ -706,7 +698,7 @@ async function init() {
   }
 }
 
-// ── 後端 API 呼叫 ─────────────────────────────────────────────────────────────
+// ── 後端 API ──────────────────────────────────────────────────────────────────
 async function apiGet(action, extraParams = {}) {
   if (!state.apiBase) throw new Error('apiBase not set');
   const params = new URLSearchParams({ action, uid: state.lineUserId, ...extraParams });
@@ -729,19 +721,17 @@ async function loadProduct(pid) {
   const params = pid ? { pid } : {};
   const resp = await apiGet('product', params);
   if (!resp.ok) { showToast('找不到商品資訊'); return; }
-
   state.product = resp.data;
   renderProduct(resp.data);
 }
 
 function renderProduct(p) {
-  const deadline  = new Date(p.deadline);
+  const deadline    = new Date(p.deadline);
   const discountPct = Math.round((1 - p.price / p.original_price) * 100);
 
   document.getElementById('s1-title').textContent = p.name;
 
-  const body = document.getElementById('s1-body');
-  body.innerHTML = `
+  document.getElementById('s1-body').innerHTML = `
     <div class="product-hero-placeholder">🎁</div>
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -770,7 +760,7 @@ function renderProduct(p) {
     </div>
     <div class="card">
       <table class="info-table">
-        <tr><td>截止時間</td><td>${deadline.toLocaleDateString('zh-TW', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td></tr>
+        <tr><td>截止時間</td><td>${deadline.toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td></tr>
         <tr><td>每人限購</td><td>最多 ${p.max_qty} 件</td></tr>
         <tr><td>口味選擇</td><td>${(p.variants||[]).join(' / ')}</td></tr>
         ${p.description ? `<tr><td>商品說明</td><td style="color:var(--text-2)">${p.description}</td></tr>` : ''}
@@ -778,18 +768,14 @@ function renderProduct(p) {
     </div>
   `;
 
-  // 倒數計時
   startCountdown(deadline);
-
-  // 填入下單頁規格
   fillOrderForm(p);
 
-  // ── ✅ 截止時間：更新「我要參團」按鈕狀態 ────────────────
+  // ✅ 截止時間 → 更新「我要參團」按鈕
   const joinBtn   = document.getElementById('s1-btn');
   const isExpired = new Date() > deadline;
   joinBtn.disabled    = isExpired;
   joinBtn.textContent = isExpired ? '⛔ 已截止收單' : '我要參團 🛒';
-  // ─────────────────────────────────────────────────────────
 }
 
 function startCountdown(deadline) {
@@ -799,7 +785,6 @@ function startCountdown(deadline) {
     const diff = deadline - Date.now();
     if (diff <= 0) {
       el.textContent = '已截止';
-      // 同步更新按鈕（倒數歸零時立即鎖定）
       const btn = document.getElementById('s1-btn');
       if (btn && !btn.disabled) {
         btn.disabled    = true;
@@ -824,14 +809,12 @@ function fillOrderForm(p) {
   document.getElementById('max-qty-label').textContent = maxQty;
   document.getElementById('s2-unit-price').textContent = `NT$${p.price}`;
 
-  // 口味 chips
   const variantEl = document.getElementById('variant-chips');
   variantEl.innerHTML = (p.variants||[]).map((v, i) =>
     `<button class="chip${i===0?' selected':''}" onclick="selectChip(this,'variant')" data-val="${v}">${v}</button>`
   ).join('');
   state.selectedVariant = (p.variants||[])[0] || '';
 
-  // 包裝 chips
   const packEl = document.getElementById('packaging-chips');
   packEl.innerHTML = (p.packaging||[]).map((v, i) =>
     `<button class="chip${i===0?' selected':''}" onclick="selectChip(this,'packaging')" data-val="${v}">${v}</button>`
@@ -841,16 +824,15 @@ function fillOrderForm(p) {
   updateQtyDisplay();
 }
 
-// ── ✅ 「我要參團」截止檢查 ───────────────────────────────────────────────────
+// ✅ 「我要參團」— 截止檢查後才進 s2
 function joinGroup() {
   const deadline = state.product?.deadline ? new Date(state.product.deadline) : null;
   if (deadline && new Date() > deadline) {
     showToast('此商品已截止收單，感謝您的關注 🙏');
-    return;   // 阻止進入訂單表單
+    return;
   }
   goTo('s2');
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 // ── 表單互動 ──────────────────────────────────────────────────────────────────
 function selectChip(el, group) {
@@ -869,12 +851,12 @@ function changeQty(delta) {
 }
 
 function updateQtyDisplay() {
-  const p = state.product;
+  const p     = state.product;
   const price = p ? Number(p.price) : 0;
   const max   = p ? Number(p.max_qty) : 5;
-  document.getElementById('qty-val').textContent  = state.qty;
-  document.getElementById('qty-minus').disabled   = state.qty <= 1;
-  document.getElementById('qty-plus').disabled    = state.qty >= max;
+  document.getElementById('qty-val').textContent   = state.qty;
+  document.getElementById('qty-minus').disabled    = state.qty <= 1;
+  document.getElementById('qty-plus').disabled     = state.qty >= max;
   document.getElementById('subtotal').textContent  = `NT$${price * state.qty}`;
   document.getElementById('s2-qty').textContent    = `× ${state.qty}`;
   document.getElementById('s2-total').textContent  = `NT$${price * state.qty}`;
@@ -884,13 +866,12 @@ function selectPayment(method) {
   state.payMethod = method;
   document.querySelectorAll('.pay-option').forEach(el => el.classList.remove('selected'));
   document.getElementById(`pay-${method}`).classList.add('selected');
-  document.getElementById('transfer-block').style.display  = method === 'transfer'  ? 'flex' : 'none';
+  document.getElementById('transfer-block').style.display       = method === 'transfer' ? 'flex' : 'none';
   document.getElementById('transfer-block').style.flexDirection = 'column';
-  document.getElementById('transfer-block').style.gap = '10px';
-  document.getElementById('linepay-block').style.display  = method === 'line_pay'   ? 'block' : 'none';
-  document.getElementById('onsite-block').style.display   = method === 'on_site'    ? 'block' : 'none';
-  document.getElementById('s3-btn').textContent = method === 'line_pay'
-    ? '前往 LINE Pay 付款' : '確認下單';
+  document.getElementById('transfer-block').style.gap           = '10px';
+  document.getElementById('linepay-block').style.display        = method === 'line_pay' ? 'block' : 'none';
+  document.getElementById('onsite-block').style.display         = method === 'on_site'  ? 'block' : 'none';
+  document.getElementById('s3-btn').textContent = method === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
 }
 
 function triggerUpload() { document.getElementById('file-input').click(); }
@@ -899,12 +880,9 @@ function handleFileSelect(input) {
   const file = input.files[0];
   if (!file) return;
   state.uploadedFile = file;
-
   const reader = new FileReader();
   reader.onload = e => {
-    const base64 = e.target.result.split(',')[1];
-    state.uploadedBase64 = base64;
-
+    state.uploadedBase64 = e.target.result.split(',')[1];
     const area  = document.getElementById('upload-area');
     const label = document.getElementById('upload-label');
     area.classList.add('uploaded');
@@ -916,13 +894,12 @@ function handleFileSelect(input) {
 // ── 下單提交 ──────────────────────────────────────────────────────────────────
 async function submitOrder() {
   const btn = document.getElementById('s3-btn');
-  btn.disabled = true;
+  btn.disabled    = true;
   btn.textContent = '送出中…';
 
   try {
     const p = state.product;
 
-    // 把 payload 抽出來，方便重複下單時重用
     const orderPayload = {
       action:     'create_order',
       productId:  p.product_id,
@@ -950,14 +927,16 @@ async function submitOrder() {
         `口味：${ex.variant}　數量：${ex.qty} 件　金額：NT$${ex.total}\n\n` +
         `確定要再次訂購嗎？`;
 
-      // 先恢復按鈕，等待使用者選擇
-      btn.disabled = false;
+      btn.disabled    = false;
       btn.textContent = state.payMethod === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
 
-      if (!confirm(msg)) return;   // 取消 → 不送出
+      // ✅ 取消 → 關閉 LIFF 回到 LINE 群組
+      if (!confirm(msg)) {
+        liff.closeWindow();
+        return;
+      }
 
-      // 確認後，帶 allowDuplicate 重送
-      btn.disabled = true;
+      btn.disabled    = true;
       btn.textContent = '送出中…';
       const resp2 = await apiPost({ ...orderPayload, allowDuplicate: true });
       if (!resp2.ok) { showToast(resp2.error || '下單失敗'); return; }
@@ -996,7 +975,7 @@ async function submitOrder() {
     console.error('submitOrder error:', err);
     showToast('網路錯誤，請稍後再試');
   } finally {
-    btn.disabled = false;
+    btn.disabled    = false;
     btn.textContent = state.payMethod === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
   }
 }
@@ -1007,17 +986,17 @@ function renderSuccessScreen(orderId) {
   document.getElementById('receipt-product').textContent = p?.name || '-';
   document.getElementById('receipt-variant').textContent = state.selectedVariant || '-';
   document.getElementById('receipt-qty').textContent     = `${state.qty} 件`;
-  document.getElementById('receipt-pay').textContent     = { line_pay:'LINE Pay', transfer:'銀行轉帳', on_site:'現場繳款' }[state.payMethod];
+  document.getElementById('receipt-pay').textContent     =
+    { line_pay:'LINE Pay', transfer:'銀行轉帳', on_site:'現場繳款' }[state.payMethod];
   document.getElementById('receipt-total').textContent   = `NT$${(p?.price || 0) * state.qty}`;
 
   const hint = {
-    transfer:  `請完成轉帳後，截圖上傳至此頁面（已上傳）或聯繫團主。\n匯款帳號：${document.getElementById('bank-account')?.textContent || ''}`,
-    line_pay:  '付款連結已傳送至您的 LINE，請點擊完成付款。',
-    on_site:   '請於取貨當日準備現金，我們會在出貨時通知您。',
+    transfer: `請完成轉帳後，截圖上傳至此頁面（已上傳）或聯繫團主。\n匯款帳號：${document.getElementById('bank-account')?.textContent || ''}`,
+    line_pay: '付款連結已傳送至您的 LINE，請點擊完成付款。',
+    on_site:  '請於取貨當日準備現金，我們會在出貨時通知您。',
   }[state.payMethod];
   document.getElementById('s4-pay-hint').textContent = hint;
 
-  // 預載追蹤頁
   loadTrackingScreen(orderId);
 }
 
@@ -1028,9 +1007,7 @@ async function loadTrackingScreen(orderId) {
     const resp = await apiGet('order', { oid: orderId });
     if (!resp.ok) return;
     order = resp.data;
-  } catch (e) {
-    return;
-  }
+  } catch (e) { return; }
 
   const statusMap = {
     pending:   { label: '⏳ 待付款', cls: 'badge-amber', step: 0 },
@@ -1045,17 +1022,17 @@ async function loadTrackingScreen(orderId) {
   document.getElementById('track-id').textContent = orderId;
   const badge = document.getElementById('track-status-badge');
   badge.textContent = status.label;
-  badge.className = `status-badge-lg ${status.cls}`;
+  badge.className   = `status-badge-lg ${status.cls}`;
 
   document.getElementById('track-summary').innerHTML =
     `商品：${order.variant} × ${order.qty} 件 <br>金額：<strong>NT$${order.total}</strong>`;
 
   const steps = [
-    { label: '訂單成立', desc: '您的訂單已成功建立' },
+    { label: '訂單成立',   desc: '您的訂單已成功建立' },
     { label: '付款確認中', desc: '團主正在核實您的付款' },
-    { label: '已付款', desc: '付款確認完成！' },
-    { label: '配送中', desc: '商品正在配送' },
-    { label: '已收貨', desc: '訂單完成，謝謝！' },
+    { label: '已付款',     desc: '付款確認完成！' },
+    { label: '配送中',     desc: '商品正在配送' },
+    { label: '已收貨',     desc: '訂單完成，謝謝！' },
   ];
 
   document.getElementById('timeline').innerHTML = steps.map((s, i) => {
@@ -1090,7 +1067,7 @@ function goTo(screenId) {
   document.getElementById(screenId).classList.add('active');
 }
 
-// ── 工具 ─────────────────────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg) {
   const el = document.getElementById('toast');
@@ -1105,21 +1082,20 @@ function loadMockData() {
   state.displayName = '測試使用者';
   state.lineUserId  = 'U_mock_dev';
   state.product = {
-    product_id:    'P001',
-    name:          '萬聖節糖果禮盒',
-    price:         580,
+    product_id:     'P001',
+    name:           '萬聖節糖果禮盒',
+    price:          580,
     original_price: 780,
-    deadline:      new Date(Date.now() + 3 * 86400000).toISOString(),
-    max_qty:       5,
-    variants:      ['抹茶', '草莓', '巧克力', '綜合'],
-    packaging:     ['精美禮盒', '簡易包裝'],
-    description:   '精選比利時進口巧克力，多種口味任選',
-    status:        'open',
-    totalOrders:   12,
-    totalQty:      28,
+    deadline:       new Date(Date.now() + 3 * 86400000).toISOString(),
+    max_qty:        5,
+    variants:       ['抹茶', '草莓', '巧克力', '綜合'],
+    packaging:      ['精美禮盒', '簡易包裝'],
+    description:    '精選比利時進口巧克力，多種口味任選',
+    status:         'open',
+    totalOrders:    12,
+    totalQty:       28,
   };
 
-  // Mock bank info
   document.getElementById('bank-code').textContent    = '808';
   document.getElementById('bank-account').textContent = '0001234567890';
   document.getElementById('bank-name').textContent    = '王小明';
@@ -1127,25 +1103,21 @@ function loadMockData() {
   renderProduct(state.product);
   selectPayment('transfer');
 
-  // Override submit to mock
   window.apiPost = async (body) => {
     await new Promise(r => setTimeout(r, 800));
-    if (body.action === 'create_order') {
+    if (body.action === 'create_order')
       return { ok: true, data: { orderId: `ORD-${Date.now().toString().slice(-8)}` } };
-    }
     return { ok: true, data: {} };
   };
-  window.apiGet = async (action, params) => {
+  window.apiGet = async (action) => {
     await new Promise(r => setTimeout(r, 400));
-    if (action === 'order') {
-      return { ok: true, data: {
-        order_id: state.currentOrderId || 'ORD-MOCK-0001',
-        variant: state.selectedVariant || '抹茶',
-        qty: state.qty,
-        total: (state.product?.price || 580) * state.qty,
-        pay_status: 'pending',
-      }};
-    }
+    if (action === 'order') return { ok: true, data: {
+      order_id: state.currentOrderId || 'ORD-MOCK-0001',
+      variant: state.selectedVariant || '抹茶',
+      qty: state.qty,
+      total: (state.product?.price || 580) * state.qty,
+      pay_status: 'pending',
+    }};
     return { ok: true, data: [] };
   };
 }
