@@ -893,7 +893,8 @@ async function submitOrder() {
   try {
     const p = state.product;
 
-    const resp = await apiPost({
+    // 把 payload 抽出來，方便重複下單時重用
+    const orderPayload = {
       action:     'create_order',
       productId:  p.product_id,
       memberName: state.displayName,
@@ -902,25 +903,60 @@ async function submitOrder() {
       qty:        state.qty,
       payMethod:  state.payMethod,
       notes:      document.getElementById('remarks').value,
-    });
+    };
+
+    const resp = await apiPost(orderPayload);
 
     if (!resp.ok) {
       showToast(resp.error || '下單失敗，請稍後再試');
-      btn.disabled = false;
-      btn.textContent = '確認下單';
       return;
     }
 
+    // ── 重複訂購警示 ────────────────────────────────────────
+    if (resp.data?.warning === 'DUPLICATE_ORDER') {
+      const ex  = resp.data.existingOrder;
+      const msg =
+        `⚠️ 您已訂購過此商品！\n` +
+        `訂單編號：${ex.order_id}\n` +
+        `口味：${ex.variant}　數量：${ex.qty} 件　金額：NT$${ex.total}\n\n` +
+        `確定要再次訂購嗎？`;
+
+      // 先恢復按鈕，等待使用者選擇
+      btn.disabled = false;
+      btn.textContent = state.payMethod === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
+
+      if (!confirm(msg)) return;   // 取消 → 不送出
+
+      // 確認後，帶 allowDuplicate 重送
+      btn.disabled = true;
+      btn.textContent = '送出中…';
+      const resp2 = await apiPost({ ...orderPayload, allowDuplicate: true });
+      if (!resp2.ok) { showToast(resp2.error || '下單失敗'); return; }
+
+      state.currentOrderId = resp2.data.orderId;
+      if (state.payMethod === 'transfer' && state.uploadedBase64) {
+        await apiPost({
+          action: 'submit_proof', orderId: resp2.data.orderId,
+          screenshotBase64: state.uploadedBase64,
+          fileName: state.uploadedFile?.name || 'receipt.jpg',
+          transferRef: document.getElementById('transfer-ref').value,
+        });
+      }
+      renderSuccessScreen(resp2.data.orderId);
+      goTo('s4');
+      return;
+    }
+    // ────────────────────────────────────────────────────────
+
     state.currentOrderId = resp.data.orderId;
 
-    // 若有截圖，一併提交
     if (state.payMethod === 'transfer' && state.uploadedBase64) {
       await apiPost({
-        action:         'submit_proof',
-        orderId:        resp.data.orderId,
+        action:           'submit_proof',
+        orderId:          resp.data.orderId,
         screenshotBase64: state.uploadedBase64,
-        fileName:       state.uploadedFile?.name || 'receipt.jpg',
-        transferRef:    document.getElementById('transfer-ref').value,
+        fileName:         state.uploadedFile?.name || 'receipt.jpg',
+        transferRef:      document.getElementById('transfer-ref').value,
       });
     }
 
