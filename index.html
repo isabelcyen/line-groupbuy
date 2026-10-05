@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -451,7 +452,8 @@ textarea.remark-input:focus { border-color: var(--green); }
       <div style="text-align:center;padding:40px 0;color:var(--text-3)">載入商品中…</div>
     </div>
     <div class="bottom-bar">
-      <button class="btn-primary" id="s1-btn" onclick="goTo('s2')">我要參團</button>
+      <!-- ✅ 改呼叫 joinGroup()，由函式檢查截止後再進 s2 -->
+      <button class="btn-primary" id="s1-btn" onclick="joinGroup()">我要參團</button>
     </div>
   </div>
 
@@ -525,7 +527,7 @@ textarea.remark-input:focus { border-color: var(--green); }
           <div class="pay-icon">💵</div>
           <div>
             <div class="pay-name">現場繳款</div>
-            <div class="pay-desc">取貨時當面付款</div>
+            <div class="pay-desc">取貨當面付款</div>
           </div>
           <div class="pay-radio"></div>
         </div>
@@ -781,6 +783,13 @@ function renderProduct(p) {
 
   // 填入下單頁規格
   fillOrderForm(p);
+
+  // ── ✅ 截止時間：更新「我要參團」按鈕狀態 ────────────────
+  const joinBtn   = document.getElementById('s1-btn');
+  const isExpired = new Date() > deadline;
+  joinBtn.disabled    = isExpired;
+  joinBtn.textContent = isExpired ? '⛔ 已截止收單' : '我要參團 🛒';
+  // ─────────────────────────────────────────────────────────
 }
 
 function startCountdown(deadline) {
@@ -788,7 +797,16 @@ function startCountdown(deadline) {
     const el = document.getElementById('countdown-val');
     if (!el) return;
     const diff = deadline - Date.now();
-    if (diff <= 0) { el.textContent = '已截止'; return; }
+    if (diff <= 0) {
+      el.textContent = '已截止';
+      // 同步更新按鈕（倒數歸零時立即鎖定）
+      const btn = document.getElementById('s1-btn');
+      if (btn && !btn.disabled) {
+        btn.disabled    = true;
+        btn.textContent = '⛔ 已截止收單';
+      }
+      return;
+    }
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);
@@ -822,6 +840,17 @@ function fillOrderForm(p) {
 
   updateQtyDisplay();
 }
+
+// ── ✅ 「我要參團」截止檢查 ───────────────────────────────────────────────────
+function joinGroup() {
+  const deadline = state.product?.deadline ? new Date(state.product.deadline) : null;
+  if (deadline && new Date() > deadline) {
+    showToast('此商品已截止收單，感謝您的關注 🙏');
+    return;   // 阻止進入訂單表單
+  }
+  goTo('s2');
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ── 表單互動 ──────────────────────────────────────────────────────────────────
 function selectChip(el, group) {
