@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -53,7 +54,7 @@ body {
 }
 .login-logo { font-size: 2.5rem; text-align: center; margin-bottom: 16px; }
 .login-card h1 { font-size: 1.4rem; text-align: center; margin-bottom: 4px; }
-.login-card p { color: var(--muted); text-align: center; margin-bottom: 28px; font-size: .88rem; }
+.login-card p  { color: var(--muted); text-align: center; margin-bottom: 28px; font-size: .88rem; }
 
 /* ── App shell ── */
 #adminScreen { display: flex; flex-direction: column; min-height: 100vh; }
@@ -99,7 +100,12 @@ label.field-label {
 label.field-label .req { color: var(--danger); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-input[type=text], input[type=number], input[type=password], input[type=date], textarea {
+input[type=text],
+input[type=number],
+input[type=password],
+input[type=date],
+input[type=time],
+textarea {
   width: 100%; padding: 11px 14px;
   border: 1.5px solid var(--border); border-radius: 10px;
   font-size: .95rem; font-family: inherit;
@@ -110,6 +116,15 @@ input[type=text], input[type=number], input[type=password], input[type=date], te
 input:focus, textarea:focus { border-color: var(--green); }
 textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 .hint { font-size: .75rem; color: var(--muted); margin-top: 5px; }
+
+/* ── 日期+時間並排 ── */
+.datetime-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.datetime-row input[type=date] { flex: 1; min-width: 0; }
+.datetime-row input[type=time] { width: 118px; flex-shrink: 0; }
 
 /* ── Buttons ── */
 .btn {
@@ -123,10 +138,10 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .btn-primary { background: var(--green); color: #fff; }
 .btn-block { width: 100%; padding: 13px; font-size: .97rem; }
-.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger  { background: var(--danger);  color: #fff; }
 .btn-warning { background: var(--warning); color: #fff; }
-.btn-info { background: var(--info); color: #fff; }
-.btn-ghost { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-info    { background: var(--info);    color: #fff; }
+.btn-ghost   { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
 .btn-sm { padding: 4px 9px; font-size: .75rem; border-radius: 6px; }
 
 /* ── Section header ── */
@@ -243,14 +258,17 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
   <!-- ══ Tab: 開新團 ══ -->
   <div id="pane-create" class="tab-pane active">
     <div class="form-wrap">
+
       <div class="form-group">
         <label class="field-label">商品名稱 <span class="req">*</span></label>
         <input type="text" id="c-name" placeholder="例：高雄愛文芒果 10斤">
       </div>
+
       <div class="form-group">
         <label class="field-label">商品說明</label>
         <textarea id="c-desc" placeholder="產地、特色、注意事項…" oninput="syncCreateDescPreview()"></textarea>
       </div>
+
       <div class="form-group">
         <label class="field-label">商品圖片</label>
         <label class="file-upload-btn" for="c-image-file">📷 選擇圖片</label>
@@ -263,6 +281,7 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
           <div id="c-desc-preview" style="margin-top:8px;font-size:.85rem;color:var(--muted);white-space:pre-wrap"></div>
         </div>
       </div>
+
       <div class="form-row">
         <div class="form-group">
           <label class="field-label">單價（元）<span class="req">*</span></label>
@@ -273,26 +292,34 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
           <input type="text" id="c-unit" value="份">
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">最低起訂量</label>
-          <input type="number" id="c-minqty" value="1" min="1">
-        </div>
-        <div class="form-group">
-          <label class="field-label">截止日期 <span class="req">*</span></label>
-          <input type="date" id="c-deadline">
-        </div>
+
+      <div class="form-group">
+        <label class="field-label">最低起訂量</label>
+        <input type="number" id="c-minqty" value="1" min="1">
       </div>
+
+      <!-- ✅ 截止日期 + 截止時間 並排 -->
+      <div class="form-group">
+        <label class="field-label">截止日期與時間 <span class="req">*</span></label>
+        <div class="datetime-row">
+          <input type="date" id="c-deadline">
+          <input type="time" id="c-deadlineTime" value="23:59">
+        </div>
+        <p class="hint">截止後系統自動鎖定，團員無法繼續下單</p>
+      </div>
+
       <div class="form-group">
         <label class="field-label">規格 / 口味</label>
         <input type="text" id="c-variants" placeholder="原味,巧克力,抹茶">
         <p class="hint">逗號分隔，留空表示無規格選擇</p>
       </div>
+
       <div class="form-group">
         <label class="field-label">包裝方式</label>
         <input type="text" id="c-packaging" value="標準包裝">
         <p class="hint">逗號分隔，可填多種包裝方式</p>
       </div>
+
       <button class="btn btn-primary btn-block" id="createBtn" onclick="createProduct()">
         🚀 開始揪團！
       </button>
@@ -338,14 +365,17 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
     <div class="modal-title" id="editModalTitle">編輯商品</div>
     <input type="hidden" id="e-productId">
     <input type="hidden" id="e-isNew">
+
     <div class="form-group">
       <label class="field-label">商品名稱 <span class="req">*</span></label>
       <input type="text" id="e-name">
     </div>
+
     <div class="form-group">
       <label class="field-label">商品說明文字</label>
       <textarea id="e-desc" placeholder="輸入商品說明、注意事項…"></textarea>
     </div>
+
     <div class="form-group">
       <label class="field-label">商品圖片</label>
       <div id="img-preview-wrap" style="margin-top:6px;display:none">
@@ -358,6 +388,7 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
       <input type="hidden" id="e-image-url">
       <div id="e-img-filename" style="margin-top:6px;font-size:.8rem;color:var(--muted)"></div>
     </div>
+
     <div class="form-row">
       <div class="form-group">
         <label class="field-label">單價（元）<span class="req">*</span></label>
@@ -368,25 +399,33 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
         <input type="text" id="e-unit">
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="field-label">最低起訂量</label>
-        <input type="number" id="e-minqty" min="1">
-      </div>
-      <div class="form-group">
-        <label class="field-label">截止日期 <span class="req">*</span></label>
-        <input type="date" id="e-deadline">
-      </div>
+
+    <div class="form-group">
+      <label class="field-label">最低起訂量</label>
+      <input type="number" id="e-minqty" min="1">
     </div>
+
+    <!-- ✅ 截止日期 + 截止時間 並排 -->
+    <div class="form-group">
+      <label class="field-label">截止日期與時間 <span class="req">*</span></label>
+      <div class="datetime-row">
+        <input type="date" id="e-deadline">
+        <input type="time" id="e-deadlineTime" value="23:59">
+      </div>
+      <p class="hint">截止後系統自動鎖定，團員無法繼續下單</p>
+    </div>
+
     <div class="form-group">
       <label class="field-label">規格 / 口味</label>
       <input type="text" id="e-variants">
       <p class="hint">逗號分隔</p>
     </div>
+
     <div class="form-group">
       <label class="field-label">包裝方式</label>
       <input type="text" id="e-packaging">
     </div>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">取消</button>
       <button class="btn btn-primary" style="flex:2" id="editSaveBtn" onclick="saveEdit()">儲存</button>
@@ -404,7 +443,9 @@ let secret = '';
 let allProducts = [];
 let allOrders   = [];
 
-/* ── AUTH ── */
+/* ══════════════════════════════════
+   AUTH
+══════════════════════════════════ */
 function login() {
   const v = document.getElementById('pwdInput').value;
   if (!v) { toast('請輸入密碼'); return; }
@@ -419,7 +460,9 @@ function logout() {
   document.getElementById('pwdInput').value = '';
 }
 
-/* ── TABS ── */
+/* ══════════════════════════════════
+   TABS
+══════════════════════════════════ */
 function switchTab(tab) {
   ['create','manage','orders'].forEach(t => {
     document.getElementById('tbtn-' + t).classList.toggle('active', t === tab);
@@ -429,7 +472,9 @@ function switchTab(tab) {
   if (tab === 'orders') loadOrdersTab();
 }
 
-/* ── API ── */
+/* ══════════════════════════════════
+   API
+══════════════════════════════════ */
 async function api(body) {
   const r = await fetch(API, {
     method: 'POST',
@@ -439,15 +484,74 @@ async function api(body) {
   return r.json();
 }
 
-/* ── 圖片上傳 ── */
+/* ══════════════════════════════════
+   ✅ 日期時間工具
+══════════════════════════════════ */
+/**
+ * 把 ISO 字串拆成台灣時區的 date（YYYY-MM-DD）和 time（HH:MM）
+ * 用於填入 <input type="date"> 和 <input type="time">
+ */
+function splitDeadline(isoStr) {
+  if (!isoStr) return { date: '', time: '23:59' };
+  try {
+    const d = new Date(isoStr);
+    // en-CA locale 自然輸出 YYYY-MM-DD
+    const date = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(d);
+    const time = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hour12: false
+    }).format(d);  // "14:30"
+    return { date, time };
+  } catch {
+    return { date: isoStr.slice(0, 10), time: '23:59' };
+  }
+}
+
+/**
+ * 把 deadline 日期字串 + 時間字串合為完整 ISO 字串（台灣時區）
+ */
+function buildDeadlineISO(dateStr, timeStr) {
+  if (!dateStr) return '';
+  const t = timeStr || '23:59';
+  // 直接拼台灣 UTC+8 offset
+  return new Date(`${dateStr}T${t}:00+08:00`).toISOString();
+}
+
+/**
+ * 顯示用：格式化截止時間（含時分，台灣時區）
+ */
+function fmtDeadline(isoStr) {
+  if (!isoStr) return '-';
+  try {
+    const d = new Date(isoStr);
+    // 先嘗試是否為純日期 "YYYY-MM-DD"（老資料）
+    if (isoStr.length === 10) {
+      return isoStr + ' 23:59';
+    }
+    return new Intl.DateTimeFormat('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      month: 'numeric', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }).format(d);
+  } catch {
+    return isoStr;
+  }
+}
+
+/* ══════════════════════════════════
+   圖片上傳
+══════════════════════════════════ */
 async function uploadImageToGAS(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = async e => {
-      const dataUrl = e.target.result;
-      const base64  = dataUrl.split(',')[1];
+      const base64 = e.target.result.split(',')[1];
       try {
-        const d = await api({ action: 'upload_image', imageData: base64, mimeType: file.type, fileName: file.name });
+        const d = await api({
+          action: 'upload_image', imageData: base64,
+          mimeType: file.type, fileName: file.name
+        });
         if (d.ok) resolve(d.data?.imageUrl || d.imageUrl || '');
         else { toast('❌ 圖片上傳失敗：' + (d.error || '未知錯誤')); resolve(null); }
       } catch { toast('❌ 圖片上傳失敗，請稍後再試'); resolve(null); }
@@ -468,12 +572,12 @@ function handleCreateImageSelect(input) {
     wrap.style.display = 'block';
   };
   reader.readAsDataURL(file);
-  document.getElementById('c-image-url').value = '';  // reset; will be set after upload
+  document.getElementById('c-image-url').value = '';
 }
 
 function syncCreateDescPreview() {
-  const desc = document.getElementById('c-desc').value.trim();
-  document.getElementById('c-desc-preview').textContent = desc;
+  document.getElementById('c-desc-preview').textContent =
+    document.getElementById('c-desc').value.trim();
 }
 
 function handleEditImageSelect(input) {
@@ -489,18 +593,21 @@ function handleEditImageSelect(input) {
   reader.readAsDataURL(file);
 }
 
-/* ── 開新團 ── */
+/* ══════════════════════════════════
+   開新團
+══════════════════════════════════ */
 function clearCreate() {
   ['c-name','c-desc','c-price','c-variants'].forEach(id =>
     document.getElementById(id).value = '');
-  document.getElementById('c-image-url').value = '';
+  document.getElementById('c-image-url').value  = '';
   document.getElementById('c-image-file').value = '';
   document.getElementById('c-img-preview-wrap').style.display = 'none';
   document.getElementById('c-img-filename').textContent = '';
-  document.getElementById('c-unit').value    = '份';
-  document.getElementById('c-minqty').value  = '1';
-  document.getElementById('c-deadline').value = '';
-  document.getElementById('c-packaging').value = '標準包裝';
+  document.getElementById('c-unit').value         = '份';
+  document.getElementById('c-minqty').value       = '1';
+  document.getElementById('c-deadline').value     = '';
+  document.getElementById('c-deadlineTime').value = '23:59';  // ✅ 重置時間
+  document.getElementById('c-packaging').value    = '標準包裝';
 }
 
 async function createProduct() {
@@ -511,10 +618,13 @@ async function createProduct() {
   if (!price)    { toast('請填寫單價');     return; }
   if (!deadline) { toast('請選擇截止日期'); return; }
 
+  // ✅ 合併日期 + 時間為 ISO
+  const deadlineTime = document.getElementById('c-deadlineTime').value || '23:59';
+  const deadlineISO  = buildDeadlineISO(deadline, deadlineTime);
+
   const btn = document.getElementById('createBtn');
   btn.disabled = true; btn.textContent = '建立中…';
   try {
-    // 若有選擇圖片，先上傳取得 URL
     let imageUrl = document.getElementById('c-image-url').value.trim();
     const fileInput = document.getElementById('c-image-file');
     if (fileInput.files[0]) {
@@ -527,15 +637,16 @@ async function createProduct() {
       btn.textContent = '建立中…';
     }
     const d = await api({
-      action: 'create_product', name,
+      action:      'create_product',
+      name,
       description: document.getElementById('c-desc').value.trim(),
       imageUrl,
-      price: Number(price),
-      unit: document.getElementById('c-unit').value || '份',
-      minQty: Number(document.getElementById('c-minqty').value) || 1,
-      deadline,
-      variants: document.getElementById('c-variants').value,
-      packaging: document.getElementById('c-packaging').value || '標準包裝'
+      price:       Number(price),
+      unit:        document.getElementById('c-unit').value || '份',
+      minQty:      Number(document.getElementById('c-minqty').value) || 1,
+      deadline:    deadlineISO,   // ✅ 完整 ISO 含時間
+      variants:    document.getElementById('c-variants').value,
+      packaging:   document.getElementById('c-packaging').value || '標準包裝'
     });
     if (d.ok) { toast('✅ 開團成功！'); clearCreate(); }
     else      { toast('❌ ' + (d.error || '失敗')); }
@@ -543,7 +654,9 @@ async function createProduct() {
   btn.disabled = false; btn.textContent = '🚀 開始揪團！';
 }
 
-/* ── 開團管理 ── */
+/* ══════════════════════════════════
+   開團管理
+══════════════════════════════════ */
 async function loadProducts() {
   document.getElementById('manage-body').innerHTML =
     '<div class="state-box"><div class="state-icon">⏳</div><p>載入中…</p></div>';
@@ -557,7 +670,7 @@ async function loadProducts() {
   }
 }
 
-function pid(p)  { return p.id || p.productId || p.product_id || ''; }
+function pid(p)    { return p.id || p.productId || p.product_id || ''; }
 function varStr(p) {
   const v = p.variants || p.variant || '';
   return Array.isArray(v) ? v.join(',') : v;
@@ -575,21 +688,23 @@ function renderManageTable() {
   }
   const now = new Date();
   const rows = allProducts.map(p => {
-    const active = p.deadline && new Date(p.deadline) >= now;
+    const deadlineDate = p.deadline ? new Date(p.deadline) : null;
+    const active = deadlineDate && deadlineDate >= now;
     const badge  = active
       ? '<span class="badge badge-active">進行中</span>'
       : '<span class="badge badge-closed">已截止</span>';
-    const id = pid(p);
-    const safeName = (p.name||'').replace(/'/g,"\\'");
+    const id       = pid(p);
+    const safeName = (p.name || '').replace(/'/g, "\\'");
     return `<tr>
-      <td>${p.name||'-'}</td>
-      <td>$${p.price||0}</td>
-      <td>${p.deadline||'-'}</td>
+      <td>${p.name || '-'}</td>
+      <td style="font-size:.78rem;color:${active ? 'var(--warning)' : 'var(--muted)'};font-variant-numeric:tabular-nums">
+        ${fmtDeadline(p.deadline)}
+      </td>
       <td>${badge}</td>
       <td class="td-actions">
-        <button class="btn btn-info btn-sm"    onclick='openCopy("${id}")'>複製</button>
-        <button class="btn btn-ghost btn-sm"   onclick='openEdit("${id}")'>編輯</button>
-        <button class="btn btn-danger btn-sm"  onclick='delProduct("${id}","${safeName}")'>刪除</button>
+        <button class="btn btn-info btn-sm"   onclick='openCopy("${id}")'>複製</button>
+        <button class="btn btn-ghost btn-sm"  onclick='openEdit("${id}")'>編輯</button>
+        <button class="btn btn-danger btn-sm" onclick='delProduct("${id}","${safeName}")'>刪除</button>
       </td>
     </tr>`;
   }).join('');
@@ -597,7 +712,7 @@ function renderManageTable() {
   document.getElementById('manage-body').innerHTML = `
     <div class="table-outer"><table>
       <thead><tr>
-        <th>商品名稱</th><th>單價</th><th>截止日期</th><th>狀態</th><th>操作</th>
+        <th>商品名稱</th><th>截止時間</th><th>狀態</th><th>操作</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
@@ -608,7 +723,7 @@ function openCopy(productId) {
   if (!p) return;
   fillModal(p, true);
   document.getElementById('editModalTitle').textContent = '複製開新團';
-  document.getElementById('editSaveBtn').textContent = '開新團';
+  document.getElementById('editSaveBtn').textContent    = '開新團';
   document.getElementById('editModal').hidden = false;
 }
 function openEdit(productId) {
@@ -616,25 +731,31 @@ function openEdit(productId) {
   if (!p) return;
   fillModal(p, false);
   document.getElementById('editModalTitle').textContent = '編輯商品';
-  document.getElementById('editSaveBtn').textContent = '儲存更新';
+  document.getElementById('editSaveBtn').textContent    = '儲存更新';
   document.getElementById('editModal').hidden = false;
 }
+
 function fillModal(p, isNew) {
-  document.getElementById('e-productId').value  = pid(p);
-  document.getElementById('e-isNew').value      = isNew ? '1' : '0';
-  document.getElementById('e-name').value       = p.name || '';
-  document.getElementById('e-desc').value       = p.description || '';
-  const existingUrl = p.image_url || '';
-  document.getElementById('e-image-url').value  = existingUrl;
+  document.getElementById('e-productId').value = pid(p);
+  document.getElementById('e-isNew').value     = isNew ? '1' : '0';
+  document.getElementById('e-name').value      = p.name || '';
+  document.getElementById('e-desc').value      = p.description || '';
+  document.getElementById('e-price').value     = p.price || '';
+  document.getElementById('e-unit').value      = p.unit || '份';
+  document.getElementById('e-minqty').value    = p.minQty || p.min_qty || 1;
+  document.getElementById('e-variants').value  = varStr(p);
+  document.getElementById('e-packaging').value = pkgStr(p);
   document.getElementById('e-image-file').value = '';
   document.getElementById('e-img-filename').textContent = '';
-  document.getElementById('e-price').value      = p.price || '';
-  document.getElementById('e-unit').value       = p.unit || '份';
-  document.getElementById('e-minqty').value     = p.minQty || p.min_qty || 1;
-  document.getElementById('e-deadline').value   = p.deadline || '';
-  document.getElementById('e-variants').value   = varStr(p);
-  document.getElementById('e-packaging').value  = pkgStr(p);
-  // 顯示現有圖片預覽
+
+  // ✅ 從 ISO 字串解析台灣時間的日期 + 時間
+  const { date, time } = splitDeadline(p.deadline || '');
+  document.getElementById('e-deadline').value     = date;
+  document.getElementById('e-deadlineTime').value = time;
+
+  // 現有圖片預覽
+  const existingUrl = p.image_url || '';
+  document.getElementById('e-image-url').value = existingUrl;
   const wrap = document.getElementById('img-preview-wrap');
   if (existingUrl) {
     document.getElementById('img-preview').src = existingUrl;
@@ -644,39 +765,49 @@ function fillModal(p, isNew) {
     wrap.style.display = 'none';
   }
 }
+
 function closeModal() { document.getElementById('editModal').hidden = true; }
 
 async function saveEdit() {
-  const name    = document.getElementById('e-name').value.trim();
-  const price   = document.getElementById('e-price').value;
-  const deadline= document.getElementById('e-deadline').value;
+  const name     = document.getElementById('e-name').value.trim();
+  const price    = document.getElementById('e-price').value;
+  const deadline = document.getElementById('e-deadline').value;
   if (!name || !price || !deadline) { toast('請填寫必填欄位'); return; }
 
   const isNew     = document.getElementById('e-isNew').value === '1';
   const productId = document.getElementById('e-productId').value;
 
+  // ✅ 合併日期 + 時間為 ISO
+  const deadlineTime = document.getElementById('e-deadlineTime').value || '23:59';
+  const deadlineISO  = buildDeadlineISO(deadline, deadlineTime);
+
   const payload = {
-    action: isNew ? 'create_product' : 'update_product',
+    action:      isNew ? 'create_product' : 'update_product',
     name,
     description: document.getElementById('e-desc').value.trim(),
-    imageUrl: document.getElementById('e-image-url').value.trim(),
-    price: Number(price),
-    unit: document.getElementById('e-unit').value || '份',
-    minQty: Number(document.getElementById('e-minqty').value) || 1,
-    deadline,
-    variants: document.getElementById('e-variants').value,
-    packaging: document.getElementById('e-packaging').value || '標準包裝'
+    imageUrl:    document.getElementById('e-image-url').value.trim(),
+    price:       Number(price),
+    unit:        document.getElementById('e-unit').value || '份',
+    minQty:      Number(document.getElementById('e-minqty').value) || 1,
+    deadline:    deadlineISO,   // ✅ 完整 ISO 含時間
+    variants:    document.getElementById('e-variants').value,
+    packaging:   document.getElementById('e-packaging').value || '標準包裝'
   };
   if (!isNew) payload.productId = productId;
 
   const btn = document.getElementById('editSaveBtn');
   btn.disabled = true; btn.textContent = '處理中…';
+
   // 若選了新圖片，先上傳
   const eFileInput = document.getElementById('e-image-file');
   if (eFileInput.files[0]) {
     btn.textContent = '上傳圖片中…';
     const uploadedUrl = await uploadImageToGAS(eFileInput.files[0]);
-    if (uploadedUrl === null) { btn.disabled = false; btn.textContent = isNew ? '開新團' : '儲存更新'; return; }
+    if (uploadedUrl === null) {
+      btn.disabled = false;
+      btn.textContent = isNew ? '開新團' : '儲存更新';
+      return;
+    }
     payload.imageUrl = uploadedUrl;
     document.getElementById('e-image-url').value = uploadedUrl;
     btn.textContent = '處理中…';
@@ -699,7 +830,9 @@ async function delProduct(productId, name) {
   } catch { toast('❌ 網路錯誤'); }
 }
 
-/* ── 訂單管理 ── */
+/* ══════════════════════════════════
+   訂單管理
+══════════════════════════════════ */
 async function loadOrdersTab() {
   document.getElementById('ord-lv2').hidden = true;
   document.getElementById('ord-lv1').hidden = false;
@@ -708,7 +841,7 @@ async function loadOrdersTab() {
   try {
     const [pD, oD] = await Promise.all([
       api({ action: 'list_products' }),
-      api({ action: 'list_orders' })
+      api({ action: 'list_orders'   })
     ]);
     allProducts = pD.ok ? (pD.data?.products || pD.products || []) : [];
     allOrders   = oD.ok ? (oD.data?.orders   || oD.orders   || []) : [];
@@ -732,8 +865,8 @@ function renderOrdProducts() {
     const id    = pid(p);
     const count = allOrders.filter(o => opid(o) === id).length;
     return `<tr class="clickable" onclick="showOrdDetail('${id}')">
-      <td>${p.name||'-'}</td>
-      <td>${p.deadline||'-'}</td>
+      <td>${p.name || '-'}</td>
+      <td style="font-size:.78rem;font-variant-numeric:tabular-nums">${fmtDeadline(p.deadline)}</td>
       <td><b>${count}</b> 筆</td>
       <td style="color:var(--muted)">→</td>
     </tr>`;
@@ -741,14 +874,14 @@ function renderOrdProducts() {
   document.getElementById('ord-products').innerHTML = `
     <div class="table-outer"><table>
       <thead><tr>
-        <th>商品名稱</th><th>截止日期</th><th>訂單</th><th></th>
+        <th>商品名稱</th><th>截止時間</th><th>訂單</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
 }
 
 function showOrdDetail(productId) {
-  const p = allProducts.find(x => pid(x) === productId) || {};
+  const p      = allProducts.find(x => pid(x) === productId) || {};
   const orders = allOrders.filter(o => opid(o) === productId);
   document.getElementById('ord-product-name').textContent = p.name || '訂單列表';
   document.getElementById('ord-lv1').hidden = true;
@@ -764,10 +897,9 @@ function showOrdDetail(productId) {
     pending: '待確認', reviewing: '審核中',
     confirmed: '已確認', shipped: '已出貨', cancelled: '已取消'
   };
-
   const rows = orders.map(o => {
-    const st  = o.status || 'pending';
-    const lid = o.lineUserId || o.line_user_id || '';
+    const st       = o.status || 'pending';
+    const lid      = o.lineUserId || o.line_user_id || '';
     const canNotify = (st === 'confirmed') && lid;
     const notifyBtn = canNotify
       ? `<button class="btn btn-warning btn-sm"
@@ -775,11 +907,11 @@ function showOrdDetail(productId) {
            📣 速來領取</button>`
       : '';
     return `<tr>
-      <td>${o.customerName||o.customer_name||'-'}</td>
-      <td>${o.variant||'-'}</td>
-      <td>${o.quantity||1}</td>
-      <td>${o.paymentMethod||o.payment_method||'-'}</td>
-      <td><span class="badge badge-${st}">${STATUS[st]||st}</span></td>
+      <td>${o.customerName || o.customer_name || '-'}</td>
+      <td>${o.variant || '-'}</td>
+      <td>${o.quantity || 1}</td>
+      <td>${o.paymentMethod || o.payment_method || '-'}</td>
+      <td><span class="badge badge-${st}">${STATUS[st] || st}</span></td>
       <td>${notifyBtn}</td>
     </tr>`;
   }).join('');
@@ -800,7 +932,7 @@ function ordBack() {
 }
 
 async function doNotify(orderId, lineUserId, productName, customerName) {
-  if (!confirm(`確定要通知 ${customerName||'這位客戶'} 來領取「${productName}」嗎？`)) return;
+  if (!confirm(`確定要通知 ${customerName || '這位客戶'} 來領取「${productName}」嗎？`)) return;
   try {
     const d = await api({ action: 'notify_pickup', orderId, lineUserId, productName });
     if (d.ok) toast('✅ 通知已發送！');
@@ -808,7 +940,9 @@ async function doNotify(orderId, lineUserId, productName, customerName) {
   } catch { toast('❌ 網路錯誤'); }
 }
 
-/* ── Toast ── */
+/* ══════════════════════════════════
+   Toast
+══════════════════════════════════ */
 let _toastTimer;
 function toast(msg) {
   const el = document.getElementById('toast');
