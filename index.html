@@ -61,7 +61,6 @@ button { cursor: pointer; border: none; font-family: inherit; }
   margin: 0 auto;
   padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
   position: relative;
-  overflow: hidden;
 }
 
 /* ── 畫面切換動畫 ─────────────────────────────────────────── */
@@ -209,13 +208,6 @@ button { cursor: pointer; border: none; font-family: inherit; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ── 商品詳情畫面（s1）──────────────────────────────────── */
-.product-hero {
-  width: 100%;
-  aspect-ratio: 16/9;
-  object-fit: cover;
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, #06C755 0%, #1a73e8 100%);
-}
 .product-hero-placeholder {
   width: 100%;
   aspect-ratio: 16/9;
@@ -251,8 +243,62 @@ button { cursor: pointer; border: none; font-family: inherit; }
 .info-table td:first-child { color: var(--text-2); width: 80px; }
 .countdown { font-size: 13px; color: var(--amber); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-/* ── 下單表單（s2）───────────────────────────────────────── */
+/* ── 下單表單（s2）─ 規格勾選列 ─────────────────────────── */
 .section-label { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
+
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.variant-row:last-child { border-bottom: none; }
+
+.vrow-check {
+  width: 20px; height: 20px;
+  accent-color: var(--green);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.vrow-name {
+  flex: 1;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.vrow-subtotal {
+  font-size: 13px;
+  color: var(--green-dark);
+  font-weight: 600;
+  min-width: 58px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.vrow-qty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vqty-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  font-size: 16px;
+  display: grid; place-content: center;
+  line-height: 1;
+  transition: all var(--transition);
+}
+.vqty-btn:hover:not(:disabled) { background: #e6f7ed; border-color: var(--green); color: var(--green-dark); }
+.vqty-btn:disabled { opacity: 0.3; }
+.vqty-val {
+  font-size: 15px; font-weight: 700;
+  min-width: 22px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 包裝 chip ────────────────────────────────────────────── */
 .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   padding: 7px 14px;
@@ -266,25 +312,7 @@ button { cursor: pointer; border: none; font-family: inherit; }
 .chip.selected { border-color: var(--green); background: #e6f7ed; color: var(--green-dark); font-weight: 600; }
 .chip:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.qty-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.qty-btn {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  border: 1.5px solid var(--border);
-  font-size: 18px;
-  display: grid; place-content: center;
-  line-height: 1;
-  transition: all var(--transition);
-}
-.qty-btn:hover:not(:disabled) { background: #e6f7ed; border-color: var(--green); color: var(--green-dark); }
-.qty-btn:disabled { opacity: 0.3; }
-.qty-val { font-size: 18px; font-weight: 700; min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
-
+/* ── 訂單摘要 ─────────────────────────────────────────────── */
 .order-summary {
   background: var(--surface-2);
   border-radius: var(--radius-sm);
@@ -292,7 +320,8 @@ button { cursor: pointer; border: none; font-family: inherit; }
   border: 1px solid var(--border);
   font-size: 13px;
 }
-.summary-row { display: flex; justify-content: space-between; padding: 4px 0; }
+.summary-row { display: flex; justify-content: space-between; padding: 3px 0; }
+.summary-indent { padding-left: 12px; color: var(--text-2); font-size: 12px; }
 .summary-total { font-size: 16px; font-weight: 700; color: var(--red); }
 
 textarea.remark-input {
@@ -335,10 +364,7 @@ textarea.remark-input:focus { border-color: var(--green); }
   position: relative;
   transition: all var(--transition);
 }
-.pay-option.selected .pay-radio {
-  border-color: var(--green);
-  background: var(--green);
-}
+.pay-option.selected .pay-radio { border-color: var(--green); background: var(--green); }
 .pay-option.selected .pay-radio::after {
   content: '';
   position: absolute;
@@ -368,7 +394,6 @@ textarea.remark-input:focus { border-color: var(--green); }
 }
 .upload-area:hover { border-color: var(--green); background: #e6f7ed20; }
 .upload-area.uploaded { border-color: var(--green); background: #e6f7ed; }
-.upload-area.uploaded .upload-icon { color: var(--green); }
 
 /* ── 訂單成功（s4）───────────────────────────────────────── */
 .success-icon {
@@ -394,8 +419,7 @@ textarea.remark-input:focus { border-color: var(--green); }
 .tl-item:last-child { padding-bottom: 0; }
 .tl-dot {
   position: absolute;
-  left: -19px;
-  top: 3px;
+  left: -19px; top: 3px;
   width: 14px; height: 14px;
   border-radius: 50%;
   border: 2px solid var(--border);
@@ -416,8 +440,7 @@ textarea.remark-input:focus { border-color: var(--green); }
   background: var(--green);
 }
 .tl-title { font-size: 14px; font-weight: 600; }
-.tl-item.done .tl-title { color: var(--green); }
-.tl-item.current .tl-title { color: var(--green); }
+.tl-item.done .tl-title, .tl-item.current .tl-title { color: var(--green); }
 .tl-item:not(.done):not(.current) .tl-title { color: var(--text-3); }
 .tl-time { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 .tl-desc { font-size: 12px; color: var(--text-2); margin-top: 4px; }
@@ -451,50 +474,61 @@ textarea.remark-input:focus { border-color: var(--green); }
       <div style="text-align:center;padding:40px 0;color:var(--text-3)">載入商品中…</div>
     </div>
     <div class="bottom-bar">
-      <!-- ✅ joinGroup() 負責截止檢查後才進 s2 -->
       <button class="btn-primary" id="s1-btn" onclick="joinGroup()">我要參團</button>
     </div>
   </div>
 
-  <!-- s2: 下單表單 -->
+  <!-- s2: 規格選擇（勾選 + 數量） -->
   <div class="screen" id="s2">
     <div class="nav">
       <button class="nav-back" onclick="goTo('s1')">←</button>
-      <div class="nav-title">選擇規格</div>
+      <div class="nav-title">選擇規格與數量</div>
     </div>
     <div class="scroll-body">
+
+      <!-- 規格勾選 -->
       <div class="card">
-        <div class="section-label">口味選擇</div>
-        <div class="chip-grid" id="variant-chips"></div>
+        <div class="section-label">
+          規格 / 口味
+          <span style="font-weight:400;color:var(--text-3);font-size:11px;margin-left:6px">可複選，各自填寫數量</span>
+        </div>
+        <div id="variant-list">
+          <!-- 動態產生 -->
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text-3)">
+          每人每規格最多 <span id="max-qty-label">5</span> 件，總數量至少 1 件
+        </div>
       </div>
+
+      <!-- 包裝方式 -->
       <div class="card">
         <div class="section-label">包裝方式</div>
         <div class="chip-grid" id="packaging-chips"></div>
       </div>
-      <div class="card">
-        <div class="section-label">購買數量（每人最多 <span id="max-qty-label">5</span> 件）</div>
-        <div class="qty-row" style="margin-top:4px">
-          <button class="qty-btn" id="qty-minus" onclick="changeQty(-1)">−</button>
-          <span class="qty-val" id="qty-val">1</span>
-          <button class="qty-btn" id="qty-plus" onclick="changeQty(1)">+</button>
-          <span style="font-size:13px;color:var(--text-2);margin-left:auto">小計 <span id="subtotal" style="color:var(--red);font-weight:700">NT$580</span></span>
-        </div>
-      </div>
+
+      <!-- 備註 -->
       <div class="card">
         <div class="section-label">備註（選填）</div>
         <textarea class="remark-input" id="remarks" rows="2" placeholder="特殊需求、禮盒卡片文字…"></textarea>
       </div>
+
+      <!-- 訂單摘要 -->
       <div class="order-summary">
-        <div class="summary-row"><span>商品單價</span><span id="s2-unit-price">NT$580</span></div>
-        <div class="summary-row"><span>數量</span><span id="s2-qty">× 1</span></div>
+        <div class="summary-row" style="font-weight:700;font-size:14px;padding-bottom:6px">
+          <span>訂單明細</span>
+        </div>
+        <div id="s2-variant-breakdown">
+          <!-- 動態產生每規格小計 -->
+        </div>
         <div class="summary-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:10px">
           <span style="font-weight:700">合計</span>
-          <span class="summary-total" id="s2-total">NT$580</span>
+          <span class="summary-total" id="s2-total">NT$0</span>
         </div>
       </div>
+
     </div>
     <div class="bottom-bar">
-      <button class="btn-primary" id="s2-btn" onclick="goTo('s3')">下一步：選擇付款方式</button>
+      <button class="btn-primary" id="s2-btn" onclick="proceedToPayment()">下一步：選擇付款方式</button>
     </div>
   </div>
 
@@ -532,8 +566,7 @@ textarea.remark-input:focus { border-color: var(--green); }
         </div>
       </div>
 
-      <!-- 轉帳資訊區 -->
-      <div id="transfer-block">
+      <div id="transfer-block" style="display:flex;flex-direction:column;gap:10px">
         <div class="transfer-info">
           <div style="font-weight:700;margin-bottom:8px">匯款資訊</div>
           <div>銀行代碼：<strong id="bank-code">808</strong>（玉山銀行）</div>
@@ -542,18 +575,15 @@ textarea.remark-input:focus { border-color: var(--green); }
           <div style="color:var(--red);margin-top:6px">⚠️ 請備注訂單號或後五碼方便核帳</div>
         </div>
         <div class="upload-area" id="upload-area" onclick="triggerUpload()">
-          <div class="upload-icon" style="font-size:32px;margin-bottom:8px">📷</div>
+          <div style="font-size:32px;margin-bottom:8px">📷</div>
           <div style="font-size:14px;font-weight:600" id="upload-label">點此上傳匯款截圖</div>
           <div style="font-size:12px;color:var(--text-2);margin-top:4px">支援 JPG、PNG</div>
         </div>
         <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileSelect(this)">
-        <div style="font-size:12px;color:var(--text-2)">
-          <input type="text" id="transfer-ref" placeholder="請填入轉帳後五碼（可選填）"
-            style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;background:var(--surface);color:var(--text);outline:none;font-family:inherit">
-        </div>
+        <input type="text" id="transfer-ref" placeholder="請填入轉帳後五碼（可選填）"
+          style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;background:var(--surface);color:var(--text);outline:none;font-family:inherit">
       </div>
 
-      <!-- LINE Pay 提示 -->
       <div id="linepay-block" style="display:none">
         <div class="card" style="text-align:center;padding:24px">
           <div style="font-size:36px;margin-bottom:12px">💚</div>
@@ -562,7 +592,6 @@ textarea.remark-input:focus { border-color: var(--green); }
         </div>
       </div>
 
-      <!-- 現場繳款提示 -->
       <div id="onsite-block" style="display:none">
         <div class="card" style="text-align:center;padding:24px">
           <div style="font-size:36px;margin-bottom:12px">📅</div>
@@ -578,9 +607,7 @@ textarea.remark-input:focus { border-color: var(--green); }
 
   <!-- s4: 下單成功 -->
   <div class="screen" id="s4">
-    <div class="nav">
-      <div class="nav-title">訂單成立</div>
-    </div>
+    <div class="nav"><div class="nav-title">訂單成立</div></div>
     <div class="scroll-body" style="align-items:center;text-align:center">
       <div class="success-icon">✅</div>
       <div style="font-size:18px;font-weight:700">下單成功！</div>
@@ -590,8 +617,7 @@ textarea.remark-input:focus { border-color: var(--green); }
           <div style="font-weight:700;margin-bottom:10px;font-size:13px;color:var(--text-2)">訂單明細</div>
           <div class="receipt-row"><span>訂單編號</span><span id="receipt-id" style="color:var(--text);font-size:12px">ORD-…</span></div>
           <div class="receipt-row"><span>商品</span><span id="receipt-product" style="color:var(--text)">-</span></div>
-          <div class="receipt-row"><span>口味</span><span id="receipt-variant" style="color:var(--text)">-</span></div>
-          <div class="receipt-row"><span>數量</span><span id="receipt-qty" style="color:var(--text)">-</span></div>
+          <div id="receipt-variant-rows"></div>
           <div class="receipt-row"><span>付款方式</span><span id="receipt-pay" style="color:var(--text)">-</span></div>
           <div class="receipt-row"><span>總金額</span><span id="receipt-total">NT$-</span></div>
         </div>
@@ -621,16 +647,12 @@ textarea.remark-input:focus { border-color: var(--green); }
         </div>
         <div style="font-size:13px;color:var(--text-2);line-height:1.7" id="track-summary"></div>
       </div>
-
       <div class="card">
         <div class="section-label" style="margin-bottom:14px">配送進度</div>
         <div class="timeline" id="timeline"></div>
       </div>
-
       <div class="card" id="cancel-hint" style="display:none">
-        <div style="font-size:13px;color:var(--text-2)">
-          若需取消訂單，請於付款前聯繫團主，或點下方按鈕取消（僅限待付款狀態）。
-        </div>
+        <div style="font-size:13px;color:var(--text-2)">若需取消訂單，請於付款前聯繫團主，或點下方按鈕取消（僅限待付款狀態）。</div>
         <button style="margin-top:10px;font-size:13px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline" onclick="cancelOrder()">取消訂單</button>
       </div>
     </div>
@@ -647,19 +669,34 @@ textarea.remark-input:focus { border-color: var(--green); }
 <script>
 // ── 狀態 ─────────────────────────────────────────────────────────────────────
 const state = {
-  liffId: '',
-  apiBase: '',
-  lineUserId: '',
-  displayName: '',
-  product: null,
-  currentOrderId: '',
-  qty: 1,
-  selectedVariant: '',
-  selectedPackaging: '',
-  payMethod: 'transfer',
-  uploadedFile: null,
-  uploadedBase64: '',
+  liffId:           '',
+  apiBase:          '',
+  lineUserId:       '',
+  displayName:      '',
+  product:          null,
+  currentOrderId:   '',
+  selectedPackaging:'',
+  payMethod:        'transfer',
+  uploadedFile:     null,
+  uploadedBase64:   '',
 };
+
+// ── 日期格式化（台灣時間，含時分）──────────────────────────────────────────
+function formatDeadline(isoStr) {
+  if (!isoStr) return '-';
+  try {
+    return new Intl.DateTimeFormat('zh-TW', {
+      timeZone:  'Asia/Taipei',
+      month:     'numeric',
+      day:       'numeric',
+      hour:      '2-digit',
+      minute:    '2-digit',
+      hour12:    false,
+    }).format(new Date(isoStr));
+  } catch (e) {
+    return String(isoStr);
+  }
+}
 
 // ── 初始化 ────────────────────────────────────────────────────────────────────
 async function init() {
@@ -700,14 +737,12 @@ async function init() {
 
 // ── 後端 API ──────────────────────────────────────────────────────────────────
 async function apiGet(action, extraParams = {}) {
-  if (!state.apiBase) throw new Error('apiBase not set');
   const params = new URLSearchParams({ action, uid: state.lineUserId, ...extraParams });
   const res = await fetch(`${state.apiBase}?${params}`);
   return res.json();
 }
 
 async function apiPost(body) {
-  if (!state.apiBase) throw new Error('apiBase not set');
   const res = await fetch(state.apiBase, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -718,8 +753,7 @@ async function apiPost(body) {
 
 // ── 商品載入 ──────────────────────────────────────────────────────────────────
 async function loadProduct(pid) {
-  const params = pid ? { pid } : {};
-  const resp = await apiGet('product', params);
+  const resp = await apiGet('product', pid ? { pid } : {});
   if (!resp.ok) { showToast('找不到商品資訊'); return; }
   state.product = resp.data;
   renderProduct(resp.data);
@@ -727,7 +761,10 @@ async function loadProduct(pid) {
 
 function renderProduct(p) {
   const deadline    = new Date(p.deadline);
-  const discountPct = Math.round((1 - p.price / p.original_price) * 100);
+  const deadlineStr = formatDeadline(p.deadline);                // ✅ 含時分
+  const discountPct = p.original_price > p.price
+    ? Math.round((1 - p.price / p.original_price) * 100)
+    : 0;
 
   document.getElementById('s1-title').textContent = p.name;
 
@@ -736,12 +773,12 @@ function renderProduct(p) {
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <span class="badge badge-green">開團中</span>
-        <span class="badge badge-red">省 ${discountPct}%</span>
+        ${discountPct > 0 ? `<span class="badge badge-red">省 ${discountPct}%</span>` : ''}
       </div>
       <div style="font-size:20px;font-weight:700;margin-bottom:10px">${p.name}</div>
       <div class="price-row">
         <span class="price-now">NT$${p.price}</span>
-        <span class="price-old">NT$${p.original_price}</span>
+        ${p.original_price > p.price ? `<span class="price-old">NT$${p.original_price}</span>` : ''}
       </div>
     </div>
     <div class="stats-row">
@@ -760,9 +797,10 @@ function renderProduct(p) {
     </div>
     <div class="card">
       <table class="info-table">
-        <tr><td>截止時間</td><td>${deadline.toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td></tr>
-        <tr><td>每人限購</td><td>最多 ${p.max_qty} 件</td></tr>
-        <tr><td>口味選擇</td><td>${(p.variants||[]).join(' / ')}</td></tr>
+        <tr><td>截止時間</td><td style="font-weight:600;color:var(--red)">${deadlineStr}</td></tr>
+        <tr><td>單價</td><td>NT$${p.price} / ${p.unit || '份'}</td></tr>
+        <tr><td>每人限購</td><td>每規格最多 ${p.max_qty} 件</td></tr>
+        <tr><td>口味選擇</td><td>${(p.variants || []).join(' / ')}</td></tr>
         ${p.description ? `<tr><td>商品說明</td><td style="color:var(--text-2)">${p.description}</td></tr>` : ''}
       </table>
     </div>
@@ -771,7 +809,7 @@ function renderProduct(p) {
   startCountdown(deadline);
   fillOrderForm(p);
 
-  // ✅ 截止時間 → 更新「我要參團」按鈕
+  // ✅ 截止後鎖定按鈕
   const joinBtn   = document.getElementById('s1-btn');
   const isExpired = new Date() > deadline;
   joinBtn.disabled    = isExpired;
@@ -795,36 +833,132 @@ function startCountdown(deadline) {
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);
-    el.textContent = h > 24
-      ? `${Math.floor(h/24)}天${h%24}小時`
+    el.textContent = h >= 24
+      ? `${Math.floor(h/24)}天${h%24}時`
       : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
   tick();
   setInterval(tick, 1000);
 }
 
+// ── ✅ 填充訂單表單（規格勾選 + 數量）──────────────────────────────────────
 function fillOrderForm(p) {
   const maxQty = Number(p.max_qty) || 5;
-  state.qty = 1;
   document.getElementById('max-qty-label').textContent = maxQty;
-  document.getElementById('s2-unit-price').textContent = `NT$${p.price}`;
 
-  const variantEl = document.getElementById('variant-chips');
-  variantEl.innerHTML = (p.variants||[]).map((v, i) =>
-    `<button class="chip${i===0?' selected':''}" onclick="selectChip(this,'variant')" data-val="${v}">${v}</button>`
-  ).join('');
-  state.selectedVariant = (p.variants||[])[0] || '';
+  // ── 規格列（勾選 + 數量 + 小計）─────────────────────────────
+  const variants = p.variants || [];
+  const listEl = document.getElementById('variant-list');
+  listEl.innerHTML = variants.map((v, i) => {
+    const name = typeof v === 'object' ? v.name : String(v);
+    return `
+    <div class="variant-row">
+      <input type="checkbox"
+        class="vrow-check"
+        id="vchk-${i}"
+        data-idx="${i}"
+        data-name="${name}"
+        onchange="onVariantCheck(${i})">
+      <label class="vrow-name" for="vchk-${i}">${name}</label>
+      <div class="vrow-qty">
+        <button class="vqty-btn" onclick="changeVariantQty(${i}, -1)">−</button>
+        <span class="vqty-val" id="vqty-${i}">0</span>
+        <button class="vqty-btn" onclick="changeVariantQty(${i}, 1)">+</button>
+      </div>
+      <span class="vrow-subtotal" id="vsub-${i}">NT$0</span>
+    </div>`;
+  }).join('');
 
+  if (variants.length === 0) {
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--text-3);padding:8px 0">此商品無規格選項</div>';
+  }
+
+  // ── 包裝 chip ─────────────────────────────────────────────────
   const packEl = document.getElementById('packaging-chips');
-  packEl.innerHTML = (p.packaging||[]).map((v, i) =>
+  packEl.innerHTML = (p.packaging || []).map((v, i) =>
     `<button class="chip${i===0?' selected':''}" onclick="selectChip(this,'packaging')" data-val="${v}">${v}</button>`
   ).join('');
-  state.selectedPackaging = (p.packaging||[])[0] || '';
+  state.selectedPackaging = (p.packaging || [])[0] || '';
 
-  updateQtyDisplay();
+  updateOrderTotal();
 }
 
-// ✅ 「我要參團」— 截止檢查後才進 s2
+// ✅ 勾選 → 自動帶 qty=1；取消 → 清零
+function onVariantCheck(idx) {
+  const chk = document.getElementById(`vchk-${idx}`);
+  const qtyEl = document.getElementById(`vqty-${idx}`);
+  if (chk.checked) {
+    if (Number(qtyEl.textContent) === 0) qtyEl.textContent = '1';
+  } else {
+    qtyEl.textContent = '0';
+  }
+  updateOrderTotal();
+}
+
+// ✅ 按 ± 改數量 → 同步勾選狀態
+function changeVariantQty(idx, delta) {
+  const p = state.product;
+  const max = p ? Number(p.max_qty) : 99;
+  const qtyEl = document.getElementById(`vqty-${idx}`);
+  const chk   = document.getElementById(`vchk-${idx}`);
+  let cur = Math.max(0, Math.min(max, Number(qtyEl.textContent) + delta));
+  qtyEl.textContent = cur;
+  chk.checked = cur > 0;
+  updateOrderTotal();
+}
+
+// ✅ 收集已選規格
+function getSelectedVariants() {
+  const p = state.product;
+  if (!p) return [];
+  return (p.variants || []).reduce((acc, v, i) => {
+    const chk = document.getElementById(`vchk-${i}`);
+    const qty = Number(document.getElementById(`vqty-${i}`)?.textContent || 0);
+    if (chk?.checked && qty > 0) {
+      acc.push({ name: typeof v === 'object' ? v.name : String(v), qty });
+    }
+    return acc;
+  }, []);
+}
+
+// ✅ 即時更新訂單金額
+function updateOrderTotal() {
+  const p = state.product;
+  if (!p) return;
+  const unitPrice = Number(p.price);
+  const variants  = p.variants || [];
+
+  let grandTotal = 0;
+  const breakdownRows = [];
+
+  variants.forEach((v, i) => {
+    const chk = document.getElementById(`vchk-${i}`);
+    const qty = chk?.checked ? Number(document.getElementById(`vqty-${i}`)?.textContent || 0) : 0;
+    const sub = unitPrice * qty;
+    const subEl = document.getElementById(`vsub-${i}`);
+    if (subEl) subEl.textContent = qty > 0 ? `NT$${sub}` : 'NT$0';
+    if (qty > 0) {
+      const name = typeof v === 'object' ? v.name : String(v);
+      breakdownRows.push(`
+        <div class="summary-row summary-indent">
+          <span>${name} × ${qty}</span>
+          <span>NT$${sub}</span>
+        </div>`);
+      grandTotal += sub;
+    }
+  });
+
+  // 訂單摘要
+  const breakdown = document.getElementById('s2-variant-breakdown');
+  if (breakdown) {
+    breakdown.innerHTML = breakdownRows.length
+      ? `<div class="summary-row" style="color:var(--text-2);padding-bottom:2px"><span>規格明細</span><span style="font-size:11px">單價 NT$${unitPrice}</span></div>` + breakdownRows.join('')
+      : `<div style="font-size:12px;color:var(--text-3);padding:4px 0">尚未選擇規格</div>`;
+  }
+  document.getElementById('s2-total').textContent = `NT$${grandTotal}`;
+}
+
+// ── ✅ 截止檢查 ────────────────────────────────────────────────────────────
 function joinGroup() {
   const deadline = state.product?.deadline ? new Date(state.product.deadline) : null;
   if (deadline && new Date() > deadline) {
@@ -834,43 +968,36 @@ function joinGroup() {
   goTo('s2');
 }
 
-// ── 表單互動 ──────────────────────────────────────────────────────────────────
+// ✅ 進入付款前驗證：至少選一規格，總數量 >= 1
+function proceedToPayment() {
+  const selected = getSelectedVariants();
+  const totalQty = selected.reduce((s, v) => s + v.qty, 0);
+  if (totalQty < 1) {
+    showToast('請至少勾選一項規格並填入數量 ⚠️');
+    return;
+  }
+  goTo('s3');
+}
+
+// ── 包裝 chip ─────────────────────────────────────────────────────────────
 function selectChip(el, group) {
-  document.querySelectorAll(`#${group==='variant'?'variant':'packaging'}-chips .chip`)
+  document.querySelectorAll(`#packaging-chips .chip`)
     .forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
-  if (group === 'variant') state.selectedVariant = el.dataset.val;
-  else state.selectedPackaging = el.dataset.val;
+  state.selectedPackaging = el.dataset.val;
 }
 
-function changeQty(delta) {
-  const p = state.product;
-  const max = p ? Number(p.max_qty) : 5;
-  state.qty = Math.max(1, Math.min(max, state.qty + delta));
-  updateQtyDisplay();
-}
-
-function updateQtyDisplay() {
-  const p     = state.product;
-  const price = p ? Number(p.price) : 0;
-  const max   = p ? Number(p.max_qty) : 5;
-  document.getElementById('qty-val').textContent   = state.qty;
-  document.getElementById('qty-minus').disabled    = state.qty <= 1;
-  document.getElementById('qty-plus').disabled     = state.qty >= max;
-  document.getElementById('subtotal').textContent  = `NT$${price * state.qty}`;
-  document.getElementById('s2-qty').textContent    = `× ${state.qty}`;
-  document.getElementById('s2-total').textContent  = `NT$${price * state.qty}`;
-}
-
+// ── 付款方式 ──────────────────────────────────────────────────────────────────
 function selectPayment(method) {
   state.payMethod = method;
   document.querySelectorAll('.pay-option').forEach(el => el.classList.remove('selected'));
   document.getElementById(`pay-${method}`).classList.add('selected');
-  document.getElementById('transfer-block').style.display       = method === 'transfer' ? 'flex' : 'none';
-  document.getElementById('transfer-block').style.flexDirection = 'column';
-  document.getElementById('transfer-block').style.gap           = '10px';
-  document.getElementById('linepay-block').style.display        = method === 'line_pay' ? 'block' : 'none';
-  document.getElementById('onsite-block').style.display         = method === 'on_site'  ? 'block' : 'none';
+  const tBlock = document.getElementById('transfer-block');
+  tBlock.style.display = method === 'transfer' ? 'flex' : 'none';
+  tBlock.style.flexDirection = 'column';
+  tBlock.style.gap = '10px';
+  document.getElementById('linepay-block').style.display = method === 'line_pay' ? 'block' : 'none';
+  document.getElementById('onsite-block').style.display  = method === 'on_site'  ? 'block' : 'none';
   document.getElementById('s3-btn').textContent = method === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
 }
 
@@ -883,10 +1010,9 @@ function handleFileSelect(input) {
   const reader = new FileReader();
   reader.onload = e => {
     state.uploadedBase64 = e.target.result.split(',')[1];
-    const area  = document.getElementById('upload-area');
-    const label = document.getElementById('upload-label');
+    const area = document.getElementById('upload-area');
     area.classList.add('uploaded');
-    label.textContent = `✅ ${file.name}`;
+    document.getElementById('upload-label').textContent = `✅ ${file.name}`;
   };
   reader.readAsDataURL(file);
 }
@@ -898,15 +1024,21 @@ async function submitOrder() {
   btn.textContent = '送出中…';
 
   try {
-    const p = state.product;
+    const p        = state.product;
+    const selected = getSelectedVariants();
+    const totalQty = selected.reduce((s, v) => s + v.qty, 0);
+    const total    = Number(p.price) * totalQty;
+
+    // 顯示格式：原味×2, 巧克力×1
+    const variantLabel = selected.map(v => `${v.name}×${v.qty}`).join(', ');
 
     const orderPayload = {
       action:     'create_order',
       productId:  p.product_id,
       memberName: state.displayName,
-      variant:    state.selectedVariant,
+      variant:    variantLabel,          // 存到 DB 的顯示字串
       packaging:  state.selectedPackaging,
-      qty:        state.qty,
+      qty:        totalQty,
       payMethod:  state.payMethod,
       notes:      document.getElementById('remarks').value,
     };
@@ -924,15 +1056,14 @@ async function submitOrder() {
       const msg =
         `⚠️ 您已訂購過此商品！\n` +
         `訂單編號：${ex.order_id}\n` +
-        `口味：${ex.variant}　數量：${ex.qty} 件　金額：NT$${ex.total}\n\n` +
+        `規格：${ex.variant}　金額：NT$${ex.total}\n\n` +
         `確定要再次訂購嗎？`;
 
       btn.disabled    = false;
       btn.textContent = state.payMethod === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
 
-      // ✅ 取消 → 關閉 LIFF 回到 LINE 群組
       if (!confirm(msg)) {
-        liff.closeWindow();
+        liff.closeWindow();   // ✅ 取消 → 關閉 LIFF 回到 LINE
         return;
       }
 
@@ -943,32 +1074,25 @@ async function submitOrder() {
 
       state.currentOrderId = resp2.data.orderId;
       if (state.payMethod === 'transfer' && state.uploadedBase64) {
-        await apiPost({
-          action: 'submit_proof', orderId: resp2.data.orderId,
-          screenshotBase64: state.uploadedBase64,
-          fileName: state.uploadedFile?.name || 'receipt.jpg',
-          transferRef: document.getElementById('transfer-ref').value,
-        });
+        await apiPost({ action: 'submit_proof', orderId: resp2.data.orderId,
+          screenshotBase64: state.uploadedBase64, fileName: state.uploadedFile?.name || 'receipt.jpg',
+          transferRef: document.getElementById('transfer-ref').value });
       }
-      renderSuccessScreen(resp2.data.orderId);
+      renderSuccessScreen(resp2.data.orderId, selected, total);
       goTo('s4');
       return;
     }
-    // ────────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────
 
     state.currentOrderId = resp.data.orderId;
 
     if (state.payMethod === 'transfer' && state.uploadedBase64) {
-      await apiPost({
-        action:           'submit_proof',
-        orderId:          resp.data.orderId,
-        screenshotBase64: state.uploadedBase64,
-        fileName:         state.uploadedFile?.name || 'receipt.jpg',
-        transferRef:      document.getElementById('transfer-ref').value,
-      });
+      await apiPost({ action: 'submit_proof', orderId: resp.data.orderId,
+        screenshotBase64: state.uploadedBase64, fileName: state.uploadedFile?.name || 'receipt.jpg',
+        transferRef: document.getElementById('transfer-ref').value });
     }
 
-    renderSuccessScreen(resp.data.orderId);
+    renderSuccessScreen(resp.data.orderId, selected, total);
     goTo('s4');
 
   } catch (err) {
@@ -980,15 +1104,24 @@ async function submitOrder() {
   }
 }
 
-function renderSuccessScreen(orderId) {
+function renderSuccessScreen(orderId, selected, total) {
   const p = state.product;
   document.getElementById('receipt-id').textContent      = orderId;
   document.getElementById('receipt-product').textContent = p?.name || '-';
-  document.getElementById('receipt-variant').textContent = state.selectedVariant || '-';
-  document.getElementById('receipt-qty').textContent     = `${state.qty} 件`;
   document.getElementById('receipt-pay').textContent     =
     { line_pay:'LINE Pay', transfer:'銀行轉帳', on_site:'現場繳款' }[state.payMethod];
-  document.getElementById('receipt-total').textContent   = `NT$${(p?.price || 0) * state.qty}`;
+  document.getElementById('receipt-total').textContent   = `NT$${total}`;
+
+  // 每規格一行
+  const vrRows = document.getElementById('receipt-variant-rows');
+  if (vrRows && selected?.length) {
+    vrRows.innerHTML = selected.map(v =>
+      `<div class="receipt-row">
+        <span>${v.name}</span>
+        <span style="color:var(--text)">× ${v.qty}　NT$${Number(p.price) * v.qty}</span>
+      </div>`
+    ).join('');
+  }
 
   const hint = {
     transfer: `請完成轉帳後，截圖上傳至此頁面（已上傳）或聯繫團主。\n匯款帳號：${document.getElementById('bank-account')?.textContent || ''}`,
@@ -1025,7 +1158,7 @@ async function loadTrackingScreen(orderId) {
   badge.className   = `status-badge-lg ${status.cls}`;
 
   document.getElementById('track-summary').innerHTML =
-    `商品：${order.variant} × ${order.qty} 件 <br>金額：<strong>NT$${order.total}</strong>`;
+    `規格：${order.variant}<br>金額：<strong>NT$${order.total}</strong>`;
 
   const steps = [
     { label: '訂單成立',   desc: '您的訂單已成功建立' },
@@ -1052,12 +1185,8 @@ async function cancelOrder() {
   if (!confirm('確定要取消訂單嗎？')) return;
   try {
     const resp = await apiPost({ action: 'cancel_order', orderId: state.currentOrderId });
-    if (resp.ok) {
-      showToast('訂單已取消');
-      setTimeout(() => goTo('s1'), 1500);
-    } else {
-      showToast(resp.error || '取消失敗');
-    }
+    if (resp.ok) { showToast('訂單已取消'); setTimeout(() => goTo('s1'), 1500); }
+    else showToast(resp.error || '取消失敗');
   } catch (e) { showToast('網路錯誤'); }
 }
 
@@ -1077,25 +1206,25 @@ function showToast(msg) {
   _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ── Mock 資料（開發用）────────────────────────────────────────────────────────
+// ── Mock（開發用）─────────────────────────────────────────────────────────────
 function loadMockData() {
   state.displayName = '測試使用者';
   state.lineUserId  = 'U_mock_dev';
   state.product = {
     product_id:     'P001',
     name:           '萬聖節糖果禮盒',
-    price:          580,
-    original_price: 780,
-    deadline:       new Date(Date.now() + 3 * 86400000).toISOString(),
+    price:          300,
+    original_price: 450,
+    deadline:       new Date(Date.now() + 3 * 86400000 + 3600000 * 14).toISOString(),
     max_qty:        5,
-    variants:       ['抹茶', '草莓', '巧克力', '綜合'],
+    unit:           '份',
+    variants:       ['原味', '巧克力', '抹茶'],
     packaging:      ['精美禮盒', '簡易包裝'],
     description:    '精選比利時進口巧克力，多種口味任選',
     status:         'open',
     totalOrders:    12,
     totalQty:       28,
   };
-
   document.getElementById('bank-code').textContent    = '808';
   document.getElementById('bank-account').textContent = '0001234567890';
   document.getElementById('bank-name').textContent    = '王小明';
@@ -1112,11 +1241,8 @@ function loadMockData() {
   window.apiGet = async (action) => {
     await new Promise(r => setTimeout(r, 400));
     if (action === 'order') return { ok: true, data: {
-      order_id: state.currentOrderId || 'ORD-MOCK-0001',
-      variant: state.selectedVariant || '抹茶',
-      qty: state.qty,
-      total: (state.product?.price || 580) * state.qty,
-      pay_status: 'pending',
+      order_id: state.currentOrderId || 'ORD-MOCK', variant: '原味×2, 巧克力×1',
+      qty: 3, total: 900, pay_status: 'pending',
     }};
     return { ok: true, data: [] };
   };
