@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -293,9 +292,16 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="field-label">最低起訂量</label>
-        <input type="number" id="c-minqty" value="1" min="1">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field-label">最低起訂量</label>
+          <input type="number" id="c-minqty" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <label class="field-label">每人限購量</label>
+          <input type="number" id="c-maxqty" value="99" min="1">
+          <p class="hint">99 = 不限制</p>
+        </div>
       </div>
 
       <!-- ✅ 截止日期 + 截止時間 並排 -->
@@ -400,9 +406,16 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="field-label">最低起訂量</label>
-      <input type="number" id="e-minqty" min="1">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="field-label">最低起訂量</label>
+        <input type="number" id="e-minqty" min="1">
+      </div>
+      <div class="form-group">
+        <label class="field-label">每人限購量</label>
+        <input type="number" id="e-maxqty" min="1">
+        <p class="hint">99 = 不限制</p>
+      </div>
     </div>
 
     <!-- ✅ 截止日期 + 截止時間 並排 -->
@@ -605,6 +618,7 @@ function clearCreate() {
   document.getElementById('c-img-filename').textContent = '';
   document.getElementById('c-unit').value         = '份';
   document.getElementById('c-minqty').value       = '1';
+  document.getElementById('c-maxqty').value       = '99';
   document.getElementById('c-deadline').value     = '';
   document.getElementById('c-deadlineTime').value = '23:59';  // ✅ 重置時間
   document.getElementById('c-packaging').value    = '標準包裝';
@@ -644,6 +658,7 @@ async function createProduct() {
       price:       Number(price),
       unit:        document.getElementById('c-unit').value || '份',
       minQty:      Number(document.getElementById('c-minqty').value) || 1,
+      maxQty:      Number(document.getElementById('c-maxqty').value) || 99,
       deadline:    deadlineISO,   // ✅ 完整 ISO 含時間
       variants:    document.getElementById('c-variants').value,
       packaging:   document.getElementById('c-packaging').value || '標準包裝'
@@ -743,6 +758,7 @@ function fillModal(p, isNew) {
   document.getElementById('e-price').value     = p.price || '';
   document.getElementById('e-unit').value      = p.unit || '份';
   document.getElementById('e-minqty').value    = p.minQty || p.min_qty || 1;
+  document.getElementById('e-maxqty').value    = p.maxQty || p.max_qty || 99;
   document.getElementById('e-variants').value  = varStr(p);
   document.getElementById('e-packaging').value = pkgStr(p);
   document.getElementById('e-image-file').value = '';
@@ -789,6 +805,7 @@ async function saveEdit() {
     price:       Number(price),
     unit:        document.getElementById('e-unit').value || '份',
     minQty:      Number(document.getElementById('e-minqty').value) || 1,
+    maxQty:      Number(document.getElementById('e-maxqty').value) || 99,
     deadline:    deadlineISO,   // ✅ 完整 ISO 含時間
     variants:    document.getElementById('e-variants').value,
     packaging:   document.getElementById('e-packaging').value || '標準包裝'
