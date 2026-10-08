@@ -191,6 +191,25 @@ tr:hover td { background: var(--row-hover); }
 }
 .file-upload-btn:hover { border-color: var(--green); color: var(--green); }
 
+/* ── 圖片 grid 預覽 ── */
+.img-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.img-thumb {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+}
+.img-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+
 /* ── Toast ── */
 #toast {
   position: fixed; bottom: max(24px, env(safe-area-inset-bottom, 24px)); left: 50%;
@@ -268,15 +287,16 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
         <textarea id="c-desc" placeholder="產地、特色、注意事項…" oninput="syncCreateDescPreview()"></textarea>
       </div>
 
+      <!-- ✅ 多圖上傳（最多 10 張） -->
       <div class="form-group">
-        <label class="field-label">商品圖片</label>
-        <label class="file-upload-btn" for="c-image-file">📷 選擇圖片</label>
-        <input type="file" id="c-image-file" accept="image/*" style="display:none" onchange="handleCreateImageSelect(this)">
+        <label class="field-label">商品圖片（最多 10 張）</label>
+        <label class="file-upload-btn" for="c-image-file">📷 選擇圖片（可多選）</label>
+        <input type="file" id="c-image-file" accept="image/*" multiple style="display:none"
+               onchange="handleCreateImageSelect(this)">
         <input type="hidden" id="c-image-url">
         <div id="c-img-preview-wrap" style="margin-top:10px;display:none">
-          <img id="c-img-preview" src="" alt="圖片預覽"
-            style="max-width:100%;border-radius:10px;border:1px solid var(--border);display:block">
-          <div id="c-img-filename" style="margin-top:6px;font-size:.8rem;color:var(--muted)"></div>
+          <div class="img-grid" id="c-img-grid"></div>
+          <div id="c-img-filename" style="font-size:.8rem;color:var(--muted)"></div>
           <div id="c-desc-preview" style="margin-top:8px;font-size:.85rem;color:var(--muted);white-space:pre-wrap"></div>
         </div>
       </div>
@@ -314,10 +334,11 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
         <p class="hint">截止後系統自動鎖定，團員無法繼續下單</p>
       </div>
 
+      <!-- ✅ 規格（價格） -->
       <div class="form-group">
-        <label class="field-label">規格 / 口味</label>
-        <input type="text" id="c-variants" placeholder="原味,巧克力,抹茶">
-        <p class="hint">逗號分隔，留空表示無規格選擇</p>
+        <label class="field-label">規格（價格）</label>
+        <input type="text" id="c-variants" placeholder="酪梨(150),百香果(100),抹茶(120)">
+        <p class="hint">格式：名稱(價格)，逗號分隔。若所有規格同價，可直接填名稱如：原味,巧克力</p>
       </div>
 
       <div class="form-group">
@@ -382,15 +403,16 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
       <textarea id="e-desc" placeholder="輸入商品說明、注意事項…"></textarea>
     </div>
 
+    <!-- ✅ 多圖上傳（最多 10 張） -->
     <div class="form-group">
-      <label class="field-label">商品圖片</label>
+      <label class="field-label">商品圖片（最多 10 張）</label>
       <div id="img-preview-wrap" style="margin-top:6px;display:none">
-        <img id="img-preview" src="" alt="圖片預覽"
-          style="max-width:100%;border-radius:10px;border:1px solid var(--border);display:block">
+        <div class="img-grid" id="e-img-grid"></div>
         <div id="desc-preview" style="margin-top:8px;font-size:.85rem;color:var(--muted);white-space:pre-wrap"></div>
       </div>
-      <label class="file-upload-btn" for="e-image-file" style="margin-top:8px">📷 選擇圖片</label>
-      <input type="file" id="e-image-file" accept="image/*" style="display:none" onchange="handleEditImageSelect(this)">
+      <label class="file-upload-btn" for="e-image-file" style="margin-top:8px">📷 選擇圖片（可多選）</label>
+      <input type="file" id="e-image-file" accept="image/*" multiple style="display:none"
+             onchange="handleEditImageSelect(this)">
       <input type="hidden" id="e-image-url">
       <div id="e-img-filename" style="margin-top:6px;font-size:.8rem;color:var(--muted)"></div>
     </div>
@@ -428,10 +450,11 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
       <p class="hint">截止後系統自動鎖定，團員無法繼續下單</p>
     </div>
 
+    <!-- ✅ 規格（價格） -->
     <div class="form-group">
-      <label class="field-label">規格 / 口味</label>
-      <input type="text" id="e-variants">
-      <p class="hint">逗號分隔</p>
+      <label class="field-label">規格（價格）</label>
+      <input type="text" id="e-variants" placeholder="酪梨(150),百香果(100),抹茶(120)">
+      <p class="hint">格式：名稱(價格)，逗號分隔。若所有規格同價，可直接填名稱如：原味,巧克力</p>
     </div>
 
     <div class="form-group">
@@ -500,60 +523,44 @@ async function api(body) {
 /* ══════════════════════════════════
    ✅ 日期時間工具
 ══════════════════════════════════ */
-/**
- * 把 ISO 字串拆成台灣時區的 date（YYYY-MM-DD）和 time（HH:MM）
- * 用於填入 <input type="date"> 和 <input type="time">
- */
 function splitDeadline(isoStr) {
   if (!isoStr) return { date: '', time: '23:59' };
   try {
     const d = new Date(isoStr);
-    // en-CA locale 自然輸出 YYYY-MM-DD
     const date = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit'
     }).format(d);
     const time = new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hour12: false
-    }).format(d);  // "14:30"
+    }).format(d);
     return { date, time };
   } catch {
     return { date: isoStr.slice(0, 10), time: '23:59' };
   }
 }
 
-/**
- * 把 deadline 日期字串 + 時間字串合為完整 ISO 字串（台灣時區）
- */
 function buildDeadlineISO(dateStr, timeStr) {
   if (!dateStr) return '';
   const t = timeStr || '23:59';
-  // 直接拼台灣 UTC+8 offset
   return new Date(`${dateStr}T${t}:00+08:00`).toISOString();
 }
 
-/**
- * 顯示用：格式化截止時間（含時分，台灣時區）
- */
 function fmtDeadline(isoStr) {
   if (!isoStr) return '-';
   try {
-    const d = new Date(isoStr);
-    // 先嘗試是否為純日期 "YYYY-MM-DD"（老資料）
-    if (isoStr.length === 10) {
-      return isoStr + ' 23:59';
-    }
+    if (isoStr.length === 10) return isoStr + ' 23:59';
     return new Intl.DateTimeFormat('zh-TW', {
       timeZone: 'Asia/Taipei',
       month: 'numeric', day: 'numeric',
       hour: '2-digit', minute: '2-digit', hour12: false
-    }).format(d);
+    }).format(new Date(isoStr));
   } catch {
     return isoStr;
   }
 }
 
 /* ══════════════════════════════════
-   圖片上傳
+   ✅ 圖片上傳（單張）
 ══════════════════════════════════ */
 async function uploadImageToGAS(file) {
   return new Promise((resolve) => {
@@ -573,18 +580,57 @@ async function uploadImageToGAS(file) {
   });
 }
 
+/* ✅ 建立圖片預覽 grid */
+function buildImgGrid(files, gridId) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.innerHTML = '';
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const div = document.createElement('div');
+      div.className = 'img-thumb';
+      div.innerHTML = `<img src="${e.target.result}" alt="">`;
+      grid.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ✅ 建立現有圖片 grid（從逗號分隔 URL） */
+function buildExistingImgGrid(urlStr, gridId) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.innerHTML = '';
+  const urls = urlStr.split(',').map(u => u.trim()).filter(Boolean);
+  urls.forEach(url => {
+    const div = document.createElement('div');
+    div.className = 'img-thumb';
+    div.innerHTML = `<img src="${url}" alt="" onerror="this.parentElement.style.display='none'">`;
+    grid.appendChild(div);
+  });
+}
+
+/* ── 建立表單圖片選擇處理 ── */
 function handleCreateImageSelect(input) {
-  const file = input.files[0];
+  const files = Array.from(input.files || []);
   const wrap = document.getElementById('c-img-preview-wrap');
-  if (!file) { wrap.style.display = 'none'; document.getElementById('c-image-url').value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('c-img-preview').src = e.target.result;
-    document.getElementById('c-img-filename').textContent = file.name + '（上傳後取得網址）';
-    document.getElementById('c-desc-preview').textContent = document.getElementById('c-desc').value.trim();
-    wrap.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+  if (!files.length) {
+    wrap.style.display = 'none';
+    document.getElementById('c-image-url').value = '';
+    return;
+  }
+  if (files.length > 10) {
+    toast('❌ 最多只能上傳 10 張圖片');
+    input.value = '';
+    return;
+  }
+  buildImgGrid(files, 'c-img-grid');
+  document.getElementById('c-img-filename').textContent =
+    `已選擇 ${files.length} 張圖片（送出時自動上傳）`;
+  document.getElementById('c-desc-preview').textContent =
+    document.getElementById('c-desc').value.trim();
+  wrap.style.display = 'block';
   document.getElementById('c-image-url').value = '';
 }
 
@@ -593,17 +639,21 @@ function syncCreateDescPreview() {
     document.getElementById('c-desc').value.trim();
 }
 
+/* ── 編輯 modal 圖片選擇處理 ── */
 function handleEditImageSelect(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('img-preview').src = e.target.result;
-    document.getElementById('img-preview-wrap').style.display = 'block';
-    document.getElementById('e-img-filename').textContent = file.name + '（上傳後取代現有圖片）';
-    document.getElementById('desc-preview').textContent = document.getElementById('e-desc').value.trim();
-  };
-  reader.readAsDataURL(file);
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+  if (files.length > 10) {
+    toast('❌ 最多只能上傳 10 張圖片');
+    input.value = '';
+    return;
+  }
+  buildImgGrid(files, 'e-img-grid');
+  document.getElementById('img-preview-wrap').style.display = 'block';
+  document.getElementById('e-img-filename').textContent =
+    `已選擇 ${files.length} 張（送出後取代現有圖片）`;
+  document.getElementById('desc-preview').textContent =
+    document.getElementById('e-desc').value.trim();
 }
 
 /* ══════════════════════════════════
@@ -615,12 +665,13 @@ function clearCreate() {
   document.getElementById('c-image-url').value  = '';
   document.getElementById('c-image-file').value = '';
   document.getElementById('c-img-preview-wrap').style.display = 'none';
+  document.getElementById('c-img-grid').innerHTML = '';
   document.getElementById('c-img-filename').textContent = '';
   document.getElementById('c-unit').value         = '份';
   document.getElementById('c-minqty').value       = '1';
   document.getElementById('c-maxqty').value       = '99';
   document.getElementById('c-deadline').value     = '';
-  document.getElementById('c-deadlineTime').value = '23:59';  // ✅ 重置時間
+  document.getElementById('c-deadlineTime').value = '23:59';
   document.getElementById('c-packaging').value    = '標準包裝';
 }
 
@@ -632,24 +683,34 @@ async function createProduct() {
   if (!price)    { toast('請填寫單價');     return; }
   if (!deadline) { toast('請選擇截止日期'); return; }
 
-  // ✅ 合併日期 + 時間為 ISO
   const deadlineTime = document.getElementById('c-deadlineTime').value || '23:59';
   const deadlineISO  = buildDeadlineISO(deadline, deadlineTime);
 
   const btn = document.getElementById('createBtn');
   btn.disabled = true; btn.textContent = '建立中…';
+
   try {
     let imageUrl = document.getElementById('c-image-url').value.trim();
     const fileInput = document.getElementById('c-image-file');
-    if (fileInput.files[0]) {
-      btn.textContent = '上傳圖片中…';
-      const uploadedUrl = await uploadImageToGAS(fileInput.files[0]);
-      if (uploadedUrl === null) { btn.disabled = false; btn.textContent = '🚀 開始揪團！'; return; }
-      imageUrl = uploadedUrl;
+    const files = Array.from(fileInput.files || []);
+
+    if (files.length > 0) {
+      const urls = [];
+      for (let i = 0; i < files.length; i++) {
+        btn.textContent = `上傳第 ${i + 1}/${files.length} 張圖片…`;
+        const uploadedUrl = await uploadImageToGAS(files[i]);
+        if (uploadedUrl === null) {
+          btn.disabled = false; btn.textContent = '🚀 開始揪團！';
+          return;
+        }
+        urls.push(uploadedUrl);
+      }
+      imageUrl = urls.join(',');
       document.getElementById('c-image-url').value = imageUrl;
-      document.getElementById('c-img-filename').textContent = '✅ 圖片已上傳';
+      document.getElementById('c-img-filename').textContent = `✅ ${urls.length} 張圖片已上傳`;
       btn.textContent = '建立中…';
     }
+
     const d = await api({
       action:      'create_product',
       name,
@@ -659,7 +720,7 @@ async function createProduct() {
       unit:        document.getElementById('c-unit').value || '份',
       minQty:      Number(document.getElementById('c-minqty').value) || 1,
       maxQty:      Number(document.getElementById('c-maxqty').value) || 99,
-      deadline:    deadlineISO,   // ✅ 完整 ISO 含時間
+      deadline:    deadlineISO,
       variants:    document.getElementById('c-variants').value,
       packaging:   document.getElementById('c-packaging').value || '標準包裝'
     });
@@ -764,20 +825,20 @@ function fillModal(p, isNew) {
   document.getElementById('e-image-file').value = '';
   document.getElementById('e-img-filename').textContent = '';
 
-  // ✅ 從 ISO 字串解析台灣時間的日期 + 時間
   const { date, time } = splitDeadline(p.deadline || '');
   document.getElementById('e-deadline').value     = date;
   document.getElementById('e-deadlineTime').value = time;
 
-  // 現有圖片預覽
+  // 現有圖片預覽（支援逗號分隔多圖）
   const existingUrl = p.image_url || '';
   document.getElementById('e-image-url').value = existingUrl;
   const wrap = document.getElementById('img-preview-wrap');
   if (existingUrl) {
-    document.getElementById('img-preview').src = existingUrl;
+    buildExistingImgGrid(existingUrl, 'e-img-grid');
     document.getElementById('desc-preview').textContent = p.description || '';
     wrap.style.display = 'block';
   } else {
+    document.getElementById('e-img-grid').innerHTML = '';
     wrap.style.display = 'none';
   }
 }
@@ -793,7 +854,6 @@ async function saveEdit() {
   const isNew     = document.getElementById('e-isNew').value === '1';
   const productId = document.getElementById('e-productId').value;
 
-  // ✅ 合併日期 + 時間為 ISO
   const deadlineTime = document.getElementById('e-deadlineTime').value || '23:59';
   const deadlineISO  = buildDeadlineISO(deadline, deadlineTime);
 
@@ -806,7 +866,7 @@ async function saveEdit() {
     unit:        document.getElementById('e-unit').value || '份',
     minQty:      Number(document.getElementById('e-minqty').value) || 1,
     maxQty:      Number(document.getElementById('e-maxqty').value) || 99,
-    deadline:    deadlineISO,   // ✅ 完整 ISO 含時間
+    deadline:    deadlineISO,
     variants:    document.getElementById('e-variants').value,
     packaging:   document.getElementById('e-packaging').value || '標準包裝'
   };
@@ -815,20 +875,26 @@ async function saveEdit() {
   const btn = document.getElementById('editSaveBtn');
   btn.disabled = true; btn.textContent = '處理中…';
 
-  // 若選了新圖片，先上傳
+  // ✅ 多圖上傳
   const eFileInput = document.getElementById('e-image-file');
-  if (eFileInput.files[0]) {
-    btn.textContent = '上傳圖片中…';
-    const uploadedUrl = await uploadImageToGAS(eFileInput.files[0]);
-    if (uploadedUrl === null) {
-      btn.disabled = false;
-      btn.textContent = isNew ? '開新團' : '儲存更新';
-      return;
+  const eFiles = Array.from(eFileInput.files || []);
+  if (eFiles.length > 0) {
+    const urls = [];
+    for (let i = 0; i < eFiles.length; i++) {
+      btn.textContent = `上傳第 ${i + 1}/${eFiles.length} 張圖片…`;
+      const uploadedUrl = await uploadImageToGAS(eFiles[i]);
+      if (uploadedUrl === null) {
+        btn.disabled = false;
+        btn.textContent = isNew ? '開新團' : '儲存更新';
+        return;
+      }
+      urls.push(uploadedUrl);
     }
-    payload.imageUrl = uploadedUrl;
-    document.getElementById('e-image-url').value = uploadedUrl;
+    payload.imageUrl = urls.join(',');
+    document.getElementById('e-image-url').value = payload.imageUrl;
     btn.textContent = '處理中…';
   }
+
   try {
     const d = await api(payload);
     if (d.ok) { toast(isNew ? '✅ 新團已建立！' : '✅ 更新成功！'); closeModal(); loadProducts(); }
