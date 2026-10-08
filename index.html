@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -266,6 +265,13 @@ button { cursor: pointer; border: none; font-family: inherit; }
   font-size: 14px;
   cursor: pointer;
   user-select: none;
+  line-height: 1.4;
+}
+.vrow-price-tag {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+  display: block;
 }
 .vrow-subtotal {
   font-size: 13px;
@@ -297,20 +303,6 @@ button { cursor: pointer; border: none; font-family: inherit; }
   min-width: 22px; text-align: center;
   font-variant-numeric: tabular-nums;
 }
-
-/* ── 包裝 chip ────────────────────────────────────────────── */
-.chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  padding: 7px 14px;
-  border-radius: 20px;
-  border: 1.5px solid var(--border);
-  font-size: 13px;
-  background: var(--surface-2);
-  color: var(--text);
-  transition: all var(--transition);
-}
-.chip.selected { border-color: var(--green); background: #e6f7ed; color: var(--green-dark); font-weight: 600; }
-.chip:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── 訂單摘要 ─────────────────────────────────────────────── */
 .order-summary {
@@ -478,7 +470,7 @@ textarea.remark-input:focus { border-color: var(--green); }
     </div>
   </div>
 
-  <!-- s2: 規格選擇（勾選 + 數量） -->
+  <!-- s2: 規格選擇（勾選 + 數量）-->
   <div class="screen" id="s2">
     <div class="nav">
       <button class="nav-back" onclick="goTo('s1')">←</button>
@@ -486,25 +478,21 @@ textarea.remark-input:focus { border-color: var(--green); }
     </div>
     <div class="scroll-body">
 
-      <!-- 規格勾選 -->
+      <!-- ✅ 規格（價格） -->
       <div class="card">
         <div class="section-label">
-          規格 / 口味
+          規格（價格）
           <span style="font-weight:400;color:var(--text-3);font-size:11px;margin-left:6px">可複選，各自填寫數量</span>
         </div>
         <div id="variant-list">
           <!-- 動態產生 -->
         </div>
         <div style="margin-top:10px;font-size:11px;color:var(--text-3)">
-          每人每規格最多 <span id="max-qty-label">5</span> 件，總數量至少 1 件
+          每人每規格最多 <span id="max-qty-label">99</span> 件，總數量至少 1 件
         </div>
       </div>
 
-      <!-- 包裝方式 -->
-      <div class="card">
-        <div class="section-label">包裝方式</div>
-        <div class="chip-grid" id="packaging-chips"></div>
-      </div>
+      <!-- ✅ 已移除「包裝方式」區塊 -->
 
       <!-- 備註 -->
       <div class="card">
@@ -675,7 +663,6 @@ const state = {
   displayName:      '',
   product:          null,
   currentOrderId:   '',
-  selectedPackaging:'',
   payMethod:        'transfer',
   uploadedFile:     null,
   uploadedBase64:   '',
@@ -696,6 +683,16 @@ function formatDeadline(isoStr) {
   } catch (e) {
     return String(isoStr);
   }
+}
+
+// ── ✅ 解析規格「名稱(價格)」格式 ────────────────────────────────────────────
+// 例：「酪梨(150)」→ { name: '酪梨', price: 150 }
+// 若無括號價格 → { name: '原味', price: null }（fallback 使用商品基礎單價）
+function parseVariant(str) {
+  const s = typeof str === 'object' && str !== null ? (str.name || '') : String(str);
+  const m = s.match(/^(.+?)\((\d+(?:\.\d+)?)\)$/);
+  if (m) return { name: m[1].trim(), price: Number(m[2]) };
+  return { name: s.trim(), price: null };
 }
 
 // ── 初始化 ────────────────────────────────────────────────────────────────────
@@ -761,12 +758,20 @@ async function loadProduct(pid) {
 
 function renderProduct(p) {
   const deadline    = new Date(p.deadline);
-  const deadlineStr = formatDeadline(p.deadline);                // ✅ 含時分
+  const deadlineStr = formatDeadline(p.deadline);
   const discountPct = p.original_price > p.price
     ? Math.round((1 - p.price / p.original_price) * 100)
     : 0;
 
   document.getElementById('s1-title').textContent = p.name;
+
+  // ✅ 商品頁顯示規格時，解析名稱(價格)格式
+  const variantsDisplay = (p.variants || []).map(v => {
+    const parsed = parseVariant(v);
+    return parsed.price !== null
+      ? `${parsed.name} NT$${parsed.price}`
+      : parsed.name;
+  }).join(' / ');
 
   document.getElementById('s1-body').innerHTML = `
     <div class="product-hero-placeholder">🎁</div>
@@ -800,7 +805,7 @@ function renderProduct(p) {
         <tr><td>截止時間</td><td style="font-weight:600;color:var(--red)">${deadlineStr}</td></tr>
         <tr><td>單價</td><td>NT$${p.price} / ${p.unit || '份'}</td></tr>
         <tr><td>每人限購</td><td>每規格最多 ${p.max_qty} 件</td></tr>
-        <tr><td>口味選擇</td><td>${(p.variants || []).join(' / ')}</td></tr>
+        <tr><td>規格選擇</td><td>${variantsDisplay || '-'}</td></tr>
         ${p.description ? `<tr><td>商品說明</td><td style="color:var(--text-2)">${p.description}</td></tr>` : ''}
       </table>
     </div>
@@ -841,25 +846,32 @@ function startCountdown(deadline) {
   setInterval(tick, 1000);
 }
 
-// ── ✅ 填充訂單表單（規格勾選 + 數量）──────────────────────────────────────
+// ── ✅ 填充訂單表單（規格勾選 + 數量，含每規格單價）────────────────────────
 function fillOrderForm(p) {
-  const maxQty = Number(p.max_qty) || 5;
+  const maxQty = Number(p.max_qty) || 99;
   document.getElementById('max-qty-label').textContent = maxQty;
 
-  // ── 規格列（勾選 + 數量 + 小計）─────────────────────────────
   const variants = p.variants || [];
   const listEl = document.getElementById('variant-list');
   listEl.innerHTML = variants.map((v, i) => {
-    const name = typeof v === 'object' ? v.name : String(v);
+    const parsed    = parseVariant(v);
+    const unitPrice = parsed.price !== null ? parsed.price : Number(p.price);
+    const priceTag  = parsed.price !== null
+      ? `<span class="vrow-price-tag">NT$${unitPrice} / 件</span>`
+      : '';
     return `
     <div class="variant-row">
       <input type="checkbox"
         class="vrow-check"
         id="vchk-${i}"
         data-idx="${i}"
-        data-name="${name}"
+        data-name="${parsed.name}"
+        data-price="${unitPrice}"
         onchange="onVariantCheck(${i})">
-      <label class="vrow-name" for="vchk-${i}">${name}</label>
+      <label class="vrow-name" for="vchk-${i}">
+        ${parsed.name}
+        ${priceTag}
+      </label>
       <div class="vrow-qty">
         <button class="vqty-btn" onclick="changeVariantQty(${i}, -1)">−</button>
         <span class="vqty-val" id="vqty-${i}">0</span>
@@ -872,13 +884,6 @@ function fillOrderForm(p) {
   if (variants.length === 0) {
     listEl.innerHTML = '<div style="font-size:13px;color:var(--text-3);padding:8px 0">此商品無規格選項</div>';
   }
-
-  // ── 包裝 chip ─────────────────────────────────────────────────
-  const packEl = document.getElementById('packaging-chips');
-  packEl.innerHTML = (p.packaging || []).map((v, i) =>
-    `<button class="chip${i===0?' selected':''}" onclick="selectChip(this,'packaging')" data-val="${v}">${v}</button>`
-  ).join('');
-  state.selectedPackaging = (p.packaging || [])[0] || '';
 
   updateOrderTotal();
 }
@@ -898,7 +903,7 @@ function onVariantCheck(idx) {
 // ✅ 按 ± 改數量 → 同步勾選狀態
 function changeVariantQty(idx, delta) {
   const p = state.product;
-  const max = p ? Number(p.max_qty) : 99;
+  const max = p ? (Number(p.max_qty) || 99) : 99;
   const qtyEl = document.getElementById(`vqty-${idx}`);
   const chk   = document.getElementById(`vchk-${idx}`);
   let cur = Math.max(0, Math.min(max, Number(qtyEl.textContent) + delta));
@@ -907,7 +912,7 @@ function changeVariantQty(idx, delta) {
   updateOrderTotal();
 }
 
-// ✅ 收集已選規格
+// ── ✅ 收集已選規格（含各規格自己的價格）──────────────────────────────────
 function getSelectedVariants() {
   const p = state.product;
   if (!p) return [];
@@ -915,44 +920,44 @@ function getSelectedVariants() {
     const chk = document.getElementById(`vchk-${i}`);
     const qty = Number(document.getElementById(`vqty-${i}`)?.textContent || 0);
     if (chk?.checked && qty > 0) {
-      acc.push({ name: typeof v === 'object' ? v.name : String(v), qty });
+      const parsed = parseVariant(v);
+      const price  = parsed.price !== null ? parsed.price : Number(p.price);
+      acc.push({ name: parsed.name, qty, price });
     }
     return acc;
   }, []);
 }
 
-// ✅ 即時更新訂單金額
+// ── ✅ 即時更新訂單金額（用各規格自己的單價計算）──────────────────────────
 function updateOrderTotal() {
   const p = state.product;
   if (!p) return;
-  const unitPrice = Number(p.price);
-  const variants  = p.variants || [];
-
+  const variants = p.variants || [];
   let grandTotal = 0;
   const breakdownRows = [];
 
   variants.forEach((v, i) => {
-    const chk = document.getElementById(`vchk-${i}`);
-    const qty = chk?.checked ? Number(document.getElementById(`vqty-${i}`)?.textContent || 0) : 0;
-    const sub = unitPrice * qty;
+    const parsed    = parseVariant(v);
+    const unitPrice = parsed.price !== null ? parsed.price : Number(p.price);
+    const chk  = document.getElementById(`vchk-${i}`);
+    const qty  = chk?.checked ? Number(document.getElementById(`vqty-${i}`)?.textContent || 0) : 0;
+    const sub  = unitPrice * qty;
     const subEl = document.getElementById(`vsub-${i}`);
     if (subEl) subEl.textContent = qty > 0 ? `NT$${sub}` : 'NT$0';
     if (qty > 0) {
-      const name = typeof v === 'object' ? v.name : String(v);
       breakdownRows.push(`
         <div class="summary-row summary-indent">
-          <span>${name} × ${qty}</span>
+          <span>${parsed.name} × ${qty}</span>
           <span>NT$${sub}</span>
         </div>`);
       grandTotal += sub;
     }
   });
 
-  // 訂單摘要
   const breakdown = document.getElementById('s2-variant-breakdown');
   if (breakdown) {
     breakdown.innerHTML = breakdownRows.length
-      ? `<div class="summary-row" style="color:var(--text-2);padding-bottom:2px"><span>規格明細</span><span style="font-size:11px">單價 NT$${unitPrice}</span></div>` + breakdownRows.join('')
+      ? breakdownRows.join('')
       : `<div style="font-size:12px;color:var(--text-3);padding:4px 0">尚未選擇規格</div>`;
   }
   document.getElementById('s2-total').textContent = `NT$${grandTotal}`;
@@ -977,14 +982,6 @@ function proceedToPayment() {
     return;
   }
   goTo('s3');
-}
-
-// ── 包裝 chip ─────────────────────────────────────────────────────────────
-function selectChip(el, group) {
-  document.querySelectorAll(`#packaging-chips .chip`)
-    .forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  state.selectedPackaging = el.dataset.val;
 }
 
 // ── 付款方式 ──────────────────────────────────────────────────────────────────
@@ -1017,7 +1014,7 @@ function handleFileSelect(input) {
   reader.readAsDataURL(file);
 }
 
-// ── 下單提交 ──────────────────────────────────────────────────────────────────
+// ── ✅ 下單提交（金額以各規格自己單價計算）────────────────────────────────
 async function submitOrder() {
   const btn = document.getElementById('s3-btn');
   btn.disabled    = true;
@@ -1027,18 +1024,19 @@ async function submitOrder() {
     const p        = state.product;
     const selected = getSelectedVariants();
     const totalQty = selected.reduce((s, v) => s + v.qty, 0);
-    const total    = Number(p.price) * totalQty;
+    // ✅ 總金額 = 各規格 qty × 各自 price 加總
+    const total    = selected.reduce((s, v) => s + v.qty * v.price, 0);
 
-    // 顯示格式：原味×2, 巧克力×1
+    // 顯示格式：酪梨×2, 百香果×1
     const variantLabel = selected.map(v => `${v.name}×${v.qty}`).join(', ');
 
     const orderPayload = {
       action:     'create_order',
       productId:  p.product_id,
       memberName: state.displayName,
-      variant:    variantLabel,          // 存到 DB 的顯示字串
-      packaging:  state.selectedPackaging,
+      variant:    variantLabel,
       qty:        totalQty,
+      total:      total,            // ✅ 傳正確金額給後端
       payMethod:  state.payMethod,
       notes:      document.getElementById('remarks').value,
     };
@@ -1063,7 +1061,7 @@ async function submitOrder() {
       btn.textContent = state.payMethod === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
 
       if (!confirm(msg)) {
-        liff.closeWindow();   // ✅ 取消 → 關閉 LIFF 回到 LINE
+        liff.closeWindow();
         return;
       }
 
@@ -1104,6 +1102,7 @@ async function submitOrder() {
   }
 }
 
+// ── ✅ 成功畫面（各規格用自己的 price）───────────────────────────────────
 function renderSuccessScreen(orderId, selected, total) {
   const p = state.product;
   document.getElementById('receipt-id').textContent      = orderId;
@@ -1112,13 +1111,13 @@ function renderSuccessScreen(orderId, selected, total) {
     { line_pay:'LINE Pay', transfer:'銀行轉帳', on_site:'現場繳款' }[state.payMethod];
   document.getElementById('receipt-total').textContent   = `NT$${total}`;
 
-  // 每規格一行
+  // ✅ 每規格一行，金額 = qty × 該規格自己的 price
   const vrRows = document.getElementById('receipt-variant-rows');
   if (vrRows && selected?.length) {
     vrRows.innerHTML = selected.map(v =>
       `<div class="receipt-row">
         <span>${v.name}</span>
-        <span style="color:var(--text)">× ${v.qty}　NT$${Number(p.price) * v.qty}</span>
+        <span style="color:var(--text)">× ${v.qty}　NT$${v.qty * v.price}</span>
       </div>`
     ).join('');
   }
@@ -1212,15 +1211,15 @@ function loadMockData() {
   state.lineUserId  = 'U_mock_dev';
   state.product = {
     product_id:     'P001',
-    name:           '萬聖節糖果禮盒',
-    price:          300,
-    original_price: 450,
+    name:           '手工果凍飲',
+    price:          100,               // 基礎單價（備用，若規格無括號時用此）
+    original_price: 150,
     deadline:       new Date(Date.now() + 3 * 86400000 + 3600000 * 14).toISOString(),
     max_qty:        5,
-    unit:           '份',
-    variants:       ['原味', '巧克力', '抹茶'],
-    packaging:      ['精美禮盒', '簡易包裝'],
-    description:    '精選比利時進口巧克力，多種口味任選',
+    unit:           '杯',
+    // ✅ 新格式：名稱(價格)，各規格價格不同
+    variants:       ['酪梨(150)', '百香果(100)', '抹茶(120)'],
+    description:    '純天然手工製作，每日限量',
     status:         'open',
     totalOrders:    12,
     totalQty:       28,
@@ -1234,22 +1233,36 @@ function loadMockData() {
 
   window.apiPost = async (body) => {
     await new Promise(r => setTimeout(r, 800));
-    if (body.action === 'create_order')
-      return { ok: true, data: { orderId: `ORD-${Date.now().toString().slice(-8)}` } };
+    if (body.action === 'create_order') {
+      const oid = `ORD-${Date.now().toString().slice(-8)}`;
+      return { ok: true, data: { orderId: oid } };
+    }
     return { ok: true, data: {} };
   };
-  window.apiGet = async (action) => {
+  window.apiGet = async (action, params) => {
     await new Promise(r => setTimeout(r, 400));
     if (action === 'order') return { ok: true, data: {
-      order_id: state.currentOrderId || 'ORD-MOCK', variant: '原味×2, 巧克力×1',
-      qty: 3, total: 900, pay_status: 'pending',
+      order_id:   state.currentOrderId || 'ORD-MOCK',
+      variant:    '酪梨×2, 百香果×1',
+      qty:        3,
+      total:      400,   // 酪梨150×2 + 百香果100×1
+      pay_status: 'pending',
     }};
     return { ok: true, data: [] };
   };
+
+  document.getElementById('loading').style.display = 'none';
 }
 
 // ── 啟動 ─────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', () => {
+  // 若 URL 有 ?mock=1，直接用 mock 資料跳過 LIFF init
+  if (new URLSearchParams(location.search).get('mock') === '1') {
+    loadMockData();
+  } else {
+    init();
+  }
+});
 </script>
 </body>
 </html>
