@@ -47,30 +47,22 @@
   --text-3:    #666666;
 }
 
-/* ── Reset ────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); }
 img { max-width: 100%; display: block; }
 button { cursor: pointer; border: none; font-family: inherit; }
 
-/* ── App 容器 ─────────────────────────────────────────────── */
+/* ── App ─────────────────────────────────────────────────── */
 #app {
   min-height: 100%;
   max-width: 420px;
   margin: 0 auto;
   padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
-  position: relative;
 }
 
-/* ── 畫面切換動畫 ─────────────────────────────────────────── */
-.screen {
-  display: none;
-  flex-direction: column;
-  min-height: 100dvh;
-  width: 100%;
-}
+.screen { display: none; flex-direction: column; min-height: 100dvh; }
 .screen.active { display: flex; animation: slideIn .25s ease; }
-@keyframes slideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; } }
 
 /* ── 頂部導覽列 ───────────────────────────────────────────── */
 .nav {
@@ -94,7 +86,7 @@ button { cursor: pointer; border: none; font-family: inherit; }
 }
 .nav-title { font-size: 15px; font-weight: 700; flex: 1; }
 
-/* ── 通用卡片 ─────────────────────────────────────────────── */
+/* ── 卡片 ─────────────────────────────────────────────────── */
 .card {
   background: var(--surface);
   border-radius: var(--radius);
@@ -102,18 +94,171 @@ button { cursor: pointer; border: none; font-family: inherit; }
   border: 1px solid var(--border);
 }
 
-/* ── 全域滾動內容區 ───────────────────────────────────────── */
+/* ── 滾動內容區 ───────────────────────────────────────────── */
 .scroll-body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 0 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   padding-bottom: 100px;
 }
 
-/* ── 底部固定按鈕區 ───────────────────────────────────────── */
+/* ── 商品主視覺 ───────────────────────────────────────────── */
+.product-hero {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: linear-gradient(135deg, #06C755 0%, #1a73e8 100%);
+  display: grid;
+  place-content: center;
+  font-size: 52px;
+  flex-shrink: 0;
+}
+.product-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── 商品資訊區 ───────────────────────────────────────────── */
+.product-info {
+  background: var(--surface);
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.badge-green { background: #e6f7ed; color: var(--green-dark); }
+.badge-red   { background: #fce8e8; color: var(--red); }
+.badge-amber { background: #fff3e0; color: #e57c00; }
+.badge-blue  { background: #e8f0fe; color: var(--blue); }
+
+.product-name { font-size: 19px; font-weight: 700; margin: 8px 0 6px; line-height: 1.35; }
+.product-desc { font-size: 13px; color: var(--text-2); line-height: 1.65; margin-bottom: 10px; }
+.price-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.price-now { font-size: 24px; font-weight: 700; color: var(--red); font-variant-numeric: tabular-nums; }
+.price-old { font-size: 13px; color: var(--text-3); text-decoration: line-through; }
+.meta-row { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-2); flex-wrap: wrap; }
+.meta-row span { display: flex; align-items: center; gap: 3px; }
+.countdown-inline { color: var(--amber); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── Stats ────────────────────────────────────────────────── */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.stat-cell {
+  padding: 10px 8px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-val { font-size: 20px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.stat-lbl { font-size: 10px; color: var(--text-3); margin-top: 1px; }
+
+/* ── section 標題 ─────────────────────────────────────────── */
+.section-label { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
+
+/* ── 規格列 ───────────────────────────────────────────────── */
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.variant-row:last-child { border-bottom: none; }
+.vrow-check { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; flex-shrink: 0; }
+.vrow-name {
+  flex: 1;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.4;
+}
+.vrow-price-tag { font-size: 11px; color: var(--text-3); margin-top: 2px; display: block; }
+.vrow-subtotal {
+  font-size: 13px;
+  color: var(--green-dark);
+  font-weight: 600;
+  min-width: 58px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.vrow-qty { display: flex; align-items: center; gap: 6px; }
+.vqty-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  font-size: 16px;
+  display: grid; place-content: center;
+  line-height: 1;
+  transition: all var(--transition);
+}
+.vqty-btn:hover:not(:disabled) { background: #e6f7ed; border-color: var(--green); color: var(--green-dark); }
+.vqty-val { font-size: 15px; font-weight: 700; min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* ── 訂單摘要 ─────────────────────────────────────────────── */
+.order-summary {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+.summary-row { display: flex; justify-content: space-between; padding: 3px 0; }
+.summary-indent { padding-left: 10px; color: var(--text-2); font-size: 12px; }
+.summary-total { font-size: 16px; font-weight: 700; color: var(--red); }
+
+/* ── 付款方式（精簡版） ───────────────────────────────────── */
+.pay-chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.pay-chip {
+  flex: 1;
+  min-width: 90px;
+  padding: 9px 8px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.pay-chip .pay-icon { font-size: 20px; }
+.pay-chip .pay-name { font-size: 12px; }
+.pay-chip.selected { border-color: var(--green); background: #e6f7ed; color: var(--green-dark); }
+
+textarea.remark-input {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  resize: none;
+  outline: none;
+  transition: border-color var(--transition);
+}
+textarea.remark-input:focus { border-color: var(--green); }
+
+/* ── 底部固定按鈕 ─────────────────────────────────────────── */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -127,8 +272,8 @@ button { cursor: pointer; border: none; font-family: inherit; }
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   display: flex;
   gap: 10px;
+  z-index: 10;
 }
-
 .btn-primary {
   flex: 1;
   background: var(--green);
@@ -142,32 +287,17 @@ button { cursor: pointer; border: none; font-family: inherit; }
 .btn-primary:hover { background: var(--green-dark); }
 .btn-primary:disabled { background: var(--text-3); cursor: not-allowed; }
 .btn-secondary {
-  flex: 1;
   background: var(--surface-2);
   color: var(--text);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  padding: 13px 0;
+  padding: 13px 18px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-}
-
-/* ── 徽章 ─────────────────────────────────────────────────── */
-.badge {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 20px;
   white-space: nowrap;
 }
-.badge-green  { background: #e6f7ed; color: var(--green-dark); }
-.badge-amber  { background: #fff3e0; color: #e57c00; }
-.badge-red    { background: #fce8e8; color: var(--red); }
-.badge-blue   { background: #e8f0fe; color: var(--blue); }
-.badge-grey   { background: var(--surface-2); color: var(--text-3); }
 
-/* ── Loading 遮罩 ─────────────────────────────────────────── */
+/* ── Loading ──────────────────────────────────────────────── */
 #loading {
   position: fixed; inset: 0;
   background: var(--bg);
@@ -186,7 +316,7 @@ button { cursor: pointer; border: none; font-family: inherit; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Toast 通知 ───────────────────────────────────────────── */
+/* ── Toast ────────────────────────────────────────────────── */
 #toast {
   position: fixed;
   bottom: 90px;
@@ -201,210 +331,43 @@ button { cursor: pointer; border: none; font-family: inherit; }
   transition: all .3s;
   pointer-events: none;
   white-space: nowrap;
-  z-index: 200;
+  z-index: 300;
   max-width: 90vw;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ── 商品詳情畫面（s1）──────────────────────────────────── */
-.product-hero-placeholder {
-  width: 100%;
-  aspect-ratio: 16/9;
-  background: linear-gradient(135deg, #06C755 0%, #1a73e8 100%);
-  border-radius: var(--radius);
-  display: grid;
-  place-content: center;
-  font-size: 48px;
+/* ── 成功 Modal（彈出頁面）─────────────────────────────────── */
+#success-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,.55);
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn .2s ease;
 }
-.price-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.price-now { font-size: 26px; font-weight: 700; color: var(--red); font-variant-numeric: tabular-nums; }
-.price-old { font-size: 14px; color: var(--text-3); text-decoration: line-through; }
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.stat-tile {
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  text-align: center;
-  border: 1px solid var(--border);
-}
-.stat-value { font-size: 18px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
-.stat-label { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-.info-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.info-table td { padding: 7px 0; vertical-align: top; }
-.info-table td:first-child { color: var(--text-2); width: 80px; }
-.countdown { font-size: 13px; color: var(--amber); font-weight: 600; font-variant-numeric: tabular-nums; }
+#success-modal.open { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* ── 下單表單（s2）─ 規格勾選列 ─────────────────────────── */
-.section-label { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
-
-.variant-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--border);
-}
-.variant-row:last-child { border-bottom: none; }
-
-.vrow-check {
-  width: 20px; height: 20px;
-  accent-color: var(--green);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.vrow-name {
-  flex: 1;
-  font-size: 14px;
-  cursor: pointer;
-  user-select: none;
-  line-height: 1.4;
-}
-.vrow-price-tag {
-  font-size: 11px;
-  color: var(--text-3);
-  margin-top: 2px;
-  display: block;
-}
-.vrow-subtotal {
-  font-size: 13px;
-  color: var(--green-dark);
-  font-weight: 600;
-  min-width: 58px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.vrow-qty {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.vqty-btn {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  border: 1.5px solid var(--border);
-  font-size: 16px;
-  display: grid; place-content: center;
-  line-height: 1;
-  transition: all var(--transition);
-}
-.vqty-btn:hover:not(:disabled) { background: #e6f7ed; border-color: var(--green); color: var(--green-dark); }
-.vqty-btn:disabled { opacity: 0.3; }
-.vqty-val {
-  font-size: 15px; font-weight: 700;
-  min-width: 22px; text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── 訂單摘要 ─────────────────────────────────────────────── */
-.order-summary {
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  border: 1px solid var(--border);
-  font-size: 13px;
-}
-.summary-row { display: flex; justify-content: space-between; padding: 3px 0; }
-.summary-indent { padding-left: 12px; color: var(--text-2); font-size: 12px; }
-.summary-total { font-size: 16px; font-weight: 700; color: var(--red); }
-
-textarea.remark-input {
-  width: 100%;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  font-size: 13px;
-  font-family: inherit;
+.modal-sheet {
   background: var(--surface);
-  color: var(--text);
-  resize: none;
-  outline: none;
-  transition: border-color var(--transition);
-}
-textarea.remark-input:focus { border-color: var(--green); }
-
-/* ── 付款方式（s3）───────────────────────────────────────── */
-.pay-option {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 14px;
-  padding: 14px;
-  border-radius: var(--radius);
-  border: 2px solid var(--border);
-  background: var(--surface);
-  cursor: pointer;
-  transition: all var(--transition);
+  animation: slideUp .28s cubic-bezier(.4,0,.2,1);
+  max-height: 92dvh;
+  overflow-y: auto;
 }
-.pay-option.selected { border-color: var(--green); background: #e6f7ed; }
-.pay-icon { font-size: 26px; flex-shrink: 0; }
-.pay-name { font-size: 14px; font-weight: 700; }
-.pay-desc { font-size: 12px; color: var(--text-2); }
-.pay-radio {
-  width: 18px; height: 18px;
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  margin-left: auto;
-  flex-shrink: 0;
-  position: relative;
-  transition: all var(--transition);
-}
-.pay-option.selected .pay-radio { border-color: var(--green); background: var(--green); }
-.pay-option.selected .pay-radio::after {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  background: #fff;
-  border-radius: 50%;
-}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-.transfer-info {
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  border: 1px solid var(--border);
-  font-size: 13px;
-  line-height: 1.8;
-}
-.transfer-info strong { color: var(--text); }
+.modal-drag { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 6px; }
 
-.upload-area {
-  border: 2px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 24px 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: all var(--transition);
-  background: var(--surface-2);
-}
-.upload-area:hover { border-color: var(--green); background: #e6f7ed20; }
-.upload-area.uploaded { border-color: var(--green); background: #e6f7ed; }
-
-/* ── 訂單成功（s4）───────────────────────────────────────── */
-.success-icon {
-  font-size: 60px;
-  text-align: center;
-  animation: pop .4s cubic-bezier(.36,.07,.19,.97);
-  margin: 24px 0 8px;
-}
-@keyframes pop {
-  0%   { transform: scale(.6); opacity: 0; }
-  60%  { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); }
-}
-.receipt-card { background: var(--surface-2); border-radius: var(--radius); padding: 16px; border: 1px solid var(--border); }
-.receipt-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border); }
-.receipt-row:last-child { border: none; font-weight: 700; font-size: 15px; }
-.receipt-row span:last-child { color: var(--red); }
-
-/* ── 訂單追蹤（s5）───────────────────────────────────────── */
+/* ── 訂單追蹤 Timeline ────────────────────────────────────── */
 .timeline { position: relative; padding-left: 28px; }
 .timeline::before { content: ''; position: absolute; left: 9px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
 .tl-item { position: relative; padding: 0 0 20px 12px; }
@@ -420,31 +383,20 @@ textarea.remark-input:focus { border-color: var(--green); }
 }
 .tl-item.done .tl-dot { background: var(--green); border-color: var(--green); }
 .tl-item.current .tl-dot {
-  background: var(--surface);
-  border-color: var(--green);
+  background: var(--surface); border-color: var(--green);
   box-shadow: 0 0 0 3px #06C75520;
 }
 .tl-item.current .tl-dot::after {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  background: var(--green);
+  content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--green);
 }
 .tl-title { font-size: 14px; font-weight: 600; }
 .tl-item.done .tl-title, .tl-item.current .tl-title { color: var(--green); }
 .tl-item:not(.done):not(.current) .tl-title { color: var(--text-3); }
-.tl-time { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 .tl-desc { font-size: 12px; color: var(--text-2); margin-top: 4px; }
 
 .status-badge-lg {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 20px;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 20px;
 }
 </style>
 </head>
@@ -457,174 +409,103 @@ textarea.remark-input:focus { border-color: var(--green); }
 
 <div id="app">
 
-  <!-- s1: 商品詳情 -->
+  <!-- ========== 主畫面（商品詳情 + 規格選擇 + 確認下單，合併成一頁）========== -->
   <div class="screen active" id="s1">
-    <div class="nav">
-      <div class="nav-title" id="s1-title">商品詳情</div>
+
+    <!-- 商品主視覺 -->
+    <div class="product-hero" id="s1-hero">🎁</div>
+
+    <!-- 商品資訊 -->
+    <div class="product-info" id="s1-product-info">
+      <div id="s1-loading-text" style="text-align:center;padding:24px 0;color:var(--text-3)">載入商品中…</div>
     </div>
+
+    <!-- Stats -->
+    <div class="stats-strip" id="s1-stats" style="display:none">
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-orders">0</div>
+        <div class="stat-lbl">已參團人數</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-qty">0</div>
+        <div class="stat-lbl">已下單件數</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val countdown-inline" id="stat-countdown">計算中</div>
+        <div class="stat-lbl">剩餘時間</div>
+      </div>
+    </div>
+
+    <!-- 滾動內容：規格 + 摘要 + 付款 + 備註 -->
     <div class="scroll-body" id="s1-body">
-      <div style="text-align:center;padding:40px 0;color:var(--text-3)">載入商品中…</div>
-    </div>
-    <div class="bottom-bar">
-      <button class="btn-primary" id="s1-btn" onclick="joinGroup()">我要參團</button>
-    </div>
-  </div>
 
-  <!-- s2: 規格選擇（勾選 + 數量）-->
-  <div class="screen" id="s2">
-    <div class="nav">
-      <button class="nav-back" onclick="goTo('s1')">←</button>
-      <div class="nav-title">選擇規格與數量</div>
-    </div>
-    <div class="scroll-body">
-
-      <!-- ✅ 規格（價格） -->
-      <div class="card">
+      <!-- 規格選擇 -->
+      <div class="card" id="variant-card" style="display:none">
         <div class="section-label">
           規格（價格）
-          <span style="font-weight:400;color:var(--text-3);font-size:11px;margin-left:6px">可複選，各自填寫數量</span>
+          <span style="font-weight:400;color:var(--text-3);font-size:11px;margin-left:4px">可複選，各自填數量</span>
         </div>
-        <div id="variant-list">
-          <!-- 動態產生 -->
-        </div>
-        <div style="margin-top:10px;font-size:11px;color:var(--text-3)">
+        <div id="variant-list"></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-3)">
           每人每規格最多 <span id="max-qty-label">99</span> 件，總數量至少 1 件
         </div>
       </div>
 
-      <!-- ✅ 已移除「包裝方式」區塊 -->
-
-      <!-- 備註 -->
-      <div class="card">
-        <div class="section-label">備註（選填）</div>
-        <textarea class="remark-input" id="remarks" rows="2" placeholder="特殊需求、禮盒卡片文字…"></textarea>
-      </div>
-
-      <!-- 訂單摘要 -->
-      <div class="order-summary">
-        <div class="summary-row" style="font-weight:700;font-size:14px;padding-bottom:6px">
+      <!-- 訂單明細 -->
+      <div class="order-summary" id="order-summary-card" style="display:none">
+        <div class="summary-row" style="font-weight:700;font-size:13px;padding-bottom:4px">
           <span>訂單明細</span>
         </div>
-        <div id="s2-variant-breakdown">
-          <!-- 動態產生每規格小計 -->
+        <div id="s1-variant-breakdown">
+          <div style="font-size:12px;color:var(--text-3);padding:4px 0">尚未選擇規格</div>
         </div>
-        <div class="summary-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:10px">
+        <div class="summary-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:8px">
           <span style="font-weight:700">合計</span>
-          <span class="summary-total" id="s2-total">NT$0</span>
+          <span class="summary-total" id="s1-total">NT$0</span>
         </div>
       </div>
 
-    </div>
-    <div class="bottom-bar">
-      <button class="btn-primary" id="s2-btn" onclick="proceedToPayment()">下一步：選擇付款方式</button>
-    </div>
-  </div>
-
-  <!-- s3: 付款方式 -->
-  <div class="screen" id="s3">
-    <div class="nav">
-      <button class="nav-back" onclick="goTo('s2')">←</button>
-      <div class="nav-title">付款方式</div>
-    </div>
-    <div class="scroll-body">
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div class="pay-option" id="pay-line_pay" onclick="selectPayment('line_pay')">
-          <div class="pay-icon">💚</div>
-          <div>
-            <div class="pay-name">LINE Pay</div>
-            <div class="pay-desc">安全快速，無需手動核帳</div>
+      <!-- 付款方式 -->
+      <div class="card" id="pay-card" style="display:none">
+        <div class="section-label">付款方式</div>
+        <div class="pay-chip-group">
+          <div class="pay-chip selected" id="pay-transfer" onclick="selectPayment('transfer')">
+            <span class="pay-icon">🏦</span>
+            <span class="pay-name">銀行轉帳</span>
           </div>
-          <div class="pay-radio"></div>
-        </div>
-        <div class="pay-option selected" id="pay-transfer" onclick="selectPayment('transfer')">
-          <div class="pay-icon">🏦</div>
-          <div>
-            <div class="pay-name">銀行轉帳</div>
-            <div class="pay-desc">轉帳後上傳截圖，等待確認</div>
+          <div class="pay-chip" id="pay-on_site" onclick="selectPayment('on_site')">
+            <span class="pay-icon">💵</span>
+            <span class="pay-name">現場繳款</span>
           </div>
-          <div class="pay-radio"></div>
-        </div>
-        <div class="pay-option" id="pay-on_site" onclick="selectPayment('on_site')">
-          <div class="pay-icon">💵</div>
-          <div>
-            <div class="pay-name">現場繳款</div>
-            <div class="pay-desc">取貨時當面付款</div>
+          <div class="pay-chip" id="pay-line_pay" onclick="selectPayment('line_pay')">
+            <span class="pay-icon">💚</span>
+            <span class="pay-name">LINE Pay</span>
           </div>
-          <div class="pay-radio"></div>
         </div>
       </div>
 
-      <div id="transfer-block" style="display:flex;flex-direction:column;gap:10px">
-        <div class="transfer-info">
-          <div style="font-weight:700;margin-bottom:8px">匯款資訊</div>
-          <div>銀行代碼：<strong id="bank-code">808</strong>（玉山銀行）</div>
-          <div>帳號：<strong id="bank-account">0001234567890</strong></div>
-          <div>戶名：<strong id="bank-name">王小明</strong></div>
-          <div style="color:var(--red);margin-top:6px">⚠️ 請備注訂單號或後五碼方便核帳</div>
-        </div>
-        <div class="upload-area" id="upload-area" onclick="triggerUpload()">
-          <div style="font-size:32px;margin-bottom:8px">📷</div>
-          <div style="font-size:14px;font-weight:600" id="upload-label">點此上傳匯款截圖</div>
-          <div style="font-size:12px;color:var(--text-2);margin-top:4px">支援 JPG、PNG</div>
-        </div>
-        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileSelect(this)">
-        <input type="text" id="transfer-ref" placeholder="請填入轉帳後五碼（可選填）"
-          style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;background:var(--surface);color:var(--text);outline:none;font-family:inherit">
+      <!-- 備註 -->
+      <div class="card" id="remark-card" style="display:none">
+        <div class="section-label">備註（選填）</div>
+        <textarea class="remark-input" id="remarks" rows="2" placeholder="特殊需求、禮盒文字…"></textarea>
       </div>
 
-      <div id="linepay-block" style="display:none">
-        <div class="card" style="text-align:center;padding:24px">
-          <div style="font-size:36px;margin-bottom:12px">💚</div>
-          <div style="font-weight:700;margin-bottom:4px">使用 LINE Pay 付款</div>
-          <div style="font-size:13px;color:var(--text-2)">確認訂單後，系統將引導您至 LINE Pay 完成付款</div>
-        </div>
-      </div>
+    </div><!-- /scroll-body -->
 
-      <div id="onsite-block" style="display:none">
-        <div class="card" style="text-align:center;padding:24px">
-          <div style="font-size:36px;margin-bottom:12px">📅</div>
-          <div style="font-weight:700;margin-bottom:4px">現場繳款</div>
-          <div style="font-size:13px;color:var(--text-2)">取貨時請攜帶現金，請準備正確金額</div>
-        </div>
-      </div>
-    </div>
+    <!-- 底部按鈕 -->
     <div class="bottom-bar">
-      <button class="btn-primary" id="s3-btn" onclick="submitOrder()">確認下單</button>
+      <button class="btn-primary" id="s1-btn" disabled>載入中…</button>
     </div>
-  </div>
 
-  <!-- s4: 下單成功 -->
-  <div class="screen" id="s4">
-    <div class="nav"><div class="nav-title">訂單成立</div></div>
-    <div class="scroll-body" style="align-items:center;text-align:center">
-      <div class="success-icon">✅</div>
-      <div style="font-size:18px;font-weight:700">下單成功！</div>
-      <div style="font-size:13px;color:var(--text-2);margin-top:4px">確認通知已傳送至您的 LINE</div>
-      <div style="width:100%;margin-top:8px">
-        <div class="receipt-card">
-          <div style="font-weight:700;margin-bottom:10px;font-size:13px;color:var(--text-2)">訂單明細</div>
-          <div class="receipt-row"><span>訂單編號</span><span id="receipt-id" style="color:var(--text);font-size:12px">ORD-…</span></div>
-          <div class="receipt-row"><span>商品</span><span id="receipt-product" style="color:var(--text)">-</span></div>
-          <div id="receipt-variant-rows"></div>
-          <div class="receipt-row"><span>付款方式</span><span id="receipt-pay" style="color:var(--text)">-</span></div>
-          <div class="receipt-row"><span>總金額</span><span id="receipt-total">NT$-</span></div>
-        </div>
-      </div>
-      <div id="s4-pay-hint" style="width:100%;background:var(--surface-2);border-radius:var(--radius-sm);padding:14px;font-size:13px;color:var(--text-2);line-height:1.7;text-align:left;border:1px solid var(--border)"></div>
-    </div>
-    <div class="bottom-bar">
-      <button class="btn-secondary" onclick="goTo('s5')">查看訂單追蹤</button>
-      <button class="btn-primary" onclick="goTo('s1')">回到商品頁</button>
-    </div>
-  </div>
+  </div><!-- /s1 -->
 
-  <!-- s5: 訂單追蹤 -->
+  <!-- ========== 訂單追蹤（s5）========== -->
   <div class="screen" id="s5">
     <div class="nav">
-      <button class="nav-back" onclick="goTo('s4')">←</button>
+      <button class="nav-back" onclick="closeTracking()">←</button>
       <div class="nav-title">訂單追蹤</div>
     </div>
-    <div class="scroll-body">
+    <div class="scroll-body" style="padding-top:16px">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div>
@@ -639,55 +520,95 @@ textarea.remark-input:focus { border-color: var(--green); }
         <div class="section-label" style="margin-bottom:14px">配送進度</div>
         <div class="timeline" id="timeline"></div>
       </div>
-      <div class="card" id="cancel-hint" style="display:none">
-        <div style="font-size:13px;color:var(--text-2)">若需取消訂單，請於付款前聯繫團主，或點下方按鈕取消（僅限待付款狀態）。</div>
-        <button style="margin-top:10px;font-size:13px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline" onclick="cancelOrder()">取消訂單</button>
-      </div>
     </div>
     <div class="bottom-bar">
-      <button class="btn-primary" onclick="goTo('s1')">回到商品頁</button>
+      <button class="btn-primary" onclick="goToGroup()">回團購群組頁</button>
     </div>
   </div>
 
+</div><!-- /app -->
+
+<!-- ========== 成功 Modal ========== -->
+<div id="success-modal">
+  <div class="modal-sheet">
+    <div class="modal-drag"></div>
+
+    <!-- 成功圖示 -->
+    <div style="text-align:center;padding:4px 0 8px">
+      <div style="font-size:56px;animation:pop .4s cubic-bezier(.36,.07,.19,.97)">✅</div>
+      <div style="font-size:20px;font-weight:700;margin-top:8px">下單成功！</div>
+      <div style="font-size:12px;color:var(--text-2);margin-top:4px">確認通知已傳送至您的 LINE</div>
+    </div>
+
+    <!-- 訂單明細 -->
+    <div style="background:var(--surface-2);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">
+      <div style="font-weight:700;font-size:13px;color:var(--text-2);margin-bottom:10px;text-align:center">訂單明細</div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-2)">訂單編號</span>
+        <span style="font-size:12px;color:var(--text-2)" id="receipt-id">ORD-…</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-2)">商品</span>
+        <span style="text-align:right;max-width:60%;word-break:break-all" id="receipt-product">-</span>
+      </div>
+      <div id="receipt-variant-rows"></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-2)">付款方式</span>
+        <span id="receipt-pay">-</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-weight:700;font-size:15px">
+        <span>總金額</span>
+        <span style="color:var(--red)" id="receipt-total">NT$-</span>
+      </div>
+    </div>
+
+    <!-- 付款提示 -->
+    <div id="receipt-pay-hint" style="font-size:12px;color:var(--text-2);background:var(--surface-2);border-radius:var(--radius-sm);padding:12px;border:1px solid var(--border);line-height:1.7"></div>
+
+    <!-- 操作按鈕 -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn-primary" style="border-radius:var(--radius-sm)" onclick="goToGroup()">回團購群組頁</button>
+      <button class="btn-secondary" style="text-align:center" onclick="goToTracking()">查看訂單追蹤</button>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
+
+<style>
+@keyframes pop {
+  0% { transform: scale(.6); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+</style>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
 // ── 狀態 ─────────────────────────────────────────────────────────────────────
 const state = {
-  liffId:           '',
-  apiBase:          '',
-  lineUserId:       '',
-  displayName:      '',
-  product:          null,
-  currentOrderId:   '',
-  payMethod:        'transfer',
-  uploadedFile:     null,
-  uploadedBase64:   '',
+  liffId:         '',
+  apiBase:        '',
+  lineUserId:     '',
+  displayName:    '',
+  product:        null,
+  currentOrderId: '',
+  payMethod:      'transfer',
 };
 
-// ── 日期格式化（台灣時間，含時分）──────────────────────────────────────────
-function formatDeadline(isoStr) {
+// ── 日期格式化 ────────────────────────────────────────────────────────────────
+function formatDate(isoStr) {
   if (!isoStr) return '-';
   try {
     return new Intl.DateTimeFormat('zh-TW', {
-      timeZone:  'Asia/Taipei',
-      month:     'numeric',
-      day:       'numeric',
-      hour:      '2-digit',
-      minute:    '2-digit',
-      hour12:    false,
+      timeZone: 'Asia/Taipei',
+      month: 'numeric', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false,
     }).format(new Date(isoStr));
-  } catch (e) {
-    return String(isoStr);
-  }
+  } catch { return String(isoStr); }
 }
 
-// ── ✅ 解析規格「名稱(價格)」格式 ────────────────────────────────────────────
-// 例：「酪梨(150)」→ { name: '酪梨', price: 150 }
-// 若無括號價格 → { name: '原味', price: null }（fallback 使用商品基礎單價）
+// ── ✅ 解析「名稱(價格)」格式 ────────────────────────────────────────────────
 function parseVariant(str) {
   const s = typeof str === 'object' && str !== null ? (str.name || '') : String(str);
   const m = s.match(/^(.+?)\((\d+(?:\.\d+)?)\)$/);
@@ -702,9 +623,8 @@ async function init() {
     state.apiBase  = 'https://line-group-buy.isabelcyen.workers.dev/';
     state.liffId   = '2011684954-69W5ZbCT';
     const pid      = params.get('pid') || '';
-    const action   = params.get('action') || '';
 
-    await liff.init({ liffId: state.liffId || '____YOUR_LIFF_ID____' });
+    await liff.init({ liffId: state.liffId });
 
     if (liff.isLoggedIn()) {
       const profile     = await liff.getProfile();
@@ -712,19 +632,8 @@ async function init() {
       state.displayName = profile.displayName;
     }
 
-    if (action === 'track') {
-      const oid = params.get('oid') || '';
-      if (oid) {
-        state.currentOrderId = oid;
-        await loadTrackingScreen(oid);
-        goTo('s5');
-        return;
-      }
-    }
-
     await loadProduct(pid);
     document.getElementById('loading').style.display = 'none';
-
   } catch (err) {
     console.error('init error:', err);
     document.getElementById('loading').innerHTML =
@@ -732,20 +641,17 @@ async function init() {
   }
 }
 
-// ── 後端 API ──────────────────────────────────────────────────────────────────
-async function apiGet(action, extraParams = {}) {
-  const params = new URLSearchParams({ action, uid: state.lineUserId, ...extraParams });
-  const res = await fetch(`${state.apiBase}?${params}`);
-  return res.json();
+// ── API ───────────────────────────────────────────────────────────────────────
+async function apiGet(action, extra = {}) {
+  const p = new URLSearchParams({ action, uid: state.lineUserId, ...extra });
+  return (await fetch(`${state.apiBase}?${p}`)).json();
 }
-
 async function apiPost(body) {
-  const res = await fetch(state.apiBase, {
+  return (await fetch(state.apiBase, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...body, lineUserId: state.lineUserId }),
-  });
-  return res.json();
+  })).json();
 }
 
 // ── 商品載入 ──────────────────────────────────────────────────────────────────
@@ -756,76 +662,70 @@ async function loadProduct(pid) {
   renderProduct(resp.data);
 }
 
+// ── ✅ 渲染商品（主畫面，合併詳情 + 規格 + 摘要）─────────────────────────────
 function renderProduct(p) {
   const deadline    = new Date(p.deadline);
-  const deadlineStr = formatDeadline(p.deadline);
+  const deadlineStr = formatDate(p.deadline);
+  const isExpired   = new Date() > deadline;
   const discountPct = p.original_price > p.price
-    ? Math.round((1 - p.price / p.original_price) * 100)
-    : 0;
+    ? Math.round((1 - p.price / p.original_price) * 100) : 0;
 
-  document.getElementById('s1-title').textContent = p.name;
+  // ── 商品圖片 ──────────────────────────────────────────────
+  const heroEl = document.getElementById('s1-hero');
+  if (p.image_url) {
+    const firstUrl = p.image_url.split(',')[0].trim();
+    heroEl.innerHTML = `<img src="${firstUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover">`;
+  }
 
-  // ✅ 商品頁顯示規格時，解析名稱(價格)格式
-  const variantsDisplay = (p.variants || []).map(v => {
-    const parsed = parseVariant(v);
-    return parsed.price !== null
-      ? `${parsed.name} NT$${parsed.price}`
-      : parsed.name;
-  }).join(' / ');
-
-  document.getElementById('s1-body').innerHTML = `
-    <div class="product-hero-placeholder">🎁</div>
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span class="badge badge-green">開團中</span>
-        ${discountPct > 0 ? `<span class="badge badge-red">省 ${discountPct}%</span>` : ''}
-      </div>
-      <div style="font-size:20px;font-weight:700;margin-bottom:10px">${p.name}</div>
-      <div class="price-row">
-        <span class="price-now">NT$${p.price}</span>
-        ${p.original_price > p.price ? `<span class="price-old">NT$${p.original_price}</span>` : ''}
-      </div>
+  // ── 商品資訊 ──────────────────────────────────────────────
+  document.getElementById('s1-product-info').innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <span class="badge badge-green">開團中</span>
+      ${discountPct > 0 ? `<span class="badge badge-red">省 ${discountPct}%</span>` : ''}
     </div>
-    <div class="stats-row">
-      <div class="stat-tile">
-        <div class="stat-value">${p.totalOrders ?? 0}</div>
-        <div class="stat-label">已參團人數</div>
-      </div>
-      <div class="stat-tile">
-        <div class="stat-value">${p.totalQty ?? 0}</div>
-        <div class="stat-label">已下單件數</div>
-      </div>
-      <div class="stat-tile">
-        <div class="countdown" id="countdown-val">計算中</div>
-        <div class="stat-label">剩餘時間</div>
-      </div>
-    </div>
-    <div class="card">
-      <table class="info-table">
-        <tr><td>截止時間</td><td style="font-weight:600;color:var(--red)">${deadlineStr}</td></tr>
-        <tr><td>單價</td><td>NT$${p.price} / ${p.unit || '份'}</td></tr>
-        <tr><td>每人限購</td><td>每規格最多 ${p.max_qty} 件</td></tr>
-        <tr><td>規格選擇</td><td>${variantsDisplay || '-'}</td></tr>
-        ${p.description ? `<tr><td>商品說明</td><td style="color:var(--text-2)">${p.description}</td></tr>` : ''}
-      </table>
+    <div class="product-name">${p.name}</div>
+    ${p.description ? `<div class="product-desc">${p.description}</div>` : ''}
+    <div class="meta-row">
+      <span>📅 截止 <strong>${deadlineStr}</strong></span>
     </div>
   `;
 
-  startCountdown(deadline);
-  fillOrderForm(p);
+  // ── Stats ────────────────────────────────────────────────
+  document.getElementById('stat-orders').textContent = p.totalOrders ?? 0;
+  document.getElementById('stat-qty').textContent    = p.totalQty    ?? 0;
+  document.getElementById('s1-stats').style.display  = 'grid';
 
-  // ✅ 截止後鎖定按鈕
-  const joinBtn   = document.getElementById('s1-btn');
-  const isExpired = new Date() > deadline;
-  joinBtn.disabled    = isExpired;
-  joinBtn.textContent = isExpired ? '⛔ 已截止收單' : '我要參團 🛒';
+  // ── 顯示規格等區塊 ───────────────────────────────────────
+  if (!isExpired) {
+    document.getElementById('variant-card').style.display      = '';
+    document.getElementById('order-summary-card').style.display = '';
+    document.getElementById('pay-card').style.display           = '';
+    document.getElementById('remark-card').style.display        = '';
+  }
+
+  // ── 倒計時 ────────────────────────────────────────────────
+  startCountdown(deadline);
+
+  // ── 填充規格 ──────────────────────────────────────────────
+  fillVariants(p);
+
+  // ── 按鈕狀態 ──────────────────────────────────────────────
+  const btn = document.getElementById('s1-btn');
+  if (isExpired) {
+    btn.disabled    = true;
+    btn.textContent = '⛔ 已截止收單';
+  } else {
+    btn.disabled    = false;
+    btn.textContent = '確認下單';
+    btn.onclick     = submitOrder;
+  }
 }
 
 function startCountdown(deadline) {
   function tick() {
-    const el = document.getElementById('countdown-val');
-    if (!el) return;
+    const el   = document.getElementById('stat-countdown');
     const diff = deadline - Date.now();
+    if (!el) return;
     if (diff <= 0) {
       el.textContent = '已截止';
       const btn = document.getElementById('s1-btn');
@@ -846,73 +746,55 @@ function startCountdown(deadline) {
   setInterval(tick, 1000);
 }
 
-// ── ✅ 填充訂單表單（規格勾選 + 數量，含每規格單價）────────────────────────
-function fillOrderForm(p) {
-  const maxQty = Number(p.max_qty) || 99;
+// ── ✅ 規格列渲染（含各規格價格）────────────────────────────────────────────
+function fillVariants(p) {
+  const maxQty  = Number(p.max_qty) || 99;
   document.getElementById('max-qty-label').textContent = maxQty;
 
-  const variants = p.variants || [];
   const listEl = document.getElementById('variant-list');
-  listEl.innerHTML = variants.map((v, i) => {
+  listEl.innerHTML = (p.variants || []).map((v, i) => {
     const parsed    = parseVariant(v);
     const unitPrice = parsed.price !== null ? parsed.price : Number(p.price);
-    const priceTag  = parsed.price !== null
-      ? `<span class="vrow-price-tag">NT$${unitPrice} / 件</span>`
-      : '';
     return `
     <div class="variant-row">
-      <input type="checkbox"
-        class="vrow-check"
-        id="vchk-${i}"
-        data-idx="${i}"
-        data-name="${parsed.name}"
-        data-price="${unitPrice}"
+      <input type="checkbox" class="vrow-check" id="vchk-${i}"
+        data-idx="${i}" data-name="${parsed.name}" data-price="${unitPrice}"
         onchange="onVariantCheck(${i})">
       <label class="vrow-name" for="vchk-${i}">
         ${parsed.name}
-        ${priceTag}
+        <span class="vrow-price-tag">NT$${unitPrice} / 件</span>
       </label>
       <div class="vrow-qty">
-        <button class="vqty-btn" onclick="changeVariantQty(${i}, -1)">−</button>
+        <button class="vqty-btn" onclick="changeVariantQty(${i},-1)">−</button>
         <span class="vqty-val" id="vqty-${i}">0</span>
-        <button class="vqty-btn" onclick="changeVariantQty(${i}, 1)">+</button>
+        <button class="vqty-btn" onclick="changeVariantQty(${i},1)">+</button>
       </div>
       <span class="vrow-subtotal" id="vsub-${i}">NT$0</span>
     </div>`;
   }).join('');
 
-  if (variants.length === 0) {
-    listEl.innerHTML = '<div style="font-size:13px;color:var(--text-3);padding:8px 0">此商品無規格選項</div>';
-  }
-
   updateOrderTotal();
 }
 
-// ✅ 勾選 → 自動帶 qty=1；取消 → 清零
 function onVariantCheck(idx) {
-  const chk = document.getElementById(`vchk-${idx}`);
+  const chk   = document.getElementById(`vchk-${idx}`);
   const qtyEl = document.getElementById(`vqty-${idx}`);
-  if (chk.checked) {
-    if (Number(qtyEl.textContent) === 0) qtyEl.textContent = '1';
-  } else {
-    qtyEl.textContent = '0';
-  }
+  if (chk.checked && Number(qtyEl.textContent) === 0) qtyEl.textContent = '1';
+  if (!chk.checked) qtyEl.textContent = '0';
   updateOrderTotal();
 }
 
-// ✅ 按 ± 改數量 → 同步勾選狀態
 function changeVariantQty(idx, delta) {
-  const p = state.product;
-  const max = p ? (Number(p.max_qty) || 99) : 99;
+  const max   = Number(state.product?.max_qty) || 99;
   const qtyEl = document.getElementById(`vqty-${idx}`);
   const chk   = document.getElementById(`vchk-${idx}`);
-  let cur = Math.max(0, Math.min(max, Number(qtyEl.textContent) + delta));
+  let cur     = Math.max(0, Math.min(max, Number(qtyEl.textContent) + delta));
   qtyEl.textContent = cur;
-  chk.checked = cur > 0;
+  chk.checked       = cur > 0;
   updateOrderTotal();
 }
 
-// ── ✅ 收集已選規格（含各規格自己的價格）──────────────────────────────────
+// ── ✅ 收集已選規格（含各規格自己的 price）───────────────────────────────────
 function getSelectedVariants() {
   const p = state.product;
   if (!p) return [];
@@ -928,218 +810,163 @@ function getSelectedVariants() {
   }, []);
 }
 
-// ── ✅ 即時更新訂單金額（用各規格自己的單價計算）──────────────────────────
+// ── ✅ 即時更新金額（各規格自己的單價）───────────────────────────────────────
 function updateOrderTotal() {
   const p = state.product;
   if (!p) return;
-  const variants = p.variants || [];
   let grandTotal = 0;
-  const breakdownRows = [];
+  const rows = [];
 
-  variants.forEach((v, i) => {
+  (p.variants || []).forEach((v, i) => {
     const parsed    = parseVariant(v);
     const unitPrice = parsed.price !== null ? parsed.price : Number(p.price);
-    const chk  = document.getElementById(`vchk-${i}`);
-    const qty  = chk?.checked ? Number(document.getElementById(`vqty-${i}`)?.textContent || 0) : 0;
-    const sub  = unitPrice * qty;
-    const subEl = document.getElementById(`vsub-${i}`);
+    const chk       = document.getElementById(`vchk-${i}`);
+    const qty       = chk?.checked ? Number(document.getElementById(`vqty-${i}`)?.textContent || 0) : 0;
+    const sub       = unitPrice * qty;
+    const subEl     = document.getElementById(`vsub-${i}`);
     if (subEl) subEl.textContent = qty > 0 ? `NT$${sub}` : 'NT$0';
     if (qty > 0) {
-      breakdownRows.push(`
-        <div class="summary-row summary-indent">
-          <span>${parsed.name} × ${qty}</span>
-          <span>NT$${sub}</span>
-        </div>`);
+      rows.push(`<div class="summary-row summary-indent"><span>${parsed.name} × ${qty}</span><span>NT$${sub}</span></div>`);
       grandTotal += sub;
     }
   });
 
-  const breakdown = document.getElementById('s2-variant-breakdown');
+  const breakdown = document.getElementById('s1-variant-breakdown');
   if (breakdown) {
-    breakdown.innerHTML = breakdownRows.length
-      ? breakdownRows.join('')
+    breakdown.innerHTML = rows.length
+      ? rows.join('')
       : `<div style="font-size:12px;color:var(--text-3);padding:4px 0">尚未選擇規格</div>`;
   }
-  document.getElementById('s2-total').textContent = `NT$${grandTotal}`;
-}
-
-// ── ✅ 截止檢查 ────────────────────────────────────────────────────────────
-function joinGroup() {
-  const deadline = state.product?.deadline ? new Date(state.product.deadline) : null;
-  if (deadline && new Date() > deadline) {
-    showToast('此商品已截止收單，感謝您的關注 🙏');
-    return;
-  }
-  goTo('s2');
-}
-
-// ✅ 進入付款前驗證：至少選一規格，總數量 >= 1
-function proceedToPayment() {
-  const selected = getSelectedVariants();
-  const totalQty = selected.reduce((s, v) => s + v.qty, 0);
-  if (totalQty < 1) {
-    showToast('請至少勾選一項規格並填入數量 ⚠️');
-    return;
-  }
-  goTo('s3');
+  document.getElementById('s1-total').textContent = `NT$${grandTotal}`;
 }
 
 // ── 付款方式 ──────────────────────────────────────────────────────────────────
 function selectPayment(method) {
   state.payMethod = method;
-  document.querySelectorAll('.pay-option').forEach(el => el.classList.remove('selected'));
-  document.getElementById(`pay-${method}`).classList.add('selected');
-  const tBlock = document.getElementById('transfer-block');
-  tBlock.style.display = method === 'transfer' ? 'flex' : 'none';
-  tBlock.style.flexDirection = 'column';
-  tBlock.style.gap = '10px';
-  document.getElementById('linepay-block').style.display = method === 'line_pay' ? 'block' : 'none';
-  document.getElementById('onsite-block').style.display  = method === 'on_site'  ? 'block' : 'none';
-  document.getElementById('s3-btn').textContent = method === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
+  ['transfer','on_site','line_pay'].forEach(m => {
+    document.getElementById(`pay-${m}`)?.classList.toggle('selected', m === method);
+  });
 }
 
-function triggerUpload() { document.getElementById('file-input').click(); }
-
-function handleFileSelect(input) {
-  const file = input.files[0];
-  if (!file) return;
-  state.uploadedFile = file;
-  const reader = new FileReader();
-  reader.onload = e => {
-    state.uploadedBase64 = e.target.result.split(',')[1];
-    const area = document.getElementById('upload-area');
-    area.classList.add('uploaded');
-    document.getElementById('upload-label').textContent = `✅ ${file.name}`;
-  };
-  reader.readAsDataURL(file);
-}
-
-// ── ✅ 下單提交（金額以各規格自己單價計算）────────────────────────────────
+// ── ✅ 確認下單 → 提交 → 成功 Modal ─────────────────────────────────────────
 async function submitOrder() {
-  const btn = document.getElementById('s3-btn');
+  const selected  = getSelectedVariants();
+  const totalQty  = selected.reduce((s, v) => s + v.qty, 0);
+  if (totalQty < 1) { showToast('請至少勾選一項規格並填入數量 ⚠️'); return; }
+
+  const btn = document.getElementById('s1-btn');
   btn.disabled    = true;
   btn.textContent = '送出中…';
 
   try {
-    const p        = state.product;
-    const selected = getSelectedVariants();
-    const totalQty = selected.reduce((s, v) => s + v.qty, 0);
-    // ✅ 總金額 = 各規格 qty × 各自 price 加總
-    const total    = selected.reduce((s, v) => s + v.qty * v.price, 0);
-
-    // 顯示格式：酪梨×2, 百香果×1
+    const p            = state.product;
+    const total        = selected.reduce((s, v) => s + v.qty * v.price, 0);
     const variantLabel = selected.map(v => `${v.name}×${v.qty}`).join(', ');
 
-    const orderPayload = {
+    const resp = await apiPost({
       action:     'create_order',
       productId:  p.product_id,
       memberName: state.displayName,
       variant:    variantLabel,
       qty:        totalQty,
-      total:      total,            // ✅ 傳正確金額給後端
+      total:      total,
       payMethod:  state.payMethod,
       notes:      document.getElementById('remarks').value,
-    };
-
-    const resp = await apiPost(orderPayload);
+    });
 
     if (!resp.ok) {
       showToast(resp.error || '下單失敗，請稍後再試');
       return;
     }
 
-    // ── 重複訂購警示 ────────────────────────────────────────
+    // ── 重複訂購警示 ──────────────────────────────────────
     if (resp.data?.warning === 'DUPLICATE_ORDER') {
-      const ex  = resp.data.existingOrder;
-      const msg =
-        `⚠️ 您已訂購過此商品！\n` +
-        `訂單編號：${ex.order_id}\n` +
-        `規格：${ex.variant}　金額：NT$${ex.total}\n\n` +
-        `確定要再次訂購嗎？`;
-
-      btn.disabled    = false;
-      btn.textContent = state.payMethod === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
-
-      if (!confirm(msg)) {
+      const ex = resp.data.existingOrder;
+      if (!confirm(`⚠️ 您已訂購過！\n訂單：${ex.order_id}\n規格：${ex.variant}\n確定再次訂購？`)) {
         liff.closeWindow();
         return;
       }
-
-      btn.disabled    = true;
-      btn.textContent = '送出中…';
-      const resp2 = await apiPost({ ...orderPayload, allowDuplicate: true });
+      const resp2 = await apiPost({
+        action: 'create_order', productId: p.product_id, memberName: state.displayName,
+        variant: variantLabel, qty: totalQty, total, payMethod: state.payMethod,
+        notes: document.getElementById('remarks').value, allowDuplicate: true,
+      });
       if (!resp2.ok) { showToast(resp2.error || '下單失敗'); return; }
-
       state.currentOrderId = resp2.data.orderId;
-      if (state.payMethod === 'transfer' && state.uploadedBase64) {
-        await apiPost({ action: 'submit_proof', orderId: resp2.data.orderId,
-          screenshotBase64: state.uploadedBase64, fileName: state.uploadedFile?.name || 'receipt.jpg',
-          transferRef: document.getElementById('transfer-ref').value });
-      }
-      renderSuccessScreen(resp2.data.orderId, selected, total);
-      goTo('s4');
+      openSuccessModal(resp2.data.orderId, selected, total);
       return;
     }
-    // ──────────────────────────────────────────────────────
 
     state.currentOrderId = resp.data.orderId;
-
-    if (state.payMethod === 'transfer' && state.uploadedBase64) {
-      await apiPost({ action: 'submit_proof', orderId: resp.data.orderId,
-        screenshotBase64: state.uploadedBase64, fileName: state.uploadedFile?.name || 'receipt.jpg',
-        transferRef: document.getElementById('transfer-ref').value });
-    }
-
-    renderSuccessScreen(resp.data.orderId, selected, total);
-    goTo('s4');
+    openSuccessModal(resp.data.orderId, selected, total);
 
   } catch (err) {
     console.error('submitOrder error:', err);
     showToast('網路錯誤，請稍後再試');
   } finally {
     btn.disabled    = false;
-    btn.textContent = state.payMethod === 'line_pay' ? '前往 LINE Pay 付款' : '確認下單';
+    btn.textContent = '確認下單';
   }
 }
 
-// ── ✅ 成功畫面（各規格用自己的 price）───────────────────────────────────
-function renderSuccessScreen(orderId, selected, total) {
+// ── ✅ 打開成功 Modal（彈出頁面）────────────────────────────────────────────
+function openSuccessModal(orderId, selected, total) {
   const p = state.product;
+
   document.getElementById('receipt-id').textContent      = orderId;
   document.getElementById('receipt-product').textContent = p?.name || '-';
   document.getElementById('receipt-pay').textContent     =
-    { line_pay:'LINE Pay', transfer:'銀行轉帳', on_site:'現場繳款' }[state.payMethod];
+    { line_pay: 'LINE Pay', transfer: '銀行轉帳', on_site: '現場繳款' }[state.payMethod];
   document.getElementById('receipt-total').textContent   = `NT$${total}`;
 
-  // ✅ 每規格一行，金額 = qty × 該規格自己的 price
-  const vrRows = document.getElementById('receipt-variant-rows');
-  if (vrRows && selected?.length) {
-    vrRows.innerHTML = selected.map(v =>
-      `<div class="receipt-row">
-        <span>${v.name}</span>
-        <span style="color:var(--text)">× ${v.qty}　NT$${v.qty * v.price}</span>
+  // 各規格明細行
+  document.getElementById('receipt-variant-rows').innerHTML =
+    selected.map(v =>
+      `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-2)">${v.name}</span>
+        <span>× ${v.qty}　NT$${v.qty * v.price}</span>
       </div>`
     ).join('');
-  }
 
-  const hint = {
-    transfer: `請完成轉帳後，截圖上傳至此頁面（已上傳）或聯繫團主。\n匯款帳號：${document.getElementById('bank-account')?.textContent || ''}`,
-    line_pay: '付款連結已傳送至您的 LINE，請點擊完成付款。',
-    on_site:  '請於取貨當日準備現金，我們會在出貨時通知您。',
-  }[state.payMethod];
-  document.getElementById('s4-pay-hint').textContent = hint;
+  // 付款提示
+  const hints = {
+    transfer: '請完成轉帳後，截圖傳給團主核帳。',
+    line_pay: '請點擊 LINE 中的付款連結完成付款。',
+    on_site:  '請於取貨當日準備現金，攜帶正確金額，我們會在出貨時通知您。',
+  };
+  document.getElementById('receipt-pay-hint').textContent = hints[state.payMethod] || '';
 
-  loadTrackingScreen(orderId);
+  // 顯示 modal
+  document.getElementById('success-modal').classList.add('open');
+
+  // 預載訂單追蹤
+  loadTrackingData(orderId);
 }
 
-// ── 訂單追蹤 ──────────────────────────────────────────────────────────────────
-async function loadTrackingScreen(orderId) {
+// ── ✅ 回團購群組頁 → liff.closeWindow() ─────────────────────────────────────
+function goToGroup() {
+  try { liff.closeWindow(); } catch (e) { console.warn('liff.closeWindow failed', e); }
+}
+
+// ── 查看訂單追蹤 ──────────────────────────────────────────────────────────────
+function goToTracking() {
+  document.getElementById('success-modal').classList.remove('open');
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('s5').classList.add('active');
+}
+
+function closeTracking() {
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById('s1').classList.add('active');
+}
+
+async function loadTrackingData(orderId) {
   let order;
   try {
     const resp = await apiGet('order', { oid: orderId });
     if (!resp.ok) return;
     order = resp.data;
-  } catch (e) { return; }
+  } catch { return; }
 
   const statusMap = {
     pending:   { label: '⏳ 待付款', cls: 'badge-amber', step: 0 },
@@ -1175,24 +1002,6 @@ async function loadTrackingScreen(orderId) {
       <div class="tl-desc">${cls ? s.desc : ''}</div>
     </div>`;
   }).join('');
-
-  document.getElementById('cancel-hint').style.display =
-    order.pay_status === 'pending' ? 'block' : 'none';
-}
-
-async function cancelOrder() {
-  if (!confirm('確定要取消訂單嗎？')) return;
-  try {
-    const resp = await apiPost({ action: 'cancel_order', orderId: state.currentOrderId });
-    if (resp.ok) { showToast('訂單已取消'); setTimeout(() => goTo('s1'), 1500); }
-    else showToast(resp.error || '取消失敗');
-  } catch (e) { showToast('網路錯誤'); }
-}
-
-// ── 畫面切換 ──────────────────────────────────────────────────────────────────
-function goTo(screenId) {
-  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-  document.getElementById(screenId).classList.add('active');
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -1205,58 +1014,50 @@ function showToast(msg) {
   _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ── Mock（開發用）─────────────────────────────────────────────────────────────
+// ── Mock 資料（?mock=1）────────────────────────────────────────────────────────
 function loadMockData() {
   state.displayName = '測試使用者';
   state.lineUserId  = 'U_mock_dev';
   state.product = {
     product_id:     'P001',
-    name:           '手工果凍飲',
-    price:          100,               // 基礎單價（備用，若規格無括號時用此）
-    original_price: 150,
-    deadline:       new Date(Date.now() + 3 * 86400000 + 3600000 * 14).toISOString(),
+    name:           '（一日快閃）友善種植安全青菜🥬（今天訂明天10/6取）',
+    price:          100,
+    original_price: 0,
+    deadline:       new Date(Date.now() + 3 * 86400000 + 3600000 * 4).toISOString(),
     max_qty:        5,
-    unit:           '杯',
-    // ✅ 新格式：名稱(價格)，各規格價格不同
-    variants:       ['酪梨(150)', '百香果(100)', '抹茶(120)'],
-    description:    '純天然手工製作，每日限量',
+    unit:           '份',
+    variants:       ['酪梨(150)', '百香果(100)', '珍珠芭樂(100)', '甜心芥藍菜(50)'],
+    description:    '純天然手工種植，每日限量供應，請把握機會！',
     status:         'open',
-    totalOrders:    12,
-    totalQty:       28,
+    totalOrders:    8,
+    totalQty:       21,
   };
-  document.getElementById('bank-code').textContent    = '808';
-  document.getElementById('bank-account').textContent = '0001234567890';
-  document.getElementById('bank-name').textContent    = '王小明';
-
-  renderProduct(state.product);
-  selectPayment('transfer');
 
   window.apiPost = async (body) => {
     await new Promise(r => setTimeout(r, 800));
     if (body.action === 'create_order') {
-      const oid = `ORD-${Date.now().toString().slice(-8)}`;
+      const dt  = new Date();
+      const oid = `ORD-${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}-${String(Math.floor(Math.random()*9000)+1000)}`;
       return { ok: true, data: { orderId: oid } };
     }
     return { ok: true, data: {} };
   };
   window.apiGet = async (action, params) => {
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 300));
     if (action === 'order') return { ok: true, data: {
-      order_id:   state.currentOrderId || 'ORD-MOCK',
-      variant:    '酪梨×2, 百香果×1',
-      qty:        3,
-      total:      400,   // 酪梨150×2 + 百香果100×1
-      pay_status: 'pending',
+      order_id: state.currentOrderId || 'ORD-MOCK',
+      variant: '百香果×3, 甜心芥藍菜×1',
+      qty: 4, total: 350, pay_status: 'pending',
     }};
     return { ok: true, data: [] };
   };
 
+  renderProduct(state.product);
   document.getElementById('loading').style.display = 'none';
 }
 
 // ── 啟動 ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  // 若 URL 有 ?mock=1，直接用 mock 資料跳過 LIFF init
   if (new URLSearchParams(location.search).get('mock') === '1') {
     loadMockData();
   } else {
