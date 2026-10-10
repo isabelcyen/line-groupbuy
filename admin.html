@@ -699,13 +699,28 @@ async function loadProducts() {
 }
 
 function pid(p)    { return p.id || p.productId || p.product_id || ''; }
+function jsonUnwrap(v) {
+  // 若是 JSON array 字串則 parse，並遞迴展開巢狀 JSON 字串
+  if (typeof v === 'string' && v.trim().startsWith('[')) {
+    try { v = JSON.parse(v); } catch(e) { return v; }
+  }
+  if (Array.isArray(v)) {
+    return v.flatMap(item => {
+      if (typeof item === 'string' && item.trim().startsWith('[')) {
+        try { return JSON.parse(item); } catch(e) { return [item]; }
+      }
+      return [item];
+    });
+  }
+  return v;
+}
 function varStr(p) {
-  const v = p.variants || p.variant || '';
-  return Array.isArray(v) ? v.join(',') : v;
+  const v = jsonUnwrap(p.variants || p.variant || '');
+  return Array.isArray(v) ? v.join(',') : String(v);
 }
 function pkgStr(p) {
-  const v = p.packaging || '標準包裝';
-  return Array.isArray(v) ? v.join(',') : v;
+  const v = jsonUnwrap(p.packaging || '標準包裝');
+  return Array.isArray(v) ? v.join(',') : String(v);
 }
 
 function renderManageTable() {
