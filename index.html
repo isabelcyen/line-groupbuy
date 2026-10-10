@@ -105,8 +105,9 @@ button { cursor: pointer; border: none; font-family: inherit; }
   padding-bottom: 100px;
 }
 
-/* ── 商品主視覺 ───────────────────────────────────────────── */
+/* ── 商品主視覺（已移除）─────────────────────────────────── */
 .product-hero {
+  display: none;
   width: 100%;
   aspect-ratio: 16/9;
   background: linear-gradient(135deg, #06C755 0%, #1a73e8 100%);
@@ -412,14 +413,6 @@ textarea.remark-input:focus { border-color: var(--green); }
   <!-- ========== 主畫面（商品詳情 + 規格選擇 + 確認下單，合併成一頁）========== -->
   <div class="screen active" id="s1">
 
-    <!-- 商品主視覺 -->
-    <div class="product-hero" id="s1-hero">🎁</div>
-
-    <!-- 商品資訊 -->
-    <div class="product-info" id="s1-product-info">
-      <div id="s1-loading-text" style="text-align:center;padding:24px 0;color:var(--text-3)">載入商品中…</div>
-    </div>
-
     <!-- Stats -->
     <div class="stats-strip" id="s1-stats" style="display:none">
       <div class="stat-cell">
@@ -670,25 +663,7 @@ function renderProduct(p) {
   const discountPct = p.original_price > p.price
     ? Math.round((1 - p.price / p.original_price) * 100) : 0;
 
-  // ── 商品圖片 ──────────────────────────────────────────────
-  const heroEl = document.getElementById('s1-hero');
-  if (p.image_url) {
-    const firstUrl = p.image_url.split(',')[0].trim();
-    heroEl.innerHTML = `<img src="${firstUrl}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover">`;
-  }
-
-  // ── 商品資訊 ──────────────────────────────────────────────
-  document.getElementById('s1-product-info').innerHTML = `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-      <span class="badge badge-green">開團中</span>
-      ${discountPct > 0 ? `<span class="badge badge-red">省 ${discountPct}%</span>` : ''}
-    </div>
-    <div class="product-name">${p.name}</div>
-    ${p.description ? `<div class="product-desc">${p.description}</div>` : ''}
-    <div class="meta-row">
-      <span>📅 截止 <strong>${deadlineStr}</strong></span>
-    </div>
-  `;
+  // （商品圖片與資訊區已移除，LINE 群組貼文已有）
 
   // ── Stats ────────────────────────────────────────────────
   document.getElementById('stat-orders').textContent = p.totalOrders ?? 0;
