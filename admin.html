@@ -290,7 +290,7 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
       <!-- ✅ 多圖上傳（最多 10 張） -->
       <div class="form-group">
         <label class="field-label">商品圖片（最多 10 張）</label>
-        <label class="file-upload-btn" for="c-image-file">📷 選擇圖片（可多選）</label>
+        <label class="file-upload-btn" for="c-image-file">📷 選擇圖片</label>
         <input type="file" id="c-image-file" accept="image/*" multiple style="display:none"
                onchange="handleCreateImageSelect(this)">
         <input type="hidden" id="c-image-url">
@@ -298,29 +298,6 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
           <div class="img-grid" id="c-img-grid"></div>
           <div id="c-img-filename" style="font-size:.8rem;color:var(--muted)"></div>
           <div id="c-desc-preview" style="margin-top:8px;font-size:.85rem;color:var(--muted);white-space:pre-wrap"></div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">單價（元）<span class="req">*</span></label>
-          <input type="number" id="c-price" placeholder="300" min="0">
-        </div>
-        <div class="form-group">
-          <label class="field-label">單位</label>
-          <input type="text" id="c-unit" value="份">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">最低起訂量</label>
-          <input type="number" id="c-minqty" value="1" min="1">
-        </div>
-        <div class="form-group">
-          <label class="field-label">每人限購量</label>
-          <input type="number" id="c-maxqty" value="99" min="1">
-          <p class="hint">99 = 不限制</p>
         </div>
       </div>
 
@@ -410,34 +387,11 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
         <div class="img-grid" id="e-img-grid"></div>
         <div id="desc-preview" style="margin-top:8px;font-size:.85rem;color:var(--muted);white-space:pre-wrap"></div>
       </div>
-      <label class="file-upload-btn" for="e-image-file" style="margin-top:8px">📷 選擇圖片（可多選）</label>
+      <label class="file-upload-btn" for="e-image-file" style="margin-top:8px">📷 選擇圖片</label>
       <input type="file" id="e-image-file" accept="image/*" multiple style="display:none"
              onchange="handleEditImageSelect(this)">
       <input type="hidden" id="e-image-url">
       <div id="e-img-filename" style="margin-top:6px;font-size:.8rem;color:var(--muted)"></div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label class="field-label">單價（元）<span class="req">*</span></label>
-        <input type="number" id="e-price" min="0">
-      </div>
-      <div class="form-group">
-        <label class="field-label">單位</label>
-        <input type="text" id="e-unit">
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label class="field-label">最低起訂量</label>
-        <input type="number" id="e-minqty" min="1">
-      </div>
-      <div class="form-group">
-        <label class="field-label">每人限購量</label>
-        <input type="number" id="e-maxqty" min="1">
-        <p class="hint">99 = 不限制</p>
-      </div>
     </div>
 
     <!-- ✅ 截止日期 + 截止時間 並排 -->
@@ -677,10 +631,8 @@ function clearCreate() {
 
 async function createProduct() {
   const name     = document.getElementById('c-name').value.trim();
-  const price    = document.getElementById('c-price').value;
   const deadline = document.getElementById('c-deadline').value;
   if (!name)     { toast('請填寫商品名稱'); return; }
-  if (!price)    { toast('請填寫單價');     return; }
   if (!deadline) { toast('請選擇截止日期'); return; }
 
   const deadlineTime = document.getElementById('c-deadlineTime').value || '23:59';
@@ -716,10 +668,10 @@ async function createProduct() {
       name,
       description: document.getElementById('c-desc').value.trim(),
       imageUrl,
-      price:       Number(price),
-      unit:        document.getElementById('c-unit').value || '份',
-      minQty:      Number(document.getElementById('c-minqty').value) || 1,
-      maxQty:      Number(document.getElementById('c-maxqty').value) || 99,
+      price:       0,
+      unit:        '份',
+      minQty:      1,
+      maxQty:      99,
       deadline:    deadlineISO,
       variants:    document.getElementById('c-variants').value,
       packaging:   document.getElementById('c-packaging').value || '標準包裝'
@@ -816,10 +768,6 @@ function fillModal(p, isNew) {
   document.getElementById('e-isNew').value     = isNew ? '1' : '0';
   document.getElementById('e-name').value      = p.name || '';
   document.getElementById('e-desc').value      = p.description || '';
-  document.getElementById('e-price').value     = p.price || '';
-  document.getElementById('e-unit').value      = p.unit || '份';
-  document.getElementById('e-minqty').value    = p.minQty || p.min_qty || 1;
-  document.getElementById('e-maxqty').value    = p.maxQty || p.max_qty || 99;
   document.getElementById('e-variants').value  = varStr(p);
   document.getElementById('e-packaging').value = pkgStr(p);
   document.getElementById('e-image-file').value = '';
@@ -847,9 +795,8 @@ function closeModal() { document.getElementById('editModal').hidden = true; }
 
 async function saveEdit() {
   const name     = document.getElementById('e-name').value.trim();
-  const price    = document.getElementById('e-price').value;
   const deadline = document.getElementById('e-deadline').value;
-  if (!name || !price || !deadline) { toast('請填寫必填欄位'); return; }
+  if (!name || !deadline) { toast('請填寫必填欄位'); return; }
 
   const isNew     = document.getElementById('e-isNew').value === '1';
   const productId = document.getElementById('e-productId').value;
@@ -862,10 +809,10 @@ async function saveEdit() {
     name,
     description: document.getElementById('e-desc').value.trim(),
     imageUrl:    document.getElementById('e-image-url').value.trim(),
-    price:       Number(price),
-    unit:        document.getElementById('e-unit').value || '份',
-    minQty:      Number(document.getElementById('e-minqty').value) || 1,
-    maxQty:      Number(document.getElementById('e-maxqty').value) || 99,
+    price:       0,
+    unit:        '份',
+    minQty:      1,
+    maxQty:      99,
     deadline:    deadlineISO,
     variants:    document.getElementById('e-variants').value,
     packaging:   document.getElementById('e-packaging').value || '標準包裝'
