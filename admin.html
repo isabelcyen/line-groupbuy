@@ -289,7 +289,7 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
 
       <!-- ✅ 多圖上傳（最多 10 張） -->
       <div class="form-group">
-        <label class="field-label">商品圖片（最多 10 張）</label>
+        <label class="field-label">商品圖片（最多 5 張）</label>
         <label class="file-upload-btn" for="c-image-file">📷 選擇圖片</label>
         <input type="file" id="c-image-file" accept="image/*" multiple style="display:none"
                onchange="handleCreateImageSelect(this)">
@@ -382,7 +382,7 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
 
     <!-- ✅ 多圖上傳（最多 10 張） -->
     <div class="form-group">
-      <label class="field-label">商品圖片（最多 10 張）</label>
+      <label class="field-label">商品圖片（最多 5 張）</label>
       <div id="img-preview-wrap" style="margin-top:6px;display:none">
         <div class="img-grid" id="e-img-grid"></div>
         <div id="desc-preview" style="margin-top:8px;font-size:.85rem;color:var(--muted);white-space:pre-wrap"></div>
@@ -565,23 +565,27 @@ function buildExistingImgGrid(urlStr, gridId) {
   });
 }
 
+/* 累積選取的圖片陣列（跨多次選擇） */
+let createFileList = [];
+let editFileList   = [];
+
 /* ── 建立表單圖片選擇處理 ── */
 function handleCreateImageSelect(input) {
-  const files = Array.from(input.files || []);
+  const newFiles = Array.from(input.files || []);
+  input.value = ''; // 清空 input，讓下次選同一張也能觸發 change
+  if (!newFiles.length) return;
+
+  const combined = [...createFileList, ...newFiles];
+  if (combined.length > 5) {
+    toast(`❌ 最多 5 張，目前已有 ${createFileList.length} 張，本次選了 ${newFiles.length} 張`);
+    return;
+  }
+  createFileList = combined;
+
   const wrap = document.getElementById('c-img-preview-wrap');
-  if (!files.length) {
-    wrap.style.display = 'none';
-    document.getElementById('c-image-url').value = '';
-    return;
-  }
-  if (files.length > 10) {
-    toast('❌ 最多只能上傳 10 張圖片');
-    input.value = '';
-    return;
-  }
-  buildImgGrid(files, 'c-img-grid');
+  buildImgGrid(createFileList, 'c-img-grid');
   document.getElementById('c-img-filename').textContent =
-    `已選擇 ${files.length} 張圖片（送出時自動上傳）`;
+    `已選擇 ${createFileList.length} 張圖片（送出時自動上傳）`;
   document.getElementById('c-desc-preview').textContent =
     document.getElementById('c-desc').value.trim();
   wrap.style.display = 'block';
@@ -595,17 +599,21 @@ function syncCreateDescPreview() {
 
 /* ── 編輯 modal 圖片選擇處理 ── */
 function handleEditImageSelect(input) {
-  const files = Array.from(input.files || []);
-  if (!files.length) return;
-  if (files.length > 10) {
-    toast('❌ 最多只能上傳 10 張圖片');
-    input.value = '';
+  const newFiles = Array.from(input.files || []);
+  input.value = ''; // 清空 input，讓下次選同一張也能觸發 change
+  if (!newFiles.length) return;
+
+  const combined = [...editFileList, ...newFiles];
+  if (combined.length > 5) {
+    toast(`❌ 最多 5 張，目前已有 ${editFileList.length} 張，本次選了 ${newFiles.length} 張`);
     return;
   }
-  buildImgGrid(files, 'e-img-grid');
+  editFileList = combined;
+
+  buildImgGrid(editFileList, 'e-img-grid');
   document.getElementById('img-preview-wrap').style.display = 'block';
   document.getElementById('e-img-filename').textContent =
-    `已選擇 ${files.length} 張（送出後取代現有圖片）`;
+    `已選擇 ${editFileList.length} 張（送出後取代現有圖片）`;
   document.getElementById('desc-preview').textContent =
     document.getElementById('e-desc').value.trim();
 }
@@ -618,6 +626,7 @@ function clearCreate() {
     document.getElementById(id).value = '');
   document.getElementById('c-image-url').value  = '';
   document.getElementById('c-image-file').value = '';
+  createFileList = [];
   document.getElementById('c-img-preview-wrap').style.display = 'none';
   document.getElementById('c-img-grid').innerHTML = '';
   document.getElementById('c-img-filename').textContent = '';
@@ -643,8 +652,7 @@ async function createProduct() {
 
   try {
     let imageUrl = document.getElementById('c-image-url').value.trim();
-    const fileInput = document.getElementById('c-image-file');
-    const files = Array.from(fileInput.files || []);
+    const files = createFileList;
 
     if (files.length > 0) {
       const urls = [];
@@ -786,6 +794,7 @@ function fillModal(p, isNew) {
   document.getElementById('e-variants').value  = varStr(p);
   document.getElementById('e-packaging').value = pkgStr(p);
   document.getElementById('e-image-file').value = '';
+  editFileList = [];
   document.getElementById('e-img-filename').textContent = '';
 
   const { date, time } = splitDeadline(p.deadline || '');
@@ -837,9 +846,8 @@ async function saveEdit() {
   const btn = document.getElementById('editSaveBtn');
   btn.disabled = true; btn.textContent = '處理中…';
 
-  // ✅ 多圖上傳
-  const eFileInput = document.getElementById('e-image-file');
-  const eFiles = Array.from(eFileInput.files || []);
+  // ✅ 多圖上傳（使用累積陣列 editFileList）
+  const eFiles = editFileList;
   if (eFiles.length > 0) {
     const urls = [];
     for (let i = 0; i < eFiles.length; i++) {
