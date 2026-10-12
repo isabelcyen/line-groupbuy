@@ -311,6 +311,13 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
         <p class="hint">截止後系統自動鎖定，團員無法繼續下單</p>
       </div>
 
+      <!-- ✅ 數量截止 -->
+      <div class="form-group">
+        <label class="field-label">總數量上限（數量截止）</label>
+        <input type="number" id="c-quota" min="0" placeholder="0 = 不限數量" style="max-width:200px">
+        <p class="hint">累計訂購量達此上限後自動截止，設 0 或留空表示不限</p>
+      </div>
+
       <!-- ✅ 規格（價格） -->
       <div class="form-group">
         <label class="field-label">規格（價格）</label>
@@ -402,6 +409,13 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
         <input type="time" id="e-deadlineTime" value="23:59">
       </div>
       <p class="hint">截止後系統自動鎖定，團員無法繼續下單</p>
+    </div>
+
+    <!-- ✅ 數量截止 -->
+    <div class="form-group">
+      <label class="field-label">總數量上限（數量截止）</label>
+      <input type="number" id="e-quota" min="0" placeholder="0 = 不限數量" style="max-width:200px">
+      <p class="hint">累計訂購量達此上限後自動截止，設 0 或留空表示不限</p>
     </div>
 
     <!-- ✅ 規格（價格） -->
@@ -680,6 +694,7 @@ async function createProduct() {
       unit:        '份',
       minQty:      1,
       maxQty:      99,
+      quota:       Number(document.getElementById('c-quota').value) || 0,
       deadline:    deadlineISO,
       variants:    document.getElementById('c-variants').value,
       packaging:   document.getElementById('c-packaging').value || '標準包裝'
@@ -800,6 +815,7 @@ function fillModal(p, isNew) {
   const { date, time } = splitDeadline(p.deadline || '');
   document.getElementById('e-deadline').value     = date;
   document.getElementById('e-deadlineTime').value = time;
+  document.getElementById('e-quota').value        = Number(p.quota) || '';
 
   // 現有圖片預覽（支援逗號分隔多圖）
   const existingUrl = p.image_url || '';
@@ -837,6 +853,7 @@ async function saveEdit() {
     unit:        '份',
     minQty:      1,
     maxQty:      99,
+    quota:       Number(document.getElementById('e-quota').value) || 0,
     deadline:    deadlineISO,
     variants:    document.getElementById('e-variants').value,
     packaging:   document.getElementById('e-packaging').value || '標準包裝'
