@@ -421,7 +421,7 @@ textarea.remark-input:focus { border-color: var(--green); }
       </div>
       <div class="stat-cell">
         <div class="stat-val" id="stat-qty">0</div>
-        <div class="stat-lbl">已下單件數</div>
+        <div class="stat-lbl" id="stat-qty-lbl">已下單件數</div>
       </div>
       <div class="stat-cell">
         <div class="stat-val countdown-inline" id="stat-countdown">計算中</div>
@@ -667,11 +667,28 @@ function renderProduct(p) {
 
   // ── Stats ────────────────────────────────────────────────
   document.getElementById('stat-orders').textContent = p.totalOrders ?? 0;
-  document.getElementById('stat-qty').textContent    = p.totalQty    ?? 0;
-  document.getElementById('s1-stats').style.display  = 'grid';
+
+  // 有配額時顯示「剩餘可訂件數」，否則顯示「已下單件數」
+  const qtyEl     = document.getElementById('stat-qty');
+  const qtyLblEl  = document.getElementById('stat-qty-lbl');
+  const remaining = (p.quota > 0) ? (p.remainingQty ?? 0) : null;
+  if (remaining !== null) {
+    qtyEl.textContent    = remaining;
+    if (qtyLblEl) qtyLblEl.textContent = '剩餘可訂件數';
+    qtyEl.style.color    = remaining === 0 ? '#E84040' : (remaining <= 5 ? '#E88040' : '');
+  } else {
+    qtyEl.textContent    = p.totalQty ?? 0;
+    if (qtyLblEl) qtyLblEl.textContent = '已下單件數';
+    qtyEl.style.color    = '';
+  }
+  document.getElementById('s1-stats').style.display = 'grid';
+
+  // 額滿視同截止
+  const isSoldOut = remaining === 0;
+  const isClosed  = isExpired || isSoldOut;
 
   // ── 顯示規格等區塊 ───────────────────────────────────────
-  if (!isExpired) {
+  if (!isClosed) {
     document.getElementById('variant-card').style.display      = '';
     document.getElementById('order-summary-card').style.display = '';
     document.getElementById('pay-card').style.display           = '';
@@ -686,7 +703,10 @@ function renderProduct(p) {
 
   // ── 按鈕狀態 ──────────────────────────────────────────────
   const btn = document.getElementById('s1-btn');
-  if (isExpired) {
+  if (isSoldOut) {
+    btn.disabled    = true;
+    btn.textContent = '🚫 已額滿';
+  } else if (isExpired) {
     btn.disabled    = true;
     btn.textContent = '⛔ 已截止收單';
   } else {
