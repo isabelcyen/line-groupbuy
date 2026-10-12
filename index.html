@@ -705,10 +705,10 @@ function renderProduct(p) {
   const btn = document.getElementById('s1-btn');
   if (isSoldOut) {
     btn.disabled    = true;
-    btn.textContent = '🚫 已額滿';
+    btn.textContent = '⛔ 已截止（額滿）';
   } else if (isExpired) {
     btn.disabled    = true;
-    btn.textContent = '⛔ 已截止收單';
+    btn.textContent = '⛔ 已截止（逾期）';
   } else {
     btn.disabled    = false;
     btn.textContent = '確認下單';
@@ -726,7 +726,7 @@ function startCountdown(deadline) {
       const btn = document.getElementById('s1-btn');
       if (btn && !btn.disabled) {
         btn.disabled    = true;
-        btn.textContent = '⛔ 已截止收單';
+        btn.textContent = '⛔ 已截止（逾期）';
       }
       return;
     }
