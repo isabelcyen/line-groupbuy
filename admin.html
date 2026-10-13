@@ -471,7 +471,8 @@ async function api(body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...body, adminSecret: secret })
   });
-  return r.json();
+  try { return await r.json(); }
+  catch { return { ok: false, _timeout: true }; }
 }
 
 /* ══════════════════════════════════
@@ -686,8 +687,9 @@ async function createProduct() {
       packaging:   document.getElementById('c-packaging').value || '標準包裝'
     });
     if (d.ok) { toast('✅ 開團成功！'); clearCreate(); }
+    else if (d._timeout) { clearCreate(); toast('⚠️ 回應逾時，若群組已收到開團通知則開團成功'); }
     else      { toast('❌ ' + (d.error || '失敗')); }
-  } catch { toast('❌ 網路錯誤'); }
+  } catch { clearCreate(); toast('⚠️ 網路逾時，請確認群組是否已收到開團通知'); }
   btn.disabled = false; btn.textContent = '🚀 開始揪團！';
 }
 
