@@ -622,21 +622,25 @@ function handleEditImageSelect(input) {
 /* ══════════════════════════════════
    開新團
 ══════════════════════════════════ */
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
 function clearCreate() {
-  ['c-name','c-desc','c-price','c-variants'].forEach(id =>
-    document.getElementById(id).value = '');
-  document.getElementById('c-image-url').value  = '';
-  document.getElementById('c-image-file').value = '';
+  ['c-name','c-desc','c-variants'].forEach(id => setVal(id, ''));
+  setVal('c-image-url', '');
+  const fi = document.getElementById('c-image-file');
+  if (fi) fi.value = '';
   createFileList = [];
-  document.getElementById('c-img-preview-wrap').style.display = 'none';
-  document.getElementById('c-img-grid').innerHTML = '';
-  document.getElementById('c-img-filename').textContent = '';
-  document.getElementById('c-unit').value         = '份';
-  document.getElementById('c-minqty').value       = '1';
-  document.getElementById('c-maxqty').value       = '99';
-  document.getElementById('c-deadline').value     = '';
-  document.getElementById('c-deadlineTime').value = '23:59';
-  document.getElementById('c-packaging').value    = '標準包裝';
+  const pw = document.getElementById('c-img-preview-wrap');
+  if (pw) pw.style.display = 'none';
+  const ig = document.getElementById('c-img-grid');
+  if (ig) ig.innerHTML = '';
+  const fn = document.getElementById('c-img-filename');
+  if (fn) fn.textContent = '';
+  setVal('c-deadline', '');
+  setVal('c-deadlineTime', '23:59');
+  setVal('c-packaging', '標準包裝');
 }
 
 async function createProduct() {
@@ -690,7 +694,7 @@ async function createProduct() {
     else if (d._timeout) { clearCreate(); toast('⚠️ 回應逾時，若群組已收到開團通知則開團成功'); }
     else      { toast('❌ ' + (d.error || '失敗')); }
   } catch { clearCreate(); toast('⚠️ 網路逾時，請確認群組是否已收到開團通知'); }
-  btn.disabled = false; btn.textContent = '🚀 開始揪團！';
+  finally  { btn.disabled = false; btn.textContent = '🚀 開始揪團！'; }
 }
 
 /* ══════════════════════════════════
