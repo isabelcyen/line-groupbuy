@@ -327,6 +327,18 @@ tr.clickable:hover td { background: rgba(6,199,85,.06); }
       <button class="btn btn-primary btn-block" id="createBtn" onclick="createProduct()">
         🚀 開始揪團！
       </button>
+      <!-- 開團成功但通知失敗時顯示 -->
+      <div id="notify-retry-wrap" style="display:none;margin-top:12px;">
+        <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;font-size:13px;color:#795548;">
+          ⚠️ 開團成功，但 LINE 群組通知未能送出。<br>
+          <span id="notify-error-msg" style="font-size:12px;color:#c62828;word-break:break-all;"></span>
+        </div>
+        <button class="btn btn-block" id="resendBtn"
+          style="margin-top:8px;background:#06C755;color:#fff;border:none;"
+          onclick="resendAnnounce()">
+          📢 重新發送群組通知
+        </button>
+      </div>
     </div>
   </div>
 
@@ -568,6 +580,7 @@ function buildExistingImgGrid(urlStr, gridId) {
 
 /* 累積選取的圖片陣列（跨多次選擇） */
 let createFileList = [];
+let lastNotifyProductId = null;
 let editFileList   = [];
 
 /* ── 建立表單圖片選擇處理 ── */
@@ -622,6 +635,22 @@ function handleEditImageSelect(input) {
 /* ══════════════════════════════════
    開新團
 ══════════════════════════════════ */
+async function resendAnnounce() {
+  if (!lastNotifyProductId) { toast('找不到商品 ID'); return; }
+  const btn = document.getElementById('resendBtn');
+  btn.disabled = true; btn.textContent = '發送中…';
+  try {
+    const d = await api({ action: 'announce_product', productId: lastNotifyProductId });
+    if (d.ok) {
+      toast('✅ 群組通知已發送！');
+      document.getElementById('notify-retry-wrap').style.display = 'none';
+    } else {
+      toast('❌ ' + (d.error || '通知失敗'));
+    }
+  } catch { toast('❌ 網路錯誤'); }
+  finally { btn.disabled = false; btn.textContent = '📢 重新發送群組通知'; }
+}
+
 function setVal(id, val) {
   const el = document.getElementById(id);
   if (el) el.value = val;
@@ -690,8 +719,18 @@ async function createProduct() {
       variants:    document.getElementById('c-variants').value,
       packaging:   document.getElementById('c-packaging').value || '標準包裝'
     });
-    if (d.ok) { toast('✅ 開團成功！'); clearCreate(); }
-    else if (d._timeout) { clearCreate(); toast('⚠️ 回應逾時，若群組已收到開團通知則開團成功'); }
+    if (d.ok) {
+      clearCreate();
+      if (d.notifyError) {
+        toast('✅ 開團成功（通知未送出）');
+        lastNotifyProductId = d.productId;
+        document.getElementById('notify-error-msg').textContent = d.notifyError;
+        document.getElementById('notify-retry-wrap').style.display = '';
+      } else {
+        toast('✅ 開團成功！');
+        document.getElementById('notify-retry-wrap').style.display = 'none';
+      }
+    } else if (d._timeout) { clearCreate(); toast('⚠️ 回應逾時，若群組已收到開團通知則開團成功'); }
     else      { toast('❌ ' + (d.error || '失敗')); }
   } catch { clearCreate(); toast('⚠️ 網路逾時，請確認群組是否已收到開團通知'); }
   finally  { btn.disabled = false; btn.textContent = '🚀 開始揪團！'; }
