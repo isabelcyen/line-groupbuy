@@ -208,6 +208,17 @@ button { cursor: pointer; border: none; font-family: inherit; }
 }
 .vqty-btn:hover:not(:disabled) { background: #e6f7ed; border-color: var(--green); color: var(--green-dark); }
 .vqty-val { font-size: 15px; font-weight: 700; min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+/* ── 規格庫存狀態 ─────────────────────────────────────────── */
+.variant-soldout { opacity: 0.55; }
+.variant-soldout .vrow-check { cursor: not-allowed; }
+.vrow-remain {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.vrow-remain.remain-low  { color: var(--amber); font-weight: 600; }
+.vrow-remain.remain-zero { color: var(--red);   font-weight: 700; }
 
 /* ── 訂單摘要 ─────────────────────────────────────────────── */
 .order-summary {
@@ -604,9 +615,10 @@ function formatDate(isoStr) {
 // ── ✅ 解析「名稱(價格)」格式 ────────────────────────────────────────────────
 function parseVariant(str) {
   const s = typeof str === 'object' && str !== null ? (str.name || '') : String(str);
-  const m = s.match(/^(.+?)\((\d+(?:\.\d+)?)\)$/);
-  if (m) return { name: m[1].trim(), price: Number(m[2]) };
-  return { name: s.trim(), price: null };
+  // 支援 "名稱(價格)" 和 "名稱(價格/限量)"
+  const m = s.match(/^(.+?)\((\d+(?:\.\d+)?)(?:\/(\d+))?\)$/);
+  if (m) return { name: m[1].trim(), price: Number(m[2]), quota: m[3] ? Number(m[3]) : 0 };
+  return { name: s.trim(), price: null, quota: 0 };
 }
 
 // ── 初始化 ────────────────────────────────────────────────────────────────────
@@ -659,7 +671,8 @@ async function loadProduct(pid) {
 function renderProduct(p) {
   const deadline    = new Date(p.deadline);
   const deadlineStr = formatDate(p.deadline);
-  const isExpired   = new Date() > deadline;
+  const isClosed_status = p.status === 'closed';
+  const isExpired   = new Date() > deadline || isClosed_status;
   const discountPct = p.original_price > p.price
     ? Math.round((1 - p.price / p.original_price) * 100) : 0;
 
@@ -706,6 +719,9 @@ function renderProduct(p) {
   if (isSoldOut) {
     btn.disabled    = true;
     btn.textContent = '⛔ 已截止（額滿）';
+  } else if (isClosed_status) {
+    btn.disabled    = true;
+    btn.textContent = '⛔ 此團已結束';
   } else if (isExpired) {
     btn.disabled    = true;
     btn.textContent = '⛔ 已截止（逾期）';
@@ -743,26 +759,46 @@ function startCountdown(deadline) {
 
 // ── ✅ 規格列渲染（含各規格價格）────────────────────────────────────────────
 function fillVariants(p) {
-  const maxQty  = Number(p.max_qty) || 99;
+  const maxQty       = Number(p.max_qty) || 99;
+  const variantTotals = p.variantTotals || {};
   document.getElementById('max-qty-label').textContent = maxQty;
 
   const listEl = document.getElementById('variant-list');
   listEl.innerHTML = (p.variants || []).map((v, i) => {
     const parsed    = parseVariant(v);
     const unitPrice = parsed.price !== null ? parsed.price : Number(p.price);
+    const vQuota    = parsed.quota;                              // 0 = 不限
+    const vSold     = variantTotals[parsed.name] || 0;
+    const vRemain   = vQuota > 0 ? Math.max(0, vQuota - vSold) : null; // null = 不限
+    const soldOut   = vRemain === 0;
+
+    // 剩餘標籤
+    let remainBadge = '';
+    if (vQuota > 0) {
+      if (soldOut) {
+        remainBadge = `<span class="vrow-remain remain-zero">已售完</span>`;
+      } else if (vRemain <= 5) {
+        remainBadge = `<span class="vrow-remain remain-low">剩 ${vRemain} 件</span>`;
+      } else {
+        remainBadge = `<span class="vrow-remain">剩 ${vRemain} 件</span>`;
+      }
+    }
+
     return `
-    <div class="variant-row">
+    <div class="variant-row${soldOut ? ' variant-soldout' : ''}">
       <input type="checkbox" class="vrow-check" id="vchk-${i}"
         data-idx="${i}" data-name="${parsed.name}" data-price="${unitPrice}"
-        onchange="onVariantCheck(${i})">
+        data-remain="${vRemain ?? 9999}"
+        onchange="onVariantCheck(${i})" ${soldOut ? 'disabled' : ''}>
       <label class="vrow-name" for="vchk-${i}">
         ${parsed.name}
         <span class="vrow-price-tag">NT$${unitPrice} / 件</span>
+        ${remainBadge}
       </label>
       <div class="vrow-qty">
-        <button class="vqty-btn" onclick="changeVariantQty(${i},-1)">−</button>
+        <button class="vqty-btn" onclick="changeVariantQty(${i},-1)" ${soldOut ? 'disabled' : ''}>−</button>
         <span class="vqty-val" id="vqty-${i}">0</span>
-        <button class="vqty-btn" onclick="changeVariantQty(${i},1)">+</button>
+        <button class="vqty-btn" id="vplus-${i}" onclick="changeVariantQty(${i},1)" ${soldOut ? 'disabled' : ''}>+</button>
       </div>
       <span class="vrow-subtotal" id="vsub-${i}">NT$0</span>
     </div>`;
@@ -780,12 +816,17 @@ function onVariantCheck(idx) {
 }
 
 function changeVariantQty(idx, delta) {
-  const max   = Number(state.product?.max_qty) || 99;
-  const qtyEl = document.getElementById(`vqty-${idx}`);
-  const chk   = document.getElementById(`vchk-${idx}`);
-  let cur     = Math.max(0, Math.min(max, Number(qtyEl.textContent) + delta));
+  const maxGlobal = Number(state.product?.max_qty) || 99;
+  const qtyEl     = document.getElementById(`vqty-${idx}`);
+  const chk       = document.getElementById(`vchk-${idx}`);
+  const vRemain   = Number(chk?.dataset?.remain ?? 9999);   // data-remain from fillVariants
+  const cap       = Math.min(maxGlobal, vRemain);
+  let cur         = Math.max(0, Math.min(cap, Number(qtyEl.textContent) + delta));
   qtyEl.textContent = cur;
   chk.checked       = cur > 0;
+  // 若已達上限，停用 + 按鈕；否則恢復
+  const plusBtn = document.getElementById(`vplus-${idx}`);
+  if (plusBtn) plusBtn.disabled = cur >= cap;
   updateOrderTotal();
 }
 
