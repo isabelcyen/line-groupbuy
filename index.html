@@ -681,45 +681,22 @@ function renderProduct(p) {
   // ── Stats ────────────────────────────────────────────────
   document.getElementById('stat-orders').textContent = p.totalOrders ?? 0;
 
-  // 有配額時顯示「剩餘可訂件數」，否則顯示「已下單件數」
+  // 統計欄位：一律顯示「已下單件數」（總配額已移除）
   const qtyEl     = document.getElementById('stat-qty');
   const qtyLblEl  = document.getElementById('stat-qty-lbl');
   const variantTotals = p.variantTotals || {};
-
-  // 判斷是否有任一規格設有限量
-  const anyVariantHasQuota = (p.variants || []).some(v => parseVariant(v).quota > 0);
-
-  // 額滿判定：有規格限量 → 所有設有限量的規格都售完才算整體額滿
-  //           無規格限量 → 使用商品總配額
-  let isSoldOut;
-  let remaining;
-  if (anyVariantHasQuota) {
-    // 以規格限量為主，商品總配額不計
-    const allVariantsSoldOut = (p.variants || []).every(v => {
-      const parsed = parseVariant(v);
-      if (parsed.quota <= 0) return false;              // 此規格不限量，視為未售完
-      const sold = variantTotals[parsed.name] || 0;
-      return sold >= parsed.quota;
-    });
-    isSoldOut = allVariantsSoldOut;
-    remaining = null;                                   // 不顯示商品總剩餘件數
-    qtyEl.textContent    = p.totalQty ?? 0;
-    if (qtyLblEl) qtyLblEl.textContent = '已下單件數';
-    qtyEl.style.color    = '';
-  } else {
-    remaining = (p.quota > 0) ? (p.remainingQty ?? 0) : null;
-    isSoldOut = remaining === 0;
-    if (remaining !== null) {
-      qtyEl.textContent    = remaining;
-      if (qtyLblEl) qtyLblEl.textContent = '剩餘可訂件數';
-      qtyEl.style.color    = remaining === 0 ? '#E84040' : (remaining <= 5 ? '#E88040' : '');
-    } else {
-      qtyEl.textContent    = p.totalQty ?? 0;
-      if (qtyLblEl) qtyLblEl.textContent = '已下單件數';
-      qtyEl.style.color    = '';
-    }
-  }
+  qtyEl.textContent    = p.totalQty ?? 0;
+  if (qtyLblEl) qtyLblEl.textContent = '已下單件數';
+  qtyEl.style.color    = '';
   document.getElementById('s1-stats').style.display = 'grid';
+
+  // 額滿判定：所有有設限量的規格都售完 → 整體額滿
+  const isSoldOut = (p.variants || []).length > 0 && (p.variants || []).every(v => {
+    const parsed = parseVariant(v);
+    if (parsed.quota <= 0) return false;               // 此規格不限量，視為未售完
+    const sold = variantTotals[parsed.name] || 0;
+    return sold >= parsed.quota;
+  });
 
   // 額滿視同截止
   const isClosed  = isExpired || isSoldOut;
