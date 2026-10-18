@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>團購選單</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/liff-sdk/2.22.3/sdk.min.js"></script>
+<style>
+/* ── CSS 變數 ── */
+:root {
+  --green:   #06C755;
+  --green-dk:#04A544;
+  --green-lt:#E8FBF0;
+  --bg:      #F5F7F5;
+  --card:    #FFFFFF;
+  --text:    #1A1A1A;
+  --muted:   #7A8A7A;
+  --border:  #E0E8E0;
+  --red:     #E84040;
+  --amber:   #F5A623;
+  --blue:    #27ACB2;
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:     #111811;
+    --card:   #1E281E;
+    --text:   #E8F0E8;
+    --muted:  #7A8F7A;
+    --border: #2A382A;
+    --green-lt:#0F2A18;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:     #111811;
+  --card:   #1E281E;
+  --text:   #E8F0E8;
+  --muted:  #7A8F7A;
+  --border: #2A382A;
+  --green-lt:#0F2A18;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Noto Sans TC', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── 頂部標題列 ── */
+.app-header {
+  background: var(--green);
+  color: #fff;
+  padding: calc(var(--safe-top) + 12px) 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.app-header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* ── Tab 導覽列 ── */
+.tabs {
+  display: flex;
+  background: var(--card);
+  border-bottom: 2px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 1;
+  min-width: 72px;
+  padding: 11px 8px 9px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .18s, border-color .18s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  margin-bottom: -2px;
+}
+.tab-btn .tab-icon { font-size: 18px; line-height: 1; }
+.tab-btn.active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+
+/* ── 內容區 ── */
+.panels {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.panel {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 12px 14px calc(var(--safe-bottom) + 14px);
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+.panel.active { display: flex; }
+
+/* ── 通用卡片 ── */
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+/* ── 公告 & 團購中：商品卡 ── */
+.product-card {
+  display: flex;
+  gap: 12px;
+  padding: 13px;
+  align-items: flex-start;
+}
+.product-thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--border);
+}
+.product-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+.product-info { flex: 1; min-width: 0; }
+.product-name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 4px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.product-meta {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+.meta-pill {
+  background: var(--bg);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.status-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-bottom: 4px;
+}
+.status-open     { background: var(--green-lt); color: var(--green-dk); }
+.status-closed   { background: #F0F0F0; color: #888; }
+.status-shipping { background: #FFF3E0; color: var(--amber); }
+
+/* ── 我的團購 & 到貨通知：訂單卡 ── */
+.order-card { padding: 13px 14px; }
+.order-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.order-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--border);
+}
+.order-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.order-name-wrap { flex: 1; min-width: 0; }
+.order-product-name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.order-id-row {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.order-detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.order-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.order-detail-row .label { color: var(--muted); }
+.order-detail-row .value { font-weight: 500; }
+.order-detail-row .value.price { color: var(--blue); font-weight: 700; }
+
+/* ── 出貨狀態標籤 ── */
+.arrive-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-top: 6px;
+}
+.arrive-shipped  { background: #FFF3E0; color: var(--amber); }
+.arrive-received { background: var(--green-lt); color: var(--green-dk); }
+
+/* ── 付款狀態 badge ── */
+.pay-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.pay-pending   { background: #FFF8E1; color: #C68A00; }
+.pay-reviewing { background: #E3F2FD; color: #1565C0; }
+.pay-paid      { background: var(--green-lt); color: var(--green-dk); }
+.pay-shipped   { background: #FFF3E0; color: var(--amber); }
+
+/* ── 空狀態 ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+.empty-state .icon { font-size: 52px; }
+.empty-state p { font-size: 14px; line-height: 1.6; }
+
+/* ── 載入中 ── */
+.loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 錯誤狀態 ── */
+.error-box {
+  background: #FFF0F0;
+  border: 1px solid #FFCCCC;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 13px;
+  color: var(--red);
+  text-align: center;
+  margin: 10px 0;
+}
+
+/* ── 截止時間 ── */
+.deadline-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--red);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* ── 時間標籤（到貨通知）── */
+.time-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ── 區塊標題（分組標題）── */
+.section-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  padding: 4px 2px 0;
+}
+</style>
+</head>
+<body>
+
+<!-- ── 頂部標題 ── -->
+<header class="app-header">
+  <span style="font-size:22px">🛒</span>
+  <h1>團購選單</h1>
+</header>
+
+<!-- ── Tab 導覽 ── -->
+<nav class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="announcements">
+    <span class="tab-icon">📢</span>公告
+  </button>
+  <button class="tab-btn" data-tab="groups">
+    <span class="tab-icon">🛒</span>團購中
+  </button>
+  <button class="tab-btn" data-tab="myorders">
+    <span class="tab-icon">📦</span>我的團購
+  </button>
+  <button class="tab-btn" data-tab="arrivals">
+    <span class="tab-icon">🔔</span>到貨通知
+  </button>
+</nav>
+
+<!-- ── 內容面板 ── -->
+<main class="panels">
+
+  <!-- 公告 -->
+  <section class="panel active" id="panel-announcements">
+    <div class="loading-wrap"><div class="spinner"></div><span>載入中…</span></div>
+  </section>
+
+  <!-- 團購中 -->
+  <section class="panel" id="panel-groups">
+    <div class="loading-wrap"><div class="spinner"></div><span>載入中…</span></div>
+  </section>
+
+  <!-- 我的團購 -->
+  <section class="panel" id="panel-myorders">
+    <div class="loading-wrap"><div class="spinner"></div><span>載入中…</span></div>
+  </section>
+
+  <!-- 到貨通知 -->
+  <section class="panel" id="panel-arrivals">
+    <div class="loading-wrap"><div class="spinner"></div><span>載入中…</span></div>
+  </section>
+
+</main>
+
+<script>
+'use strict';
+
+/* ── 設定（部署前必填）──
+   LIFF_ID = 在 LINE Developers Console 為此頁面建立的 LIFF App ID
+             格式：1234567890-xxxxxxxx
+   ── */
+const API      = 'https://line-group-buy.isabelcyen.workers.dev';
+const LIFF_ID  = '【請填入 member.html 的 LIFF App ID】';
+
+/* ── 狀態 ── */
+const state = {
+  userId:   null,
+  profile:  null,
+  loaded:   {},   // { tab: boolean }
+};
+
+/* ── 工具函式 ── */
+function fmtTime(iso) {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch { return String(iso); }
+}
+
+function fmtDeadline(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (d < new Date()) return null; // 已截止不顯示倒計時
+  return `截止 ${fmtTime(iso)}`;
+}
+
+function statusBadge(status) {
+  const map = {
+    open:     ['status-open',     '進行中'],
+    closed:   ['status-closed',   '已截止'],
+    shipping: ['status-shipping', '配送中'],
+  };
+  const [cls, label] = map[status] || ['status-closed', status];
+  return `<span class="status-badge ${cls}">${label}</span>`;
+}
+
+function payBadge(status) {
+  const map = {
+    pending:   ['pay-pending',   '⏳ 待付款'],
+    reviewing: ['pay-reviewing', '🔍 審核中'],
+    paid:      ['pay-paid',      '✅ 已付款'],
+    shipped:   ['pay-shipped',   '🚚 已出貨'],
+  };
+  const [cls, label] = map[status] || ['pay-pending', status];
+  return `<span class="pay-badge ${cls}">${label}</span>`;
+}
+
+function thumbHtml(url, alt, size = 68) {
+  if (url) {
+    return `<img class="product-thumb" src="${url}" alt="${alt}" width="${size}" height="${size}" loading="lazy" onerror="this.outerHTML='<div class=\\'product-thumb placeholder\\' style=\\'width:${size}px;height:${size}px\\'>🛒</div>'">`;
+  }
+  return `<div class="product-thumb placeholder" style="width:${size}px;height:${size}px">🛒</div>`;
+}
+
+function orderThumbHtml(url, alt) {
+  if (url) {
+    return `<img class="order-thumb" src="${url}" alt="${alt}" width="52" height="52" loading="lazy" onerror="this.outerHTML='<div class=\\'order-thumb placeholder\\'>📦</div>'">`;
+  }
+  return `<div class="order-thumb placeholder">📦</div>`;
+}
+
+/* ── API 呼叫 ── */
+async function api(body) {
+  const r = await fetch(API, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
+  });
+  const json = await r.json();
+  if (!json.ok) throw new Error(json.error || '伺服器錯誤');
+  return json.data;
+}
+
+/* ── 渲染：公告 ── */
+function renderAnnouncements(products) {
+  const panel = document.getElementById('panel-announcements');
+  if (!products.length) {
+    panel.innerHTML = `<div class="empty-state"><div class="icon">📢</div><p>目前還沒有任何公告</p></div>`;
+    return;
+  }
+  panel.innerHTML = products.map(p => {
+    const dl = fmtDeadline(p.deadline);
+    return `
+    <div class="card product-card">
+      ${thumbHtml(p.image_url, p.name)}
+      <div class="product-info">
+        ${statusBadge(p.status)}
+        <div class="product-name">${p.name}</div>
+        ${p.description ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${p.description}</div>` : ''}
+        <div class="product-meta">
+          <span class="meta-pill">💰 NT$${p.price}</span>
+          ${dl ? `<span class="meta-pill" style="color:var(--red)">⏰ ${dl}</span>` : ''}
+          <span class="meta-pill" style="color:var(--muted)">📅 ${fmtTime(p.created_at)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── 渲染：團購中 ── */
+function renderGroups(products) {
+  const panel = document.getElementById('panel-groups');
+  if (!products.length) {
+    panel.innerHTML = `<div class="empty-state"><div class="icon">🛒</div><p>目前沒有進行中的團購<br>有新開團會立即通知</p></div>`;
+    return;
+  }
+  panel.innerHTML = products.map(p => {
+    const dl = fmtDeadline(p.deadline);
+    return `
+    <div class="card product-card">
+      ${thumbHtml(p.image_url, p.name)}
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        ${p.description ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${p.description}</div>` : ''}
+        <div class="product-meta">
+          <span class="meta-pill">💰 NT$${p.price}/${p.unit || '份'}</span>
+          <span class="meta-pill">👥 已 ${p.totalOrders} 人參團</span>
+        </div>
+        ${dl ? `<div class="deadline-row">⏰ ${dl}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── 渲染：我的團購 ── */
+function renderMyOrders(orders) {
+  const panel = document.getElementById('panel-myorders');
+  if (!orders.length) {
+    panel.innerHTML = `<div class="empty-state"><div class="icon">📦</div><p>您目前沒有進行中的訂單<br>快去參加團購吧！</p></div>`;
+    return;
+  }
+  panel.innerHTML = orders.map(o => `
+    <div class="card order-card">
+      <div class="order-header">
+        ${orderThumbHtml(o.product_image, o.product_name)}
+        <div class="order-name-wrap">
+          <div class="order-product-name">${o.product_name}</div>
+          <div class="order-id-row">${o.order_id} · ${fmtTime(o.created_at)}</div>
+          <div style="margin-top:4px">${payBadge(o.pay_status)}</div>
+        </div>
+      </div>
+      <div class="order-detail-rows">
+        <div class="order-detail-row">
+          <span class="label">規格</span>
+          <span class="value">${o.variant || '-'}</span>
+        </div>
+        <div class="order-detail-row">
+          <span class="label">數量</span>
+          <span class="value">${o.qty} 件</span>
+        </div>
+        <div class="order-detail-row">
+          <span class="label">金額</span>
+          <span class="value price">NT$${o.total}</span>
+        </div>
+        <div class="order-detail-row">
+          <span class="label">付款</span>
+          <span class="value">${{line_pay:'LINE Pay', transfer:'轉帳', on_site:'現場付款'}[o.pay_method] || o.pay_method}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── 渲染：到貨通知 ── */
+function renderArrivals(orders) {
+  const panel = document.getElementById('panel-arrivals');
+  if (!orders.length) {
+    panel.innerHTML = `<div class="empty-state"><div class="icon">🔔</div><p>目前還沒有到貨通知<br>收到貨品後會在這裡顯示</p></div>`;
+    return;
+  }
+  panel.innerHTML = orders.map(o => {
+    const isReceived = o.pay_status === 'received';
+    const badgeCls   = isReceived ? 'arrive-received' : 'arrive-shipped';
+    const badgeTxt   = isReceived ? '🎉 已收貨'       : '🚚 已出貨，請準備領取';
+    return `
+    <div class="card order-card">
+      <div class="order-header">
+        ${orderThumbHtml(o.product_image, o.product_name)}
+        <div class="order-name-wrap">
+          <div class="order-product-name">${o.product_name}</div>
+          <div class="order-id-row">${o.order_id}</div>
+          <span class="arrive-badge ${badgeCls}">${badgeTxt}</span>
+        </div>
+      </div>
+      <div class="order-detail-rows">
+        <div class="order-detail-row">
+          <span class="label">規格</span>
+          <span class="value">${o.variant || '-'}</span>
+        </div>
+        <div class="order-detail-row">
+          <span class="label">數量</span>
+          <span class="value">${o.qty} 件</span>
+        </div>
+        <div class="order-detail-row">
+          <span class="label">更新時間</span>
+          <span class="value">${fmtTime(o.updated_at)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── 載入各分頁資料 ── */
+async function loadTab(tab) {
+  if (state.loaded[tab]) return;
+  state.loaded[tab] = true;
+
+  try {
+    if (tab === 'announcements') {
+      const data = await api({ action: 'get_announcements' });
+      renderAnnouncements(data.products || []);
+
+    } else if (tab === 'groups') {
+      const data = await api({ action: 'get_active_groups' });
+      renderGroups(data.products || []);
+
+    } else if (tab === 'myorders') {
+      if (!state.userId) {
+        document.getElementById('panel-myorders').innerHTML =
+          `<div class="error-box">無法取得身分，請重新開啟此頁面</div>`;
+        return;
+      }
+      const data = await api({ action: 'get_my_orders', lineUserId: state.userId });
+      renderMyOrders(data.orders || []);
+
+    } else if (tab === 'arrivals') {
+      if (!state.userId) {
+        document.getElementById('panel-arrivals').innerHTML =
+          `<div class="error-box">無法取得身分，請重新開啟此頁面</div>`;
+        return;
+      }
+      const data = await api({ action: 'get_arrivals', lineUserId: state.userId });
+      renderArrivals(data.orders || []);
+    }
+  } catch (err) {
+    const panel = document.getElementById('panel-' + tab);
+    panel.innerHTML = `<div class="error-box">載入失敗：${err.message}</div>`;
+    state.loaded[tab] = false; // 允許重試
+  }
+}
+
+/* ── Tab 切換 ── */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel-' + tab);
+  });
+  loadTab(tab);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+/* ── 初始化 ── */
+async function init() {
+  // 讀 URL ?tab= 參數
+  const urlTab = new URLSearchParams(location.search).get('tab') || 'announcements';
+
+  // 初始化 LIFF
+  const liffId = LIFF_ID;
+  if (liffId && !liffId.includes('請填入')) {
+    try {
+      await liff.init({ liffId });
+      if (liff.isLoggedIn()) {
+        const profile = await liff.getProfile();
+        state.userId  = profile.userId;
+        state.profile = profile;
+      } else {
+        liff.login({ redirectUri: location.href });
+        return;
+      }
+    } catch (err) {
+      console.warn('LIFF init failed:', err);
+      // 非 LINE 環境：僅顯示公告 & 團購中，個人頁顯示提示
+    }
+  }
+
+  // 切換至指定 tab
+  switchTab(urlTab);
+}
+
+init();
+</script>
+</body>
+</html>
