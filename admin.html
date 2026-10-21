@@ -467,20 +467,12 @@ tr:hover td { background: var(--green-bg); }
     <h3 id="prod-modal-title">建立團購</h3>
     <input type="hidden" id="prod-id">
     <div class="form-row">
-      <label>名稱 *</label>
-      <input type="text" id="prod-name" placeholder="團購名稱">
+      <label>團購名稱 *</label>
+      <input type="text" id="prod-name" placeholder="例：胖蔬農場週末蔬菜箱">
     </div>
     <div class="form-row">
       <label>描述</label>
       <textarea id="prod-desc" placeholder="描述（選填）" style="min-height:60px"></textarea>
-    </div>
-    <div class="form-row">
-      <label>售價 *</label>
-      <input type="number" id="prod-price" placeholder="NT$">
-    </div>
-    <div class="form-row">
-      <label>單位</label>
-      <input type="text" id="prod-unit" placeholder="份／個／kg…" value="份">
     </div>
     <div class="form-row">
       <label>截止時間</label>
@@ -491,8 +483,9 @@ tr:hover td { background: var(--green-bg); }
       <input type="text" id="prod-image" placeholder="https://…">
     </div>
     <div class="form-row">
-      <label>規格選項（一行一個，格式：名稱(+差價) 例：大+50）</label>
-      <textarea id="prod-variants" placeholder="原味&#10;辣味+10&#10;特大+30" style="min-height:70px"></textarea>
+      <label>規格 *（一行一個，格式：<code>品項(價格)</code> 或 <code>品項(價格/限量)</code>）</label>
+      <textarea id="prod-variants" placeholder="珍珠芭樂(150)&#10;甜心芥藍菜(120)&#10;綜合蔬菜箱(200/30)" style="min-height:90px"></textarea>
+      <small style="color:var(--muted);font-size:11px">限量填 0 表示不限；第一個規格的價格作為顯示售價</small>
     </div>
     <div class="form-row">
       <label>管理員密碼</label>
@@ -776,11 +769,18 @@ async function loadProducts() {
   }).join('');
 }
 
+/** 解析規格字串 "名稱(價格)" 或 "名稱(價格/限量)" */
+function parseVariantDef(str) {
+  const s = String(str || '').trim();
+  const m = s.match(/^(.+?)\((\d+(?:\.\d+)?)(?:\/(\d+))?\)$/);
+  if (m) return { name: m[1].trim(), price: Number(m[2]), quota: m[3] !== undefined ? Number(m[3]) : 0 };
+  return null;
+}
+
 function openProductModal() {
   document.getElementById('prod-id').value = '';
   document.getElementById('prod-modal-title').textContent = '建立團購';
-  ['prod-name','prod-desc','prod-price','prod-image','prod-variants'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('prod-unit').value = '份';
+  ['prod-name','prod-desc','prod-image','prod-variants'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('prod-deadline').value = '';
   document.getElementById('prod-secret').value = savedSecret;
   document.getElementById('product-modal').classList.add('open');
@@ -791,12 +791,21 @@ function editProduct(p) {
   document.getElementById('prod-modal-title').textContent = '編輯團購';
   document.getElementById('prod-name').value  = p.name || '';
   document.getElementById('prod-desc').value  = p.description || '';
-  document.getElementById('prod-price').value = p.price || '';
-  document.getElementById('prod-unit').value  = p.unit || '份';
   document.getElementById('prod-image').value = p.image_url || '';
+  // 把已儲存的規格（JSON 陣列格式）轉回 "名稱(價格/限量)" 顯示
   try {
-    const v = JSON.parse(p.variants || '[]');
-    document.getElementById('prod-variants').value = v.map(v => typeof v === 'object' ? v.name + (v.extra ? '+' + v.extra : '') : v).join('\n');
+    const vs = JSON.parse(p.variants || '[]');
+    document.getElementById('prod-variants').value = vs.map(v => {
+      if (typeof v === 'string') {
+        // 嘗試解析原始格式（已是 "名稱(價格)" 字串）
+        return v;
+      }
+      const price = v.price || 0;
+      const quota = v.quota || 0;
+      return quota > 0
+        ? `${v.name}(${price}/${quota})`
+        : `${v.name}(${price})`;
+    }).join('\n');
   } catch { document.getElementById('prod-variants').value = ''; }
   if (p.deadline) {
     const d = new Date(p.deadline);
@@ -810,29 +819,41 @@ function editProduct(p) {
 }
 
 async function saveProduct() {
-  const prodId = document.getElementById('prod-id').value;
-  const name   = document.getElementById('prod-name').value.trim();
-  const price  = parseFloat(document.getElementById('prod-price').value);
-  const secret = getSecret('prod-secret');
-  if (!name || !price) { toast('請填寫名稱和售價'); return; }
+  const prodId  = document.getElementById('prod-id').value;
+  const name    = document.getElementById('prod-name').value.trim();
+  const secret  = getSecret('prod-secret');
+  const variantRaw = document.getElementById('prod-variants').value;
+
+  if (!name) { toast('請填寫團購名稱'); return; }
   if (!secret) { toast('請填寫管理員密碼'); return; }
 
-  const variantLines = document.getElementById('prod-variants').value.split('\n')
-    .map(l => l.trim()).filter(Boolean);
+  // 逐行解析規格
+  const variantLines = variantRaw.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!variantLines.length) { toast('請至少填寫一個規格，格式：品項(價格)'); return; }
+
   const variants = variantLines.map(l => {
-    const m = l.match(/^(.+?)(?:\+(\d+))?$/);
-    return { name: m[1].trim(), extra: m[2] ? parseInt(m[2]) : 0 };
+    const def = parseVariantDef(l);
+    if (!def) { toast('規格格式錯誤：' + l + '\n請用「品項(價格)」或「品項(價格/限量)」'); return null; }
+    return def;
   });
+  if (variants.some(v => v === null)) return;
+
+  // 以第一個規格的價格作為顯示售價
+  const basePrice = variants[0].price;
+
+  // 送出格式為逗號分隔字串 "名稱(價格/限量)" — 後端 parseVariantDef_ 能解析
+  const variantsStr = variantLines.join(',');
 
   const body = {
-    action: prodId ? 'update_product' : 'create_product',
-    productId: prodId || undefined,
-    name, price,
-    unit:        document.getElementById('prod-unit').value.trim() || '份',
+    action:      prodId ? 'update_product' : 'create_product',
+    productId:   prodId || undefined,
+    name,
+    price:       basePrice,
+    unit:        '份',
     description: document.getElementById('prod-desc').value.trim(),
     imageUrl:    document.getElementById('prod-image').value.trim(),
     deadline:    document.getElementById('prod-deadline').value || '',
-    variants:    JSON.stringify(variants),
+    variants:    variantsStr,
     adminSecret: secret,
   };
   try {
