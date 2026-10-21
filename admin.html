@@ -994,7 +994,7 @@ async function deleteComment(commentId) {
 
 // ─── Payments ─────────────────────────────────────────
 async function loadPayments() {
-  const data = await api({ action: 'list_orders' });
+  const data = await api({ action: 'list_orders', adminSecret: savedSecret });
   const orders = (data.orders || []).filter(o => ['reviewing','paid'].includes(o.pay_status));
   const tbody = document.getElementById('payment-list');
   if (!orders.length) {
