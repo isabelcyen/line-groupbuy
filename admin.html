@@ -193,6 +193,46 @@ tr:hover td { background: var(--green-bg); }
 .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); }
 .check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--green); }
 
+/* ── 圖片上傳格子 ── */
+.img-upload-grid {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.img-slot {
+  width: 80px; height: 80px; border-radius: 10px;
+  border: 2px dashed var(--border); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  background: var(--bg); transition: border-color .2s;
+  box-sizing: border-box;
+}
+.img-slot:hover { border-color: var(--green); }
+.img-slot .plus-icon { font-size: 28px; color: var(--muted); line-height: 1; user-select: none; }
+.img-slot img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 8px; }
+.img-slot .rm-btn {
+  position: absolute; top: 3px; right: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(0,0,0,.55); color: #fff;
+  border: none; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1; z-index: 2; padding: 0;
+}
+.img-slot.uploading::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,.65);
+  display: flex; align-items: center; justify-content: center;
+}
+.img-slot.uploading::before {
+  content: '';
+  position: absolute; z-index: 3;
+  width: 22px; height: 22px;
+  border: 3px solid var(--green); border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.img-upload-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
 /* ── Toast ── */
 .toast {
   position: fixed; bottom: 20px; left: 50%;
@@ -479,8 +519,10 @@ tr:hover td { background: var(--green-bg); }
       <input type="datetime-local" id="prod-deadline">
     </div>
     <div class="form-row">
-      <label>圖片網址（多張以逗號分隔）</label>
-      <input type="text" id="prod-image" placeholder="https://…">
+      <label>圖片（最多 4 張，點格子上傳）</label>
+      <div class="img-upload-grid" id="prod-img-grid"></div>
+      <div class="img-upload-hint">支援 JPG / PNG / WEBP，上傳後自動儲存至 Google Drive</div>
+      <input type="file" id="prod-img-input" accept="image/*" style="display:none">
     </div>
     <div class="form-row">
       <label>規格 *（一行一個，格式：<code>品項(價格)</code> 或 <code>品項(價格/限量)</code>）</label>
@@ -777,34 +819,114 @@ function parseVariantDef(str) {
   return null;
 }
 
+/* ══ 圖片上傳：最多 4 格 ══ */
+let prodImageUrls = [];       // 已上傳完成的 URL 陣列
+let _pendingSlot  = -1;       // 等待 file input 的格子索引
+
+function renderImgSlots() {
+  const grid = document.getElementById('prod-img-grid');
+  grid.innerHTML = '';
+  const MAX = 4;
+  // 已有的圖片格
+  prodImageUrls.forEach((url, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'img-slot';
+    slot.innerHTML = `<img src="${url}" alt="圖片${i+1}">
+      <button class="rm-btn" onclick="removeImgSlot(${i})" title="移除">✕</button>`;
+    grid.appendChild(slot);
+  });
+  // 空格（可點擊新增）
+  if (prodImageUrls.length < MAX) {
+    const add = document.createElement('div');
+    add.className = 'img-slot';
+    add.title = '點擊上傳圖片';
+    add.innerHTML = '<span class="plus-icon">＋</span>';
+    add.onclick = () => pickImage(prodImageUrls.length);
+    grid.appendChild(add);
+  }
+}
+
+function pickImage(slotIdx) {
+  _pendingSlot = slotIdx;
+  const inp = document.getElementById('prod-img-input');
+  inp.value = '';
+  inp.click();
+}
+
+function removeImgSlot(idx) {
+  prodImageUrls.splice(idx, 1);
+  renderImgSlots();
+}
+
+// 綁定 file input change（只綁一次，懶初始化）
+let _imgInputBound = false;
+function ensureImgInputBound() {
+  if (_imgInputBound) return;
+  _imgInputBound = true;
+  document.getElementById('prod-img-input').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file || _pendingSlot < 0) return;
+    const idx = _pendingSlot;
+    _pendingSlot = -1;
+
+    // 標記上傳中
+    const grid = document.getElementById('prod-img-grid');
+    const slots = grid.querySelectorAll('.img-slot');
+    if (slots[idx]) slots[idx].classList.add('uploading');
+
+    try {
+      // 轉 base64
+      const b64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = e => res(e.target.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      // 上傳到 GAS → Google Drive
+      const secret = getSecret('prod-secret');
+      const result = await api({
+        action:    'upload_image',
+        imageData: b64,
+        mimeType:  file.type || 'image/jpeg',
+        fileName:  file.name || ('img_' + Date.now() + '.jpg'),
+        adminSecret: secret || savedSecret,
+      });
+      prodImageUrls[idx] = result.imageUrl;
+    } catch(e) {
+      toast('圖片上傳失敗：' + e.message);
+    }
+    renderImgSlots();
+  });
+}
+
 function openProductModal() {
+  ensureImgInputBound();
+  prodImageUrls = [];
   document.getElementById('prod-id').value = '';
   document.getElementById('prod-modal-title').textContent = '建立團購';
-  ['prod-name','prod-desc','prod-image','prod-variants'].forEach(id => document.getElementById(id).value = '');
+  ['prod-name','prod-desc','prod-variants'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('prod-deadline').value = '';
   document.getElementById('prod-secret').value = savedSecret;
+  renderImgSlots();
   document.getElementById('product-modal').classList.add('open');
 }
 
 function editProduct(p) {
+  ensureImgInputBound();
+  // 解析現有圖片 URL
+  prodImageUrls = (p.image_url || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
   document.getElementById('prod-id').value = p.product_id;
   document.getElementById('prod-modal-title').textContent = '編輯團購';
   document.getElementById('prod-name').value  = p.name || '';
   document.getElementById('prod-desc').value  = p.description || '';
-  document.getElementById('prod-image').value = p.image_url || '';
   // 把已儲存的規格（JSON 陣列格式）轉回 "名稱(價格/限量)" 顯示
   try {
     const vs = JSON.parse(p.variants || '[]');
     document.getElementById('prod-variants').value = vs.map(v => {
-      if (typeof v === 'string') {
-        // 嘗試解析原始格式（已是 "名稱(價格)" 字串）
-        return v;
-      }
+      if (typeof v === 'string') return v;
       const price = v.price || 0;
       const quota = v.quota || 0;
-      return quota > 0
-        ? `${v.name}(${price}/${quota})`
-        : `${v.name}(${price})`;
+      return quota > 0 ? `${v.name}(${price}/${quota})` : `${v.name}(${price})`;
     }).join('\n');
   } catch { document.getElementById('prod-variants').value = ''; }
   if (p.deadline) {
@@ -815,6 +937,7 @@ function editProduct(p) {
     document.getElementById('prod-deadline').value = '';
   }
   document.getElementById('prod-secret').value = savedSecret;
+  renderImgSlots();
   document.getElementById('product-modal').classList.add('open');
 }
 
@@ -851,7 +974,7 @@ async function saveProduct() {
     price:       basePrice,
     unit:        '份',
     description: document.getElementById('prod-desc').value.trim(),
-    imageUrl:    document.getElementById('prod-image').value.trim(),
+    imageUrl:    prodImageUrls.join(','),
     deadline:    document.getElementById('prod-deadline').value || '',
     variants:    variantsStr,
     adminSecret: secret,
