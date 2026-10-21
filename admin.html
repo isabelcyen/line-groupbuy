@@ -276,7 +276,7 @@ tr:hover td { background: var(--green-bg); }
   <div class="nav-section">
     <div class="nav-label">團購管理</div>
     <div class="nav-item" data-panel="products">
-      <span class="ni">📦</span><span class="label">商品管理</span>
+      <span class="ni">📦</span><span class="label">團購管理</span>
     </div>
     <div class="nav-item" data-panel="orders">
       <span class="ni">📋</span><span class="label">訂單管理</span>
@@ -330,7 +330,7 @@ tr:hover td { background: var(--green-bg); }
         <div class="section-header"><h3>近期訂單</h3></div>
         <table>
           <thead><tr>
-            <th>訂單</th><th>商品</th><th>團員</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
+            <th>訂單</th><th>團購</th><th>團員</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
           </tr></thead>
           <tbody id="dash-orders"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
         </table>
@@ -348,12 +348,12 @@ tr:hover td { background: var(--green-bg); }
       </div>
     </div>
 
-    <!-- ─── 商品管理 ─── -->
+    <!-- ─── 團購管理 ─── -->
     <div class="panel" id="panel-products">
       <div class="section-card">
         <div class="section-header">
-          <h3>商品列表</h3>
-          <button class="btn btn-primary" onclick="openProductModal()">＋ 建立商品</button>
+          <h3>團購列表</h3>
+          <button class="btn btn-primary" onclick="openProductModal()">＋ 建立團購</button>
         </div>
         <table>
           <thead><tr>
@@ -381,7 +381,7 @@ tr:hover td { background: var(--green-bg); }
         </div>
         <table>
           <thead><tr>
-            <th>訂單</th><th>商品</th><th>團員</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
+            <th>訂單</th><th>團購</th><th>團員</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
           </tr></thead>
           <tbody id="order-list"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
         </table>
@@ -394,7 +394,7 @@ tr:hover td { background: var(--green-bg); }
         <div class="section-header">
           <h3>留言管理</h3>
           <select id="comment-prod-filter" onchange="loadComments()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px">
-            <option value="">所有商品</option>
+            <option value="">所有團購</option>
           </select>
         </div>
         <div id="comment-list"><div class="loading-row">載入中…</div></div>
@@ -407,7 +407,7 @@ tr:hover td { background: var(--green-bg); }
         <div class="section-header"><h3>付款記錄</h3></div>
         <table>
           <thead><tr>
-            <th>訂單</th><th>商品</th><th>末五碼</th><th>截圖</th><th>狀態</th><th>時間</th><th>操作</th>
+            <th>訂單</th><th>團購</th><th>末五碼</th><th>截圖</th><th>狀態</th><th>時間</th><th>操作</th>
           </tr></thead>
           <tbody id="payment-list"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
         </table>
@@ -461,14 +461,14 @@ tr:hover td { background: var(--green-bg); }
   </div>
 </div>
 
-<!-- ─── Modal: 商品 ─── -->
+<!-- ─── Modal: 團購 ─── -->
 <div class="modal-bg" id="product-modal">
   <div class="modal">
-    <h3 id="prod-modal-title">建立商品</h3>
+    <h3 id="prod-modal-title">建立團購</h3>
     <input type="hidden" id="prod-id">
     <div class="form-row">
       <label>名稱 *</label>
-      <input type="text" id="prod-name" placeholder="商品名稱">
+      <input type="text" id="prod-name" placeholder="團購名稱">
     </div>
     <div class="form-row">
       <label>描述</label>
@@ -527,6 +527,19 @@ tr:hover td { background: var(--green-bg); }
 // ─── 設定 ─────────────────────────────────────────────
 const API = 'https://line-group-buy.isabelcyen.workers.dev';
 let savedSecret = localStorage.getItem('admin_secret') || '';
+
+// 初次進入若無密碼，立即要求輸入
+(function checkSecret() {
+  if (!savedSecret) {
+    const s = prompt('請輸入管理員密碼（ADMIN_SECRET）：');
+    if (s && s.trim()) {
+      savedSecret = s.trim();
+      localStorage.setItem('admin_secret', savedSecret);
+    } else {
+      alert('未輸入密碼，部分功能將無法使用。請重新整理頁面再試。');
+    }
+  }
+})();
 let allProducts = [];
 let announceProductId = '';
 
@@ -580,7 +593,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 // ─── Navigation ───────────────────────────────────────
 const titles = {
-  dashboard: '儀表板', announcements: '一般公告', products: '商品管理',
+  dashboard: '儀表板', announcements: '一般公告', products: '團購管理',
   orders: '訂單管理', comments: '留言管理', payments: '付款記錄',
 };
 const loaded = {};
@@ -615,8 +628,8 @@ loadPanel('dashboard');
 // ─── Dashboard ────────────────────────────────────────
 async function loadDashboard() {
   const [prodData, orderData] = await Promise.all([
-    api({ action: 'list_products' }),
-    api({ action: 'list_orders' }),
+    api({ action: 'list_products', adminSecret: savedSecret }),
+    api({ action: 'list_orders',   adminSecret: savedSecret }),
   ]);
   const prods = prodData.products || [];
   const orders = orderData.orders || [];
@@ -729,16 +742,16 @@ async function deleteAnn(annId) {
 
 // ─── Products ─────────────────────────────────────────
 async function loadProducts() {
-  const data = await api({ action: 'list_products' });
+  const data = await api({ action: 'list_products', adminSecret: savedSecret });
   allProducts = data.products || [];
   // update comment filter
   const sel = document.getElementById('comment-prod-filter');
-  sel.innerHTML = '<option value="">所有商品</option>' +
+  sel.innerHTML = '<option value="">所有團購</option>' +
     allProducts.map(p => `<option value="${esc(p.product_id)}">${esc(p.name)}</option>`).join('');
 
   const tbody = document.getElementById('product-list');
   if (!allProducts.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">尚無商品</td></tr>'; return;
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">尚無團購</td></tr>'; return;
   }
   tbody.innerHTML = allProducts.map(p => {
     const imgs = (p.image_url || '').split(',').map(s=>s.trim()).filter(Boolean);
@@ -765,7 +778,7 @@ async function loadProducts() {
 
 function openProductModal() {
   document.getElementById('prod-id').value = '';
-  document.getElementById('prod-modal-title').textContent = '建立商品';
+  document.getElementById('prod-modal-title').textContent = '建立團購';
   ['prod-name','prod-desc','prod-price','prod-image','prod-variants'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('prod-unit').value = '份';
   document.getElementById('prod-deadline').value = '';
@@ -775,7 +788,7 @@ function openProductModal() {
 
 function editProduct(p) {
   document.getElementById('prod-id').value = p.product_id;
-  document.getElementById('prod-modal-title').textContent = '編輯商品';
+  document.getElementById('prod-modal-title').textContent = '編輯團購';
   document.getElementById('prod-name').value  = p.name || '';
   document.getElementById('prod-desc').value  = p.description || '';
   document.getElementById('prod-price').value = p.price || '';
@@ -825,7 +838,7 @@ async function saveProduct() {
   try {
     await api(body);
     closeModal('product-modal');
-    toast('✅ 商品已' + (prodId ? '更新' : '建立'));
+    toast('✅ 團購已' + (prodId ? '更新' : '建立'));
     loaded.products = false;
     await loadProducts();
     loaded.products = true;
@@ -871,7 +884,7 @@ async function doAnnounce() {
 // ─── Orders ───────────────────────────────────────────
 async function loadOrders() {
   const filter = document.getElementById('order-status-filter')?.value || '';
-  const data = await api({ action: 'list_orders' });
+  const data = await api({ action: 'list_orders', adminSecret: savedSecret });
   let orders = data.orders || [];
   if (filter) orders = orders.filter(o => o.pay_status === filter);
   const tbody = document.getElementById('order-list');
