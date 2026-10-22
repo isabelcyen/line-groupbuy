@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>團購公告板</title>
+<title>團購選單</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 /* ═══ 基礎變數 ═══ */
@@ -51,13 +51,12 @@ html, body {
 }
 #topbar .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-/* ═══ Tab bar (bottom) ═══ */
+/* ═══ Tab bar (top, below header) ═══ */
 #tabbar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  height: calc(var(--tab-h) + var(--safe-b));
-  padding-bottom: var(--safe-b);
+  position: fixed; top: calc(var(--top-h) + var(--safe-t)); left: 0; right: 0; z-index: 100;
+  height: var(--tab-h);
   background: var(--card);
-  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   display: flex;
 }
 .tab-btn {
@@ -82,10 +81,11 @@ html, body {
 /* ═══ Main scroll area ═══ */
 #main {
   position: fixed;
-  top: calc(var(--top-h) + var(--safe-t));
-  bottom: calc(var(--tab-h) + var(--safe-b));
+  top: calc(var(--top-h) + var(--safe-t) + var(--tab-h));
+  bottom: 0;
   left: 0; right: 0;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--safe-b);
 }
 
 /* ═══ Section panels ═══ */
@@ -240,7 +240,7 @@ html, body {
 
 <!-- ── Top bar ── -->
 <div id="topbar">
-  <div class="app-name">🛒 團購公告板</div>
+  <div class="app-name">🛒 團購選單</div>
   <div class="user-avatar" id="user-avatar"><span>👤</span></div>
 </div>
 
