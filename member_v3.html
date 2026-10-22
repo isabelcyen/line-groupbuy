@@ -404,8 +404,8 @@ async function api(body) {
   } catch(parseErr) {
     throw new Error(`回應解析失敗 (HTTP ${resp.status}): ${parseErr.message}`);
   }
-  if (!json.success) throw new Error(json.error || `API 失敗 (HTTP ${resp.status}, action=${body.action})`);
-  return json;
+  if (!json.ok) throw new Error(json.error || `API 失敗 (HTTP ${resp.status}, action=${body.action})`);
+  return json.data;
 }
 
 /* ═══ Toast ═══ */
