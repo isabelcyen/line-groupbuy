@@ -199,45 +199,6 @@ html, body {
 .status-shipped   { background: #DBEAFE; color: #1E40AF; }
 .status-received  { background: #E0E7FF; color: #4338CA; }
 
-/* ═══ Po文 浮動按鈕 ═══ */
-#post-fab {
-  position: fixed; right: 18px;
-  bottom: calc(var(--tab-h) + var(--safe-b) + 14px);
-  width: 52px; height: 52px; border-radius: 50%;
-  background: var(--green); color: #fff;
-  border: none; cursor: pointer; font-size: 24px;
-  box-shadow: 0 3px 10px rgba(6,199,85,.45);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 90; transition: background .15s;
-}
-#post-fab:active { background: var(--green-dk); }
-#post-fab.hidden { display: none; }
-
-/* ═══ Po文 Modal ═══ */
-.modal-bg {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,.4);
-  display: flex; align-items: flex-end;
-  opacity: 0; pointer-events: none;
-  transition: opacity .2s;
-}
-.modal-bg.open { opacity: 1; pointer-events: auto; }
-.modal-sheet {
-  background: var(--card); border-radius: 18px 18px 0 0;
-  width: 100%; padding: 20px 16px;
-  padding-bottom: calc(16px + var(--safe-b));
-  transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
-}
-.modal-bg.open .modal-sheet { transform: translateY(0); }
-.modal-title { font-weight: 700; font-size: 16px; margin-bottom: 14px; }
-.modal-sheet textarea {
-  width: 100%; min-height: 100px; resize: none;
-  border: 1px solid var(--border); border-radius: 10px;
-  padding: 10px 12px; font-size: 14px; font-family: inherit;
-  background: var(--bg); color: var(--text);
-  outline: none; line-height: 1.6;
-}
-.modal-sheet textarea:focus { border-color: var(--green); }
 .modal-btns { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
 .btn {
   border: none; cursor: pointer; border-radius: 10px;
@@ -361,20 +322,6 @@ html, body {
   </button>
 </nav>
 
-<!-- ── Po文 浮動按鈕 ── -->
-<button id="post-fab" onclick="openPostModal()" title="發文">✏️</button>
-
-<!-- ── Po文 Modal ── -->
-<div class="modal-bg" id="post-modal">
-  <div class="modal-sheet">
-    <div class="modal-title">✏️ 發文到公告板</div>
-    <textarea id="post-content" placeholder="分享你的想法、心得、或留言…" maxlength="500"></textarea>
-    <div class="modal-btns">
-      <button class="btn btn-ghost" onclick="closePostModal()">取消</button>
-      <button class="btn btn-primary" id="post-submit-btn" onclick="submitPost()">發布</button>
-    </div>
-  </div>
-</div>
 
 <div id="toast"></div>
 
@@ -465,9 +412,6 @@ function switchTab(sec) {
   // 更新 tab button
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.tab-btn[data-sec="${sec}"]`).classList.add('active');
-  // 顯示/隱藏 po文 FAB（只在公告 tab 顯示）
-  const fab = document.getElementById('post-fab');
-  fab.classList.toggle('hidden', sec !== 'ann');
   // 懶載入
   if (!loaded[sec]) loadTab(sec);
 }
@@ -511,7 +455,7 @@ async function loadAnn() {
     if (liffUser) {
       html += '<div class="section-sep">💬 團員留言板</div>';
       if (!posts.length) {
-        html += '<div class="empty-state"><div class="empty-icon">💭</div><div class="empty-msg">還沒有留言，按下方 ✏️ 第一個發文！</div></div>';
+        html += '<div class="empty-state"><div class="empty-icon">💭</div><div class="empty-msg">還沒有留言</div></div>';
       } else {
         posts.forEach(p => { html += postCard(p); });
       }
@@ -554,42 +498,6 @@ function postCard(p) {
   </div>`;
 }
 
-/* ═══ 留言板：發文 ═══ */
-function openPostModal() {
-  if (!liffUser) { toast('請先登入 LINE'); return; }
-  document.getElementById('post-content').value = '';
-  document.getElementById('post-modal').classList.add('open');
-  setTimeout(() => document.getElementById('post-content').focus(), 300);
-}
-function closePostModal() {
-  document.getElementById('post-modal').classList.remove('open');
-}
-async function submitPost() {
-  const content = document.getElementById('post-content').value.trim();
-  if (!content) { toast('請輸入留言內容'); return; }
-  if (!liffUser) { toast('請先登入 LINE'); return; }
-  const btn = document.getElementById('post-submit-btn');
-  btn.disabled = true; btn.textContent = '發布中…';
-  try {
-    await api({
-      action:     'post_comment',
-      productId:  '__board__',
-      lineUserId: liffUser.userId,
-      memberName: liffUser.displayName,
-      avatarUrl:  liffUser.pictureUrl || '',
-      content,
-    });
-    closePostModal();
-    toast('✅ 發文成功！');
-    // 重新載入公告列表
-    loaded.ann = false;
-    loadAnn();
-  } catch(e) {
-    toast('發文失敗：' + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = '發布';
-  }
-}
 
 /* ═══ 團購中 ═══ */
 async function loadGroups() {
@@ -747,10 +655,6 @@ async function initLiff() {
   }
 }
 
-/* ═══ 按 modal 背景關閉 ═══ */
-document.getElementById('post-modal').addEventListener('click', function(e) {
-  if (e.target === this) closePostModal();
-});
 
 /* ═══ 啟動 ═══ */
 initLiff();
