@@ -488,28 +488,54 @@ async function loadGroups() {
   }
 }
 
+function fmtDT(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  const mo = d.getMonth() + 1;
+  const dd = d.getDate();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${mo}/${dd} ${hh}:${mm}`;
+}
+
 function groupCard(p) {
   const img = firstImg(p.image_url);
-  const thumbEl = img
-    ? `<img class="group-thumb" src="${esc(img)}" loading="lazy" alt="">`
-    : `<div class="group-thumb-placeholder">🛒</div>`;
-  const dlLabel = deadlineLabel(p.deadline);
   const isOpen = p.status === 'open';
-  const statusBadge = isOpen
-    ? '<span class="gbadge gbadge-open">開團中</span>'
-    : '<span class="gbadge gbadge-ended">已結束</span>';
-  const clickable = isOpen ? `onclick="goOrder('${esc(p.product_id)}')"` : '';
-  return `<div class="group-card${isOpen ? '' : ' group-ended'}" ${clickable}>
-    ${thumbEl}
-    <div class="group-info">
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        ${statusBadge}
-        <div class="group-name">${esc(p.name)}</div>
+  const headerBg = isOpen ? 'linear-gradient(135deg,#00BFA5,#00897B)' : 'linear-gradient(135deg,#9E9E9E,#757575)';
+  const btnBg    = isOpen ? '#00BFA5' : '#BDBDBD';
+  const deadlineColor = isOpen ? '#E53935' : '#999';
+  const imgEl = img
+    ? `<img src="${esc(img)}" loading="lazy" alt="" style="width:100%;max-height:220px;object-fit:cover;display:block">`
+    : '';
+  const desc = p.description
+    ? `<div style="font-size:13px;line-height:1.5;color:var(--fg);margin-bottom:12px;white-space:pre-line">${esc(p.description)}</div>`
+    : '';
+  const btnHandler = isOpen ? `onclick="goOrder('${esc(p.product_id)}')"` : '';
+  const btnStyle = `width:100%;padding:14px;background:${btnBg};color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;letter-spacing:1px;${isOpen ? 'cursor:pointer' : 'cursor:default;opacity:.7'}`;
+
+  return `<div class="ann-card" style="padding:0;overflow:hidden;margin-bottom:16px;border-radius:14px">
+    <div style="background:${headerBg};padding:14px 16px 16px">
+      <div style="color:rgba(255,255,255,.8);font-size:12px;margin-bottom:4px">🛒 ${isOpen ? '團購開團囉！' : '團購已結束'}</div>
+      <div style="color:#fff;font-size:20px;font-weight:800;line-height:1.25;letter-spacing:.5px">${esc(p.name)}</div>
+    </div>
+    ${imgEl}
+    <div style="padding:14px 16px 16px">
+      ${desc}
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px">
+          <span>🟢 開團</span>
+          <span style="color:#00897B;font-weight:700">${fmtDT(p.created_at)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px">
+          <span>🕐 截止</span>
+          <span style="color:${deadlineColor};font-weight:700">${fmtDT(p.deadline)}</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">
+          NT$ ${Number(p.price||0).toLocaleString()} / ${esc(p.unit||'份')} · 已有 ${p.totalOrders} 人參團
+        </div>
       </div>
-      <div class="group-price">NT$ ${Number(p.price||0).toLocaleString()} / ${esc(p.unit||'份')}</div>
-      <div class="group-stats">已有 ${p.totalOrders} 人參團</div>
-      <div class="group-deadline">${dlLabel}</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px">開團：${relTime(p.created_at)}</div>
+      <button ${btnHandler} style="${btnStyle}">${isOpen ? '立即參團 🎉' : '已結束'}</button>
     </div>
   </div>`;
 }
