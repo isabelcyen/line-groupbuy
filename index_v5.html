@@ -627,15 +627,33 @@ async function init() {
 
     await liff.init({ liffId: state.liffId });
 
-    if (!liff.isLoggedIn()) {
-      // 未登入時強制導向 LINE 登入，登入完成後回到此頁
+    // 優先從 context 取 userId（最可靠，不需 profile scope）
+    try {
+      const ctx = liff.getContext();
+      if (ctx && ctx.userId) {
+        state.lineUserId = ctx.userId;
+      }
+    } catch(e) { /* context 不可用時忽略 */ }
+
+    // 再從 profile 取 displayName；若 context 沒取到 userId 也在這裡補上
+    if (liff.isLoggedIn()) {
+      try {
+        const profile = await liff.getProfile();
+        if (!state.lineUserId) state.lineUserId = profile.userId;
+        state.displayName = profile.displayName;
+      } catch(e) {
+        console.warn('getProfile failed:', e.message);
+      }
+    } else {
       liff.login({ redirectUri: window.location.href });
-      return; // 等待重導向，後續程式不執行
+      return;
     }
 
-    const profile     = await liff.getProfile();
-    state.lineUserId  = profile.userId;
-    state.displayName = profile.displayName;
+    if (!state.lineUserId) {
+      document.getElementById('loading').innerHTML =
+        '<div style="color:red;padding:32px;text-align:center">無法取得您的 LINE 帳號，請在 LINE 內開啟此頁面</div>';
+      return;
+    }
 
     await loadProduct(pid);
     document.getElementById('loading').style.display = 'none';

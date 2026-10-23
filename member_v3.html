@@ -541,7 +541,7 @@ function groupCard(p) {
 }
 
 function goOrder(productId) {
-  const url = `${ORDER_LIFF_BASE}?productId=${productId}`;
+  const url = `${ORDER_LIFF_BASE}?pid=${productId}`;
   if (liff.isInClient()) {
     liff.openWindow({ url, external: false });
   } else {
