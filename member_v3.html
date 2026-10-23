@@ -135,6 +135,20 @@ html, body {
   transition: opacity .15s;
 }
 .group-card:active { opacity: .75; }
+.group-ended { opacity: .65; cursor: default; }
+.group-ended:active { opacity: .65; }
+.gbadge {
+  display: inline-block; padding: 2px 7px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+}
+.gbadge-open  { background: #d4edda; color: #155724; }
+.gbadge-ended { background: #e2e3e5; color: #495057; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .gbadge-open  { background: #1a4027; color: #6fcf97; }
+  :root:not([data-theme="light"]) .gbadge-ended { background: #3a3a3a; color: #aaa; }
+}
+:root[data-theme="dark"] .gbadge-open  { background: #1a4027; color: #6fcf97; }
+:root[data-theme="dark"] .gbadge-ended { background: #3a3a3a; color: #aaa; }
 .group-thumb {
   width: 90px; height: 90px; object-fit: cover; flex-shrink: 0;
   background: var(--border);
@@ -446,34 +460,58 @@ function annCard(a, pinned) {
 async function loadGroups() {
   loaded.groups = true;
   try {
-    const res = await api({ action: 'get_active_groups_v2' });
+    const res = await api({ action: 'get_all_groups' });
     const products = res.products || [];
     if (!products.length) {
       document.getElementById('groups-list').innerHTML =
-        '<div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-msg">目前沒有進行中的團購</div></div>';
+        '<div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-msg">目前還沒有團購記錄</div></div>';
       return;
     }
-    const html = products.map(p => {
-      const img = firstImg(p.image_url);
-      const thumbEl = img
-        ? `<img class="group-thumb" src="${esc(img)}" loading="lazy" alt="">`
-        : `<div class="group-thumb-placeholder">🛒</div>`;
-      const dlLabel = deadlineLabel(p.deadline);
-      return `<div class="group-card" onclick="goOrder('${esc(p.product_id)}')">
-        ${thumbEl}
-        <div class="group-info">
-          <div class="group-name">${esc(p.name)}</div>
-          <div class="group-price">NT$ ${Number(p.price||0).toLocaleString()} / ${esc(p.unit||'份')}</div>
-          <div class="group-stats">已有 ${p.totalOrders} 人參團 · 💬 ${p.commentCount}</div>
-          <div class="group-deadline">${dlLabel}</div>
-        </div>
-      </div>`;
-    }).join('');
+
+    // 分兩區：開團中 / 已結束
+    const active  = products.filter(p => p.status === 'open');
+    const ended   = products.filter(p => p.status !== 'open');
+
+    let html = '';
+    if (active.length) {
+      html += '<div class="section-sep">🟢 開團中</div>';
+      html += active.map(p => groupCard(p)).join('');
+    }
+    if (ended.length) {
+      html += '<div class="section-sep">⏹ 已結束</div>';
+      html += ended.map(p => groupCard(p)).join('');
+    }
     document.getElementById('groups-list').innerHTML = html;
   } catch(e) {
     document.getElementById('groups-list').innerHTML =
       `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-msg">${esc(e.message)}</div></div>`;
   }
+}
+
+function groupCard(p) {
+  const img = firstImg(p.image_url);
+  const thumbEl = img
+    ? `<img class="group-thumb" src="${esc(img)}" loading="lazy" alt="">`
+    : `<div class="group-thumb-placeholder">🛒</div>`;
+  const dlLabel = deadlineLabel(p.deadline);
+  const isOpen = p.status === 'open';
+  const statusBadge = isOpen
+    ? '<span class="gbadge gbadge-open">開團中</span>'
+    : '<span class="gbadge gbadge-ended">已結束</span>';
+  const clickable = isOpen ? `onclick="goOrder('${esc(p.product_id)}')"` : '';
+  return `<div class="group-card${isOpen ? '' : ' group-ended'}" ${clickable}>
+    ${thumbEl}
+    <div class="group-info">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${statusBadge}
+        <div class="group-name">${esc(p.name)}</div>
+      </div>
+      <div class="group-price">NT$ ${Number(p.price||0).toLocaleString()} / ${esc(p.unit||'份')}</div>
+      <div class="group-stats">已有 ${p.totalOrders} 人參團</div>
+      <div class="group-deadline">${dlLabel}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">開團：${relTime(p.created_at)}</div>
+    </div>
+  </div>`;
 }
 
 function goOrder(productId) {
