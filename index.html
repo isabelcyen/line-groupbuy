@@ -575,6 +575,11 @@ textarea.remark-input:focus { border-color: var(--green); }
 
 <div id="toast"></div>
 
+<!-- 👤 userId 除錯列（確認 LINE ID 是否已取得）-->
+<div id="uid-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.72);
+  color:#fff;font-size:10px;padding:4px 12px;text-align:center;z-index:9999;
+  font-family:monospace;letter-spacing:.3px;"></div>
+
 <style>
 @keyframes pop {
   0% { transform: scale(.6); opacity: 0; }
@@ -622,19 +627,69 @@ async function init() {
   try {
     const params   = new URLSearchParams(location.search);
     state.apiBase  = 'https://line-group-buy.isabelcyen.workers.dev/';
-    state.liffId   = '2011684954-yOthIDvq';
+    state.liffId   = '2011684954-69W5ZbCT';
     const pid      = params.get('pid') || '';
 
     await liff.init({ liffId: state.liffId });
 
+    // ── 三重 fallback 取得 LINE userId ───────────────────────
+    // 1️⃣ liff.getContext()：LINE 內部瀏覽器最可靠，不需任何 scope
+    try {
+      const ctx = liff.getContext();
+      console.log('[LIFF] getContext:', JSON.stringify(ctx));
+      if (ctx && ctx.userId) state.lineUserId = ctx.userId;
+    } catch(e) { console.warn('[LIFF] getContext failed:', e.message); }
+
+    // 2️⃣ liff.getDecodedIDToken()：OpenID token 的 sub 欄位即 userId
+    if (!state.lineUserId) {
+      try {
+        const token = liff.getDecodedIDToken();
+        console.log('[LIFF] idToken sub:', token?.sub);
+        if (token?.sub) state.lineUserId = token.sub;
+      } catch(e) { console.warn('[LIFF] getDecodedIDToken failed:', e.message); }
+    }
+
+    // 3️⃣ liff.getProfile()：需要 profile scope，取不到也沒關係
     if (liff.isLoggedIn()) {
-      const profile     = await liff.getProfile();
-      state.lineUserId  = profile.userId;
-      state.displayName = profile.displayName;
+      try {
+        const profile = await liff.getProfile();
+        console.log('[LIFF] getProfile userId:', profile.userId);
+        if (!state.lineUserId) state.lineUserId = profile.userId;
+        state.displayName = profile.displayName;
+      } catch(e) {
+        console.warn('[LIFF] getProfile failed:', e.message);
+      }
+    } else {
+      liff.login({ redirectUri: window.location.href });
+      return;
+    }
+
+    console.log('[LIFF] final lineUserId:', state.lineUserId);
+
+    if (!state.lineUserId) {
+      document.getElementById('loading').innerHTML =
+        `<div style="color:red;padding:32px;text-align:center;font-size:14px">
+          ❌ 無法取得您的 LINE 帳號<br>
+          <small style="color:#666">請確認在 LINE 內開啟此頁面，且未使用外部瀏覽器</small>
+        </div>`;
+      return;
     }
 
     await loadProduct(pid);
     document.getElementById('loading').style.display = 'none';
+
+    // 顯示 userId debug 列（確認捕獲成功）
+    const bar = document.getElementById('uid-bar');
+    if (bar) {
+      const uid = state.lineUserId;
+      bar.textContent = uid
+        ? `✅ LINE ID: ${uid.slice(0,8)}…${uid.slice(-4)}`
+        : '❌ LINE ID 未取得';
+      bar.style.display = 'block';
+      bar.style.background = uid ? 'rgba(0,120,0,.8)' : 'rgba(180,0,0,.9)';
+      // 3 秒後自動縮小，但保持可見
+      setTimeout(() => { bar.style.opacity = '0.4'; }, 5000);
+    }
   } catch (err) {
     console.error('init error:', err);
     document.getElementById('loading').innerHTML =
@@ -878,6 +933,13 @@ function selectPayment(method) {
 
 // ── ✅ 確認下單 → 提交 → 成功 Modal ─────────────────────────────────────────
 async function submitOrder() {
+  // ── 安全護欄：LINE userId 必須存在才能下單 ────────────────
+  if (!state.lineUserId) {
+    showToast('❌ 無法取得您的 LINE 帳號，請重新進入此頁面');
+    console.error('[LIFF] submitOrder blocked: lineUserId empty');
+    return;
+  }
+
   const selected  = getSelectedVariants();
   const totalQty  = selected.reduce((s, v) => s + v.qty, 0);
   if (totalQty < 1) { showToast('請至少勾選一項規格並填入數量 ⚠️'); return; }
