@@ -521,7 +521,7 @@ tr:hover td { background: var(--green-bg); }
     <div class="form-row">
       <label>圖片（最多 4 張，點格子上傳）</label>
       <div class="img-upload-grid" id="prod-img-grid"></div>
-      <div class="img-upload-hint">支援 JPG / PNG / WEBP，上傳後自動儲存至 Google Drive</div>
+      <div class="img-upload-hint">支援 JPG / PNG / WEBP，上傳後自動存至 GitHub（LINE 可正常顯示）</div>
       <input type="file" id="prod-img-input" accept="image/*" style="display:none">
     </div>
     <div class="form-row">
@@ -561,6 +561,12 @@ tr:hover td { background: var(--green-bg); }
 <script>
 // ─── 設定 ─────────────────────────────────────────────
 const API = 'https://line-group-buy.isabelcyen.workers.dev';
+
+// ── GitHub 圖片上傳設定（若需更換 PAT，只改這裡）──
+const GITHUB_PAT   = 'YOUR_GITHUB_PAT_HERE';  // ← 貼上新 PAT
+const GITHUB_OWNER = 'isabelcyen';
+const GITHUB_REPO  = 'line-groupbuy';
+
 let savedSecret = localStorage.getItem('admin_secret') || '';
 
 // 初次進入若無密碼，立即要求輸入
@@ -593,6 +599,40 @@ function getSecret(fieldId) {
   const v = document.getElementById(fieldId)?.value || savedSecret;
   if (v) { savedSecret = v; localStorage.setItem('admin_secret', v); }
   return v;
+}
+
+// ─── GitHub 圖片上傳 ────────────────────────────────
+async function uploadToGitHub(b64, fileName) {
+  if (!GITHUB_PAT || GITHUB_PAT === 'YOUR_GITHUB_PAT_HERE') {
+    throw new Error('請先在 admin.html 的 GITHUB_PAT 填入 Personal Access Token');
+  }
+  const ext  = (fileName.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const name = `prod_${Date.now()}.${ext}`;
+  const path = `images/${name}`;
+
+  const resp = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${GITHUB_PAT}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github+json',
+      },
+      body: JSON.stringify({
+        message: `Upload product image ${name}`,
+        content: b64,
+      }),
+    }
+  );
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.message || `GitHub API 錯誤 ${resp.status}`);
+  }
+
+  // 回傳 GitHub Pages 公開 URL（LINE LIFF 可正常顯示）
+  return `https://${GITHUB_OWNER}.github.io/${GITHUB_REPO}/${path}`;
 }
 
 // ─── Util ─────────────────────────────────────────────
@@ -858,7 +898,7 @@ function removeImgSlot(idx) {
   renderImgSlots();
 }
 
-// 綁定 file input change（只綁一次，懶初始化）
+// 綁定 file input change（只綁一次）
 let _imgInputBound = false;
 function ensureImgInputBound() {
   if (_imgInputBound) return;
@@ -882,16 +922,12 @@ function ensureImgInputBound() {
         reader.onerror = rej;
         reader.readAsDataURL(file);
       });
-      // 上傳到 GAS → Google Drive
-      const secret = getSecret('prod-secret');
-      const result = await api({
-        action:    'upload_image',
-        imageData: b64,
-        mimeType:  file.type || 'image/jpeg',
-        fileName:  file.name || ('img_' + Date.now() + '.jpg'),
-        adminSecret: secret || savedSecret,
-      });
-      prodImageUrls[idx] = result.imageUrl;
+
+      // ── 上傳到 GitHub → 回傳 GitHub Pages URL（LINE LIFF 可顯示）──
+      toast('⏳ 上傳中…');
+      const url = await uploadToGitHub(b64, file.name || ('img_' + Date.now() + '.jpg'));
+      prodImageUrls[idx] = url;
+      toast('✅ 圖片上傳成功！');
     } catch(e) {
       toast('圖片上傳失敗：' + e.message);
     }
@@ -913,13 +949,11 @@ function openProductModal() {
 
 function editProduct(p) {
   ensureImgInputBound();
-  // 解析現有圖片 URL
   prodImageUrls = (p.image_url || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
   document.getElementById('prod-id').value = p.product_id;
   document.getElementById('prod-modal-title').textContent = '編輯團購';
   document.getElementById('prod-name').value  = p.name || '';
   document.getElementById('prod-desc').value  = p.description || '';
-  // 把已儲存的規格（JSON 陣列格式）轉回 "名稱(價格/限量)" 顯示
   try {
     const vs = JSON.parse(p.variants || '[]');
     document.getElementById('prod-variants').value = vs.map(v => {
@@ -950,7 +984,6 @@ async function saveProduct() {
   if (!name) { toast('請填寫團購名稱'); return; }
   if (!secret) { toast('請填寫管理員密碼'); return; }
 
-  // 逐行解析規格
   const variantLines = variantRaw.split('\n').map(l => l.trim()).filter(Boolean);
   if (!variantLines.length) { toast('請至少填寫一個規格，格式：品項(價格)'); return; }
 
@@ -961,10 +994,7 @@ async function saveProduct() {
   });
   if (variants.some(v => v === null)) return;
 
-  // 以第一個規格的價格作為顯示售價
   const basePrice = variants[0].price;
-
-  // 送出格式為逗號分隔字串 "名稱(價格/限量)" — 後端 parseVariantDef_ 能解析
   const variantsStr = variantLines.join(',');
 
   const body = {
@@ -1092,7 +1122,6 @@ async function loadComments() {
   const el = document.getElementById('comment-list');
   el.innerHTML = '<div class="loading-row">載入中…</div>';
 
-  // If no products loaded yet, load them first
   if (!allProducts.length) await loadProducts();
 
   let allComments = [];
