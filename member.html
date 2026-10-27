@@ -485,6 +485,62 @@ let me = { userId: '', name: '', avatar: '' };
 let currentTab = 'announcements';
 let loaded = {};   // { announcements: true, ... }
 
+// ─── 規格帶價格快取 ───────────────────────────────────────
+const productVariantsCache = {};   // productId → variants[]
+let _prodCachePromise = null;
+
+async function ensureProductsCache() {
+  if (!_prodCachePromise) {
+    _prodCachePromise = api({ action: 'get_all_groups' })
+      .then(data => {
+        (data.products || []).forEach(p => {
+          productVariantsCache[p.product_id] =
+            Array.isArray(p.variants) ? p.variants : [];
+        });
+      })
+      .catch(() => {});
+  }
+  return _prodCachePromise;
+}
+
+// 解析 "名稱(價格)" 或 "名稱(價格/限量)"
+function parseVariantDefJS(str) {
+  const m = String(str || '').trim()
+    .match(/^(.+?)\((\d+(?:\.\d+)?)(?:\/(\d+))?\)$/);
+  if (m) return { name: m[1].trim(), price: Number(m[2]) };
+  return { name: String(str || '').trim(), price: 0 };
+}
+
+// 解析 "ii×2, e×3" → { ii:2, e:3 }
+function parseVariantQtysJS(variantStr) {
+  const result = {};
+  if (!variantStr) return result;
+  String(variantStr).split(',').forEach(part => {
+    const m = part.trim().match(/^(.+?)×(\d+)$/);
+    if (m) result[m[1].trim()] = (result[m[1].trim()] || 0) + Number(m[2]);
+  });
+  return result;
+}
+
+// 格式化為 "ii(30)×2, e(40)×3 共5件"
+function formatVariantDisplay(variantStr, variantDefs) {
+  const priceMap = {};
+  (variantDefs || []).forEach(vDef => {
+    const d = parseVariantDefJS(vDef);
+    if (d.name) priceMap[d.name] = d.price;
+  });
+  const qtys = parseVariantQtysJS(variantStr);
+  const entries = Object.entries(qtys);
+  if (!entries.length) return esc(variantStr);
+  const totalCount = entries.reduce((s, [, q]) => s + q, 0);
+  const parts = entries.map(([name, qty]) => {
+    const price = priceMap[name];
+    const priceStr = (price !== undefined && price > 0) ? `(${price})` : '';
+    return `${esc(name)}${priceStr}×${qty}`;
+  });
+  return parts.join(', ') + ` 共${totalCount}件`;
+}
+
 // ─── Util ─────────────────────────────────────────────────
 function fmt(iso) {
   if (!iso) return '—';
@@ -720,15 +776,18 @@ async function loadMyOrders() {
   const el = document.getElementById('myorder-list');
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>載入中…</div>';
   if (!me.userId) { el.innerHTML = '<div class="empty"><div class="empty-icon">🔐</div>請先登入</div>'; return; }
-  const data = await api({ action: 'get_my_orders', lineUserId: me.userId });
+  const [data] = await Promise.all([
+    api({ action: 'get_my_orders', lineUserId: me.userId }),
+    ensureProductsCache(),
+  ]);
   const orders = data.orders || [];
   if (!orders.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>您還沒有參團紀錄</div>'; return;
   }
-  el.innerHTML = orders.map(o => renderOrderCard(o)).join('');
+  el.innerHTML = orders.map(o => renderOrderCard(o, productVariantsCache[o.product_id] || [])).join('');
 }
 
-function renderOrderCard(o) {
+function renderOrderCard(o, variantDefs = []) {
   const s = STATUS_INFO[o.pay_status] || STATUS_INFO.cancelled;
   const stepsDone = s.steps;
   const tlHtml = TL_STEPS.map((label, i) => {
@@ -766,7 +825,7 @@ function renderOrderCard(o) {
         ${img}
         <div class="order-info">
           <div class="order-name">${esc(o.product_name)}</div>
-          <div class="order-variant">${esc(o.variant)} × ${o.qty} 件</div>
+          <div class="order-variant">${formatVariantDisplay(o.variant, variantDefs)}</div>
           <div class="order-meta">
             <div class="order-total">NT$${o.total}</div>
             <span class="status-badge ${s.cls}">${s.icon} ${s.label}</span>
@@ -804,7 +863,10 @@ async function loadArrivals() {
   const el = document.getElementById('arrival-list');
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>載入中…</div>';
   if (!me.userId) { el.innerHTML = '<div class="empty"><div class="empty-icon">🔐</div>請先登入</div>'; return; }
-  const data = await api({ action: 'get_arrivals', lineUserId: me.userId });
+  const [data] = await Promise.all([
+    api({ action: 'get_arrivals', lineUserId: me.userId }),
+    ensureProductsCache(),
+  ]);
   const orders = data.orders || [];
   if (!orders.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>目前沒有到貨通知</div>'; return;
@@ -820,7 +882,7 @@ async function loadArrivals() {
           ${img}
           <div class="arrival-info">
             <div class="arrival-name">${esc(o.product_name)}</div>
-            <div class="arrival-variant">${esc(o.variant)} × ${o.qty} 件</div>
+            <div class="arrival-variant">${formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || [])}</div>
             <div style="margin-top:4px">
               <span class="status-badge ${shipped ? 'st-shipped' : 'st-received'}">
                 ${shipped ? '🚚 等待取貨' : '🎉 已收貨'}
