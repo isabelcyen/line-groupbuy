@@ -638,7 +638,6 @@ function renderGroupCard(p) {
         ${p.description ? `<div class="prod-desc">${esc(p.description.slice(0,60))}${p.description.length>60?'…':''}</div>` : ''}
         ${variants ? `<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">規格：${esc(variants)}</div>` : ''}
         <div class="prod-meta">
-          <div class="prod-price">NT$${p.price}<span>/${esc(p.unit||'份')}</span></div>
           <div class="prod-stats">${p.totalOrders}人已參團</div>
         </div>
       </div>
@@ -646,19 +645,6 @@ function renderGroupCard(p) {
         ${!isExpired
           ? `<button class="btn-join" onclick="joinGroup('${esc(p.product_id)}','${esc(p.name)}')">🎉 立即參團</button>`
           : `<button class="btn-join" disabled style="background:var(--muted)">已截止</button>`}
-        <button class="btn-comment-toggle" onclick="toggleComments('${esc(p.product_id)}')">
-          💬 留言 <span id="cnt-${esc(p.product_id)}">${p.commentCount||0}</span>
-        </button>
-      </div>
-      <div class="comment-area" id="cmts-${esc(p.product_id)}">
-        <div class="comment-list" id="cmt-list-${esc(p.product_id)}">
-          <div class="no-comment">載入留言中…</div>
-        </div>
-        <div class="comment-input-row">
-          <input type="text" id="cmt-input-${esc(p.product_id)}" placeholder="留言互動…" maxlength="200"
-            onkeydown="if(event.key==='Enter')postComment('${esc(p.product_id)}')">
-          <button class="btn-send" onclick="postComment('${esc(p.product_id)}')">送出</button>
-        </div>
       </div>
     </div>`;
 }
