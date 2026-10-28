@@ -766,11 +766,14 @@ const STATUS_INFO = {
   pending:   { label: '待付款', cls: 'st-pending',   icon: '⏳', steps: [1,0,0,0,0] },
   reviewing: { label: '審核中', cls: 'st-reviewing', icon: '🔍', steps: [1,1,0,0,0] },
   paid:      { label: '已付款', cls: 'st-paid',      icon: '✅', steps: [1,1,1,0,0] },
-  shipped:   { label: '出貨中', cls: 'st-shipped',   icon: '🚚', steps: [1,1,1,1,0] },
+  shipped:   { label: '已出貨', cls: 'st-shipped',   icon: '🚚', steps: [1,1,1,1,0] },
   received:  { label: '已收貨', cls: 'st-received',  icon: '🎉', steps: [1,1,1,1,1] },
   cancelled: { label: '已取消', cls: 'st-cancelled', icon: '❌', steps: [0,0,0,0,0] },
 };
-const TL_STEPS = ['待付款','已付款','確認中','出貨','收貨'];
+// 未完成時的步驟標籤
+const TL_STEPS =      ['待付款','已付款','確認中','出貨','收貨'];
+// 完成後顯示過去式
+const TL_STEPS_DONE = ['待付款','已付款','已收款','已出貨','已收貨'];
 
 async function loadMyOrders() {
   const el = document.getElementById('myorder-list');
@@ -793,13 +796,14 @@ function renderOrderCard(o, variantDefs = []) {
   const tlHtml = TL_STEPS.map((label, i) => {
     const done = stepsDone[i] === 1;
     const isCur = done && (i === TL_STEPS.length-1 || !stepsDone[i+1]);
+    const displayLabel = done ? TL_STEPS_DONE[i] : label;
     return `
       ${i > 0 ? `<div class="tl-line${done ? ' done' : ''}"></div>` : ''}
       <div class="tl-step">
         <div class="tl-dot${isCur ? ' current' : done ? ' done' : ''}">
           ${done ? '✓' : (i+1)}
         </div>
-        <div class="tl-label${isCur ? ' current' : done ? ' done' : ''}">${label}</div>
+        <div class="tl-label${isCur ? ' current' : done ? ' done' : ''}">${displayLabel}</div>
       </div>`;
   }).join('');
 
