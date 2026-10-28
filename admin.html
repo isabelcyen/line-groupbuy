@@ -414,7 +414,7 @@ tr:hover td { background: var(--green-bg); }
             <option value="pending">待付款</option>
             <option value="reviewing">審核中</option>
             <option value="paid">已付款</option>
-            <option value="shipped">出貨中</option>
+            <option value="shipped">已出貨</option>
             <option value="received">已收貨</option>
             <option value="cancelled">已取消</option>
           </select>
@@ -631,7 +631,6 @@ async function uploadToGitHub(b64, fileName) {
     throw new Error(err.message || `GitHub API 錯誤 ${resp.status}`);
   }
 
-  // 回傳 GitHub Pages 公開 URL（LINE LIFF 可正常顯示）
   return `https://${GITHUB_OWNER}.github.io/${GITHUB_REPO}/${path}`;
 }
 
@@ -655,7 +654,7 @@ function statusBadge(st) {
     pending:   ['b-pending',   '⏳待付款'],
     reviewing: ['b-reviewing', '🔍審核中'],
     paid:      ['b-paid',      '✅已付款'],
-    shipped:   ['b-shipped',   '🚚出貨中'],
+    shipped:   ['b-shipped',   '🚚已出貨'],   // ← 改為「已出貨」
     received:  ['b-received',  '🎉已收貨'],
     cancelled: ['b-cancelled', '❌已取消'],
     open:      ['b-open',      '✅開放中'],
@@ -860,14 +859,13 @@ function parseVariantDef(str) {
 }
 
 /* ══ 圖片上傳：最多 4 格 ══ */
-let prodImageUrls = [];       // 已上傳完成的 URL 陣列
-let _pendingSlot  = -1;       // 等待 file input 的格子索引
+let prodImageUrls = [];
+let _pendingSlot  = -1;
 
 function renderImgSlots() {
   const grid = document.getElementById('prod-img-grid');
   grid.innerHTML = '';
   const MAX = 4;
-  // 已有的圖片格
   prodImageUrls.forEach((url, i) => {
     const slot = document.createElement('div');
     slot.className = 'img-slot';
@@ -875,7 +873,6 @@ function renderImgSlots() {
       <button class="rm-btn" onclick="removeImgSlot(${i})" title="移除">✕</button>`;
     grid.appendChild(slot);
   });
-  // 空格（可點擊新增）
   if (prodImageUrls.length < MAX) {
     const add = document.createElement('div');
     add.className = 'img-slot';
@@ -898,7 +895,6 @@ function removeImgSlot(idx) {
   renderImgSlots();
 }
 
-// 綁定 file input change（只綁一次）
 let _imgInputBound = false;
 function ensureImgInputBound() {
   if (_imgInputBound) return;
@@ -909,13 +905,11 @@ function ensureImgInputBound() {
     const idx = _pendingSlot;
     _pendingSlot = -1;
 
-    // 標記上傳中
     const grid = document.getElementById('prod-img-grid');
     const slots = grid.querySelectorAll('.img-slot');
     if (slots[idx]) slots[idx].classList.add('uploading');
 
     try {
-      // 轉 base64
       const b64 = await new Promise((res, rej) => {
         const reader = new FileReader();
         reader.onload = e => res(e.target.result.split(',')[1]);
@@ -923,7 +917,6 @@ function ensureImgInputBound() {
         reader.readAsDataURL(file);
       });
 
-      // ── 上傳到 GitHub → 回傳 GitHub Pages URL（LINE LIFF 可顯示）──
       toast('⏳ 上傳中…');
       const url = await uploadToGitHub(b64, file.name || ('img_' + Date.now() + '.jpg'));
       prodImageUrls[idx] = url;
@@ -1069,7 +1062,8 @@ async function loadOrders() {
 }
 
 function renderOrderRow(o, compact) {
-  return `<tr>
+  // 每列加 data-oid 屬性，供出貨後直接更新該列
+  return `<tr data-oid="${esc(o.order_id)}">
     <td style="font-size:11px;color:var(--muted)">${esc(o.order_id)}</td>
     <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${esc(o.product_name)}</td>
     <td style="font-size:12px">${esc(o.member_name||o.line_user_id||'—')}</td>
@@ -1089,24 +1083,50 @@ async function confirmPayment(oid) {
   if (!secret) return;
   try {
     await api({ action: 'confirm_payment', orderId: oid, adminSecret: secret });
-    toast('✅ 已確認付款'); refresh(['dashboard','orders','payments']);
+    toast('✅ 已確認付款');
+    // 直接更新該列，不重整整張表
+    updateOrderRowInPlace(oid, 'paid');
+    refresh(['dashboard', 'payments']);
   } catch(e) { toast('失敗：' + e.message); }
 }
+
 async function markShipped(oid) {
   const secret = savedSecret || prompt('管理員密碼');
   if (!secret) return;
   try {
     await api({ action: 'mark_shipping', orderId: oid, adminSecret: secret });
-    toast('🚚 已標記出貨'); refresh(['dashboard','orders']);
+    toast('🚚 已標記出貨');
+    // 直接更新該列狀態與按鈕，不重整整張表
+    updateOrderRowInPlace(oid, 'shipped');
+    refresh(['dashboard']);
   } catch(e) { toast('失敗：' + e.message); }
 }
+
+/**
+ * 出貨 / 確認付款後直接更新該列，避免整張表閃爍重整。
+ * 同時更新儀表板和訂單列表中相同 order_id 的列。
+ */
+function updateOrderRowInPlace(oid, newStatus) {
+  // 找出所有帶此 oid 的列（儀表板 + 訂單管理可能各有一列）
+  document.querySelectorAll(`tr[data-oid="${oid}"]`).forEach(row => {
+    const cells = row.cells;
+    if (!cells || cells.length < 7) return;
+    // 第 6 格：狀態 badge
+    cells[5].innerHTML = statusBadge(newStatus);
+    // 第 7 格：操作按鈕 — 出貨後清空（無進一步操作）
+    cells[6].innerHTML = '<div style="display:flex;gap:4px;flex-wrap:wrap"></div>';
+  });
+}
+
 async function cancelOrder(oid) {
   if (!confirm('確定取消此訂單？')) return;
   const secret = savedSecret || prompt('管理員密碼');
   if (!secret) return;
   try {
     await api({ action: 'cancel_order', orderId: oid, adminSecret: secret });
-    toast('✅ 已取消訂單'); refresh(['dashboard','orders']);
+    toast('✅ 已取消訂單');
+    updateOrderRowInPlace(oid, 'cancelled');
+    refresh(['dashboard']);
   } catch(e) { toast('失敗：' + e.message); }
 }
 
