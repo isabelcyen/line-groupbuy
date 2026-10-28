@@ -367,9 +367,9 @@ tr:hover td { background: var(--green-bg); }
         <div class="section-header"><h3>近期訂單</h3></div>
         <table>
           <thead><tr>
-            <th>訂單</th><th>團購</th><th>團員</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
+            <th>訂單</th><th>團購</th><th>團員</th><th>電話</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
           </tr></thead>
-          <tbody id="dash-orders"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
+          <tbody id="dash-orders"><tr><td colspan="8" class="loading-row">載入中…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -419,9 +419,9 @@ tr:hover td { background: var(--green-bg); }
         </div>
         <table>
           <thead><tr>
-            <th>訂單</th><th>團購</th><th>團員</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
+            <th>訂單</th><th>團購</th><th>團員</th><th>電話</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
           </tr></thead>
-          <tbody id="order-list"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
+          <tbody id="order-list"><tr><td colspan="8" class="loading-row">載入中…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -705,7 +705,7 @@ async function loadDashboard() {
   const recent = orders.slice(0, 20);
   const tbody = document.getElementById('dash-orders');
   if (!recent.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">尚無訂單</td></tr>'; return;
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">尚無訂單</td></tr>'; return;
   }
   tbody.innerHTML = recent.map(o => renderOrderRow(o, true)).join('');
 }
@@ -1040,7 +1040,7 @@ async function loadOrders() {
   if (filter) orders = orders.filter(o => o.pay_status === filter);
   const tbody = document.getElementById('order-list');
   if (!orders.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">沒有符合的訂單</td></tr>'; return;
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">沒有符合的訂單</td></tr>'; return;
   }
   tbody.innerHTML = orders.map(o => renderOrderRow(o, false)).join('');
 }
@@ -1051,6 +1051,7 @@ function renderOrderRow(o, compact) {
     <td style="font-size:11px;color:var(--muted)">${esc(o.order_id)}</td>
     <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${esc(o.product_name)}</td>
     <td style="font-size:12px">${esc(o.member_name||o.line_user_id||'—')}</td>
+    <td style="font-size:13px;font-weight:600;color:var(--text);letter-spacing:1px">${o.phone_last3 ? `···${esc(o.phone_last3)}` : '—'}</td>
     <td style="font-size:12px">${esc(o.variant||'—')} x${o.qty}</td>
     <td style="font-weight:600;color:var(--green)">NT$${o.total}</td>
     <td>${statusBadge(o.pay_status)}</td>
