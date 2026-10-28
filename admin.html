@@ -680,7 +680,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
     document.querySelectorAll('.panel').forEach(pn => pn.classList.remove('active'));
     document.getElementById('panel-' + p).classList.add('active');
     document.getElementById('panel-title').textContent = titles[p] || p;
-    if (!loaded[p]) { loaded[p] = true; loadPanel(p); }
+    if (!loaded[p] || p === 'orders') { loaded[p] = true; loadPanel(p); }
   });
 });
 
