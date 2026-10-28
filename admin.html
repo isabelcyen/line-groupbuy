@@ -321,9 +321,6 @@ tr:hover td { background: var(--green-bg); }
     <div class="nav-item" data-panel="orders">
       <span class="ni">📋</span><span class="label">訂單管理</span>
     </div>
-    <div class="nav-item" data-panel="comments">
-      <span class="ni">💬</span><span class="label">留言管理</span>
-    </div>
   </div>
   <div class="nav-section">
     <div class="nav-label">財務</div>
@@ -429,18 +426,6 @@ tr:hover td { background: var(--green-bg); }
       </div>
     </div>
 
-    <!-- ─── 留言管理 ─── -->
-    <div class="panel" id="panel-comments">
-      <div class="section-card">
-        <div class="section-header">
-          <h3>留言管理</h3>
-          <select id="comment-prod-filter" onchange="loadComments()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px">
-            <option value="">所有團購</option>
-          </select>
-        </div>
-        <div id="comment-list"><div class="loading-row">載入中…</div></div>
-      </div>
-    </div>
 
     <!-- ─── 付款記錄 ─── -->
     <div class="panel" id="panel-payments">
@@ -669,7 +654,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 // ─── Navigation ───────────────────────────────────────
 const titles = {
   dashboard: '儀表板', announcements: '一般公告', products: '團購管理',
-  orders: '訂單管理', comments: '留言管理', payments: '付款記錄',
+  orders: '訂單管理', payments: '付款記錄',
 };
 const loaded = {};
 document.querySelectorAll('.nav-item').forEach(el => {
@@ -690,7 +675,6 @@ function loadPanel(p) {
     announcements: loadAnnouncements,
     products: loadProducts,
     orders: loadOrders,
-    comments: loadComments,
     payments: loadPayments,
   }[p];
   if (fn) fn().catch(e => toast('載入失敗：' + e.message));
@@ -819,10 +803,6 @@ async function deleteAnn(annId) {
 async function loadProducts() {
   const data = await api({ action: 'list_products', adminSecret: savedSecret });
   allProducts = data.products || [];
-  // update comment filter
-  const sel = document.getElementById('comment-prod-filter');
-  sel.innerHTML = '<option value="">所有團購</option>' +
-    allProducts.map(p => `<option value="${esc(p.product_id)}">${esc(p.name)}</option>`).join('');
 
   const tbody = document.getElementById('product-list');
   if (!allProducts.length) {
@@ -843,8 +823,10 @@ async function loadProducts() {
           <button class="btn btn-amber btn-sm" onclick="openAnnounceModal('${esc(p.product_id)}','${esc(p.name)}')">📣</button>
           <button class="btn btn-ghost btn-sm" onclick="editProduct(${JSON.stringify(p).replace(/"/g,'&quot;')})">編輯</button>
           ${p.status === 'open'
-            ? `<button class="btn btn-danger btn-sm" onclick="closeProduct('${esc(p.product_id)}')">結團</button>`
-            : `<button class="btn btn-ghost btn-sm" onclick="openProduct('${esc(p.product_id)}')">重開</button>`}
+            ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button>`
+            : p.status === 'notified'
+              ? `<span style="color:var(--muted);font-size:12px;padding:4px 6px">✅已通知</span>`
+              : `<button class="btn btn-ghost btn-sm" onclick="openProduct('${esc(p.product_id)}')">重開</button>`}
         </div>
       </td>
     </tr>`;
@@ -1013,13 +995,14 @@ async function saveProduct() {
   } catch(e) { toast('失敗：' + e.message); }
 }
 
-async function closeProduct(pid) {
-  if (!confirm('確定結團？')) return;
+async function notifyArrived(pid, pname) {
+  if (!confirm(`確定發送「${pname}」到貨通知到群組？`)) return;
   const secret = savedSecret || prompt('管理員密碼');
   if (!secret) return;
   try {
-    await api({ action: 'update_product', productId: pid, status: 'closed', adminSecret: secret });
-    toast('✅ 已結團'); loaded.products = false; loadProducts(); loaded.products = true;
+    await api({ action: 'notify_arrived', productId: pid, adminSecret: secret });
+    toast('📢 到貨通知已發送至群組');
+    loaded.products = false; loadProducts(); loaded.products = true;
   } catch(e) { toast('失敗：' + e.message); }
 }
 async function openProduct(pid) {
@@ -1137,12 +1120,8 @@ function refresh(panels) {
   if (active && panels.includes(active)) { loadPanel(active); loaded[active] = true; }
 }
 
-// ─── Comments ─────────────────────────────────────────
+// ─── Comments (removed) ───────────────────────────────
 async function loadComments() {
-  const pid = document.getElementById('comment-prod-filter')?.value || '';
-  const el = document.getElementById('comment-list');
-  el.innerHTML = '<div class="loading-row">載入中…</div>';
-
   if (!allProducts.length) await loadProducts();
 
   let allComments = [];
