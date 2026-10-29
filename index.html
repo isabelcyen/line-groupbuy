@@ -762,6 +762,14 @@ function renderProduct(p) {
     document.getElementById('pay-card').style.display           = '';
     document.getElementById('phone-card').style.display         = '';
     document.getElementById('remark-card').style.display        = '';
+    // 自動帶入已在「設定」頁存過的電話後三碼
+    try {
+      const saved = localStorage.getItem('phone_last3') || '';
+      if (saved && /^\d{3}$/.test(saved)) {
+        const el = document.getElementById('phone-last3');
+        if (el && !el.value) el.value = saved;
+      }
+    } catch(e) {}
   }
 
   // ── 倒計時 ────────────────────────────────────────────────

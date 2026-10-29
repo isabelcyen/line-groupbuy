@@ -392,6 +392,70 @@ body {
   text-transform: uppercase; letter-spacing: .08em;
   padding: 4px 4px 8px;
 }
+
+/* ─── Settings ─── */
+.settings-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  margin-bottom: 14px;
+}
+.settings-card .sc-title {
+  font-size: 14px; font-weight: 700; color: var(--text);
+  margin-bottom: 4px;
+}
+.settings-card .sc-desc {
+  font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.5;
+}
+.phone-row {
+  display: flex; gap: 10px; align-items: center;
+}
+.phone-prefix {
+  font-size: 15px; color: var(--sub); white-space: nowrap; letter-spacing: 1px;
+}
+.phone-input {
+  flex: 1; padding: 11px 14px;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  background: var(--bg); color: var(--text);
+  font-family: inherit; font-size: 18px; font-weight: 700;
+  letter-spacing: 4px; text-align: center;
+  outline: none; transition: border-color .15s;
+}
+.phone-input:focus { border-color: var(--green); }
+.btn-save-phone {
+  width: 100%; padding: 13px;
+  background: var(--green); color: #fff;
+  border: none; border-radius: 10px;
+  font-family: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 14px;
+  transition: background .15s;
+}
+.btn-save-phone:hover { background: var(--green-dk); }
+.btn-save-phone:disabled { background: var(--muted); cursor: not-allowed; }
+.phone-saved-hint {
+  font-size: 12px; color: var(--green); margin-top: 8px;
+  text-align: center; min-height: 18px; font-weight: 600;
+}
+.settings-profile {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+}
+.settings-profile img {
+  width: 52px; height: 52px; border-radius: 50%; object-fit: cover;
+  background: var(--border); flex-shrink: 0;
+}
+.settings-profile .sp-name {
+  font-size: 16px; font-weight: 700; color: var(--text);
+}
+.settings-profile .sp-id {
+  font-size: 11px; color: var(--muted); margin-top: 2px;
+  word-break: break-all;
+}
 </style>
 </head>
 <body>
@@ -423,6 +487,9 @@ body {
   <button class="tab-btn" data-tab="arrivals">
     <span class="tab-icon">🔔</span>到貨通知
   </button>
+  <button class="tab-btn" data-tab="settings">
+    <span class="tab-icon">⚙️</span>設定
+  </button>
 </nav>
 
 <!-- Content -->
@@ -445,6 +512,32 @@ body {
   <!-- ── Tab 4: 到貨通知 ── -->
   <section class="tab-panel" id="tab-arrivals">
     <div id="arrival-list"><div class="empty"><div class="empty-icon">🔔</div>載入中…</div></div>
+  </section>
+
+  <!-- ── Tab 5: 設定 ── -->
+  <section class="tab-panel" id="tab-settings">
+    <!-- 個人資訊 -->
+    <div class="settings-profile" id="settings-profile">
+      <img id="sp-avatar" src="" alt="" onerror="this.style.display='none'">
+      <div>
+        <div class="sp-name" id="sp-name">—</div>
+        <div class="sp-id" id="sp-id"></div>
+      </div>
+    </div>
+
+    <!-- 電話後三碼設定 -->
+    <div class="settings-card">
+      <div class="sc-title">📱 電話號碼後三碼</div>
+      <div class="sc-desc">供取貨時核對身份使用，僅管理員可見。請填入您 LINE 帳號綁定手機號碼的後三碼。</div>
+      <div class="phone-row">
+        <span class="phone-prefix">···</span>
+        <input class="phone-input" type="tel" id="settings-phone"
+          maxlength="3" inputmode="numeric" pattern="[0-9]{3}"
+          placeholder="XXX">
+      </div>
+      <div class="phone-saved-hint" id="phone-hint"></div>
+      <button class="btn-save-phone" onclick="savePhoneSetting()">儲存設定</button>
+    </div>
   </section>
 </main>
 
@@ -623,6 +716,7 @@ async function loadTab(tab) {
     groups:        loadGroups,
     myorders:      loadMyOrders,
     arrivals:      loadArrivals,
+    settings:      loadSettings,
   };
   try {
     await loaders[tab]?.();
@@ -963,6 +1057,45 @@ async function submitProof() {
   } finally {
     btn.textContent = '確認送出'; btn.disabled = false;
   }
+}
+
+// ─── Tab 5: 設定 ─────────────────────────────────────────
+function loadSettings() {
+  // 個人資訊
+  const spAvatar = document.getElementById('sp-avatar');
+  const spName   = document.getElementById('sp-name');
+  const spId     = document.getElementById('sp-id');
+  if (me.avatar) { spAvatar.src = me.avatar; spAvatar.style.display = ''; }
+  else spAvatar.style.display = 'none';
+  spName.textContent = me.name || '—';
+  spId.textContent   = me.userId ? `LINE ID: ${me.userId}` : '';
+
+  // 讀已存的電話後三碼
+  let saved = '';
+  try { saved = localStorage.getItem('phone_last3') || ''; } catch(e) {}
+  const phoneEl = document.getElementById('settings-phone');
+  phoneEl.value = saved;
+  const hintEl = document.getElementById('phone-hint');
+  hintEl.textContent = saved ? `✅ 目前已設定：···${saved}` : '';
+}
+
+function savePhoneSetting() {
+  const val = (document.getElementById('settings-phone').value || '').trim();
+  const hintEl = document.getElementById('phone-hint');
+  if (!val) {
+    hintEl.style.color = 'var(--red)';
+    hintEl.textContent = '請填入 3 位數字';
+    return;
+  }
+  if (!/^\d{3}$/.test(val)) {
+    hintEl.style.color = 'var(--red)';
+    hintEl.textContent = '格式錯誤，請輸入 3 位數字';
+    return;
+  }
+  try { localStorage.setItem('phone_last3', val); } catch(e) {}
+  hintEl.style.color = 'var(--green)';
+  hintEl.textContent = `✅ 已儲存：···${val}`;
+  toast('✅ 電話設定已儲存');
 }
 
 // ─── XSS escape ──────────────────────────────────────────
