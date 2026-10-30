@@ -1084,8 +1084,8 @@ async function loadShipping() {
           <!-- 會員標頭 -->
           <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:color-mix(in srgb,var(--green) 6%,var(--card));border-bottom:1px solid var(--border)">
             <div style="text-align:center;min-width:72px">
-              <div style="font-size:22px;font-weight:900;letter-spacing:4px;color:var(--text);line-height:1">${hasPhone ? `···${esc(m.phone_last3)}` : '—'}</div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px">取貨電話</div>
+              <div style="font-size:22px;font-weight:900;letter-spacing:4px;color:var(--text);line-height:1">${hasPhone ? esc(m.phone_last3) : '—'}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">取貨電話後三碼</div>
             </div>
             <div style="width:1px;height:36px;background:var(--border)"></div>
             <div>
