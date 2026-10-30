@@ -1060,7 +1060,7 @@ async function submitProof() {
 }
 
 // ─── Tab 5: 設定 ─────────────────────────────────────────
-function loadSettings() {
+async function loadSettings() {
   // 個人資訊
   const spAvatar = document.getElementById('sp-avatar');
   const spName   = document.getElementById('sp-name');
@@ -1070,17 +1070,33 @@ function loadSettings() {
   spName.textContent = me.name || '—';
   spId.textContent   = me.userId ? `LINE ID: ${me.userId}` : '';
 
-  // 讀已存的電話後三碼
-  let saved = '';
-  try { saved = localStorage.getItem('phone_last3') || ''; } catch(e) {}
   const phoneEl = document.getElementById('settings-phone');
+  const hintEl  = document.getElementById('phone-hint');
+  hintEl.style.color = 'var(--muted)';
+  hintEl.textContent = '讀取中…';
+
+  // 優先從後端讀取（跨裝置），fallback 至 localStorage
+  let saved = '';
+  try {
+    if (me.userId) {
+      const data = await api({ action: 'get_member_phone', lineUserId: me.userId });
+      saved = data.phone_last3 || '';
+    }
+  } catch(e) { console.warn('get_member_phone failed:', e); }
+
+  if (!saved) {
+    try { saved = localStorage.getItem('phone_last3') || ''; } catch(e) {}
+  }
+  // 同步至 localStorage 作為快取
+  if (saved) { try { localStorage.setItem('phone_last3', saved); } catch(e) {} }
+
   phoneEl.value = saved;
-  const hintEl = document.getElementById('phone-hint');
-  hintEl.textContent = saved ? `✅ 目前已設定：···${saved}` : '';
+  hintEl.style.color = saved ? 'var(--green)' : 'var(--muted)';
+  hintEl.textContent = saved ? `✅ 目前已設定：···${saved}` : '尚未設定';
 }
 
-function savePhoneSetting() {
-  const val = (document.getElementById('settings-phone').value || '').trim();
+async function savePhoneSetting() {
+  const val    = (document.getElementById('settings-phone').value || '').trim();
   const hintEl = document.getElementById('phone-hint');
   if (!val) {
     hintEl.style.color = 'var(--red)';
@@ -1092,10 +1108,25 @@ function savePhoneSetting() {
     hintEl.textContent = '格式錯誤，請輸入 3 位數字';
     return;
   }
-  try { localStorage.setItem('phone_last3', val); } catch(e) {}
-  hintEl.style.color = 'var(--green)';
-  hintEl.textContent = `✅ 已儲存：···${val}`;
-  toast('✅ 電話設定已儲存');
+  const btn = document.querySelector('.btn-save-phone');
+  btn.textContent = '儲存中…'; btn.disabled = true;
+  try {
+    // 儲存至後端（跨裝置同步）
+    await api({ action: 'save_member_phone', lineUserId: me.userId, memberName: me.name, phoneLastThree: val });
+    // 同步更新 localStorage 快取
+    try { localStorage.setItem('phone_last3', val); } catch(e) {}
+    hintEl.style.color = 'var(--green)';
+    hintEl.textContent = `✅ 已儲存：···${val}`;
+    toast('✅ 電話設定已儲存');
+  } catch(e) {
+    // API 失敗時仍先存 localStorage，讓當前裝置可用
+    try { localStorage.setItem('phone_last3', val); } catch(e2) {}
+    hintEl.style.color = 'var(--amber)';
+    hintEl.textContent = `⚠️ 暫存本機：···${val}（網路異常，請稍後重試）`;
+    toast('⚠️ 網路異常，電話暫存於本機');
+  } finally {
+    btn.textContent = '儲存設定'; btn.disabled = false;
+  }
 }
 
 // ─── XSS escape ──────────────────────────────────────────

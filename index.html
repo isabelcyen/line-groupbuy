@@ -606,6 +606,7 @@ const state = {
   product:        null,
   currentOrderId: '',
   payMethod:      'transfer',
+  memberPhone:    '',   // 從後端/localStorage 取得的電話後三碼
 };
 
 // ── 日期格式化 ────────────────────────────────────────────────────────────────
@@ -760,15 +761,8 @@ function renderProduct(p) {
     document.getElementById('pay-card').style.display           = '';
     document.getElementById('phone-card').style.display         = '';
     document.getElementById('remark-card').style.display        = '';
-    // 顯示已存的電話後三碼（唯讀，來自設定頁）
-    try {
-      const saved = localStorage.getItem('phone_last3') || '';
-      const dispEl = document.getElementById('phone-display');
-      if (dispEl) {
-        dispEl.textContent = (saved && /^\d{3}$/.test(saved)) ? `···${saved}` : '（尚未設定）';
-        dispEl.style.color = (saved && /^\d{3}$/.test(saved)) ? 'var(--text)' : '#e53935';
-      }
-    } catch(e) {}
+    // 顯示電話後三碼：優先後端（跨裝置），fallback localStorage
+    loadMemberPhone();
   }
 
   // ── 倒計時 ────────────────────────────────────────────────
@@ -948,6 +942,37 @@ function selectPayment(method) {
   });
 }
 
+// ── 取得會員電話後三碼（後端 → localStorage 快取）──────────────────────────
+async function loadMemberPhone() {
+  const dispEl = document.getElementById('phone-display');
+  if (dispEl) { dispEl.textContent = '讀取中…'; dispEl.style.color = 'var(--text-2)'; }
+
+  let phone = '';
+  try {
+    if (state.lineUserId) {
+      const data = await apiPost({ action: 'get_member_phone', lineUserId: state.lineUserId });
+      if (data.ok) phone = data.data?.phone_last3 || '';
+    }
+  } catch(e) { console.warn('get_member_phone:', e); }
+
+  if (!phone) {
+    try { phone = localStorage.getItem('phone_last3') || ''; } catch(e) {}
+  }
+  // 同步 localStorage 快取
+  if (phone) { try { localStorage.setItem('phone_last3', phone); } catch(e) {} }
+
+  state.memberPhone = phone;
+  if (dispEl) {
+    if (phone && /^\d{3}$/.test(phone)) {
+      dispEl.textContent = `···${phone}`;
+      dispEl.style.color = 'var(--text)';
+    } else {
+      dispEl.textContent = '⚠️ 尚未設定，請至 團購小幫手 → ⚙️設定';
+      dispEl.style.color = '#e53935';
+    }
+  }
+}
+
 // ── ✅ 確認下單 → 提交 → 成功 Modal ─────────────────────────────────────────
 async function submitOrder() {
   // ── 安全護欄：LINE userId 必須存在才能下單 ────────────────
@@ -961,9 +986,12 @@ async function submitOrder() {
   const totalQty  = selected.reduce((s, v) => s + v.qty, 0);
   if (totalQty < 1) { showToast('請至少勾選一項規格並填入數量 ⚠️'); return; }
 
-  // 從 localStorage 讀取設定頁存的電話後三碼
-  let phoneVal = '';
-  try { phoneVal = (localStorage.getItem('phone_last3') || '').trim(); } catch(e) {}
+  // 電話後三碼：優先用已載入的 state.memberPhone（來自後端/localStorage）
+  let phoneVal = state.memberPhone || '';
+  if (!phoneVal || !/^\d{3}$/.test(phoneVal)) {
+    // 最後嘗試 localStorage（若 state 未載入）
+    try { phoneVal = (localStorage.getItem('phone_last3') || '').trim(); } catch(e) {}
+  }
   if (!phoneVal || !/^\d{3}$/.test(phoneVal)) {
     showToast('請先至 團購小幫手 → ⚙️設定 中設定電話後三碼，才能下訂單');
     return;
