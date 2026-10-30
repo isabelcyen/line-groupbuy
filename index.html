@@ -484,13 +484,11 @@ textarea.remark-input:focus { border-color: var(--green); }
         </div>
       </div>
 
-      <!-- 電話後三碼 -->
+      <!-- 電話後三碼（從設定頁統一管理，此處僅顯示） -->
       <div class="card" id="phone-card" style="display:none">
-        <div class="section-label">電話後三碼 <span style="color:#e53935;font-size:13px">*</span></div>
-        <input type="tel" id="phone-last3" maxlength="3" inputmode="numeric" pattern="[0-9]{3}"
-          placeholder="請輸入您 LINE 登入手機號碼的後三碼"
-          style="width:100%;padding:10px 12px;font-size:15px;border:1px solid var(--border,#ddd);border-radius:10px;box-sizing:border-box;font-family:inherit">
-        <div style="font-size:11px;color:#888;margin-top:4px">用於取貨核對，僅管理員可見</div>
+        <div class="section-label">取貨核對電話</div>
+        <div id="phone-display" style="font-size:15px;font-weight:700;letter-spacing:3px;color:var(--text);padding:4px 0">—</div>
+        <div style="font-size:11px;color:#888;margin-top:4px">取貨時核對用，請至 <strong>團購小幫手 → ⚙️設定</strong> 中設定</div>
       </div>
 
       <!-- 備註 -->
@@ -762,12 +760,13 @@ function renderProduct(p) {
     document.getElementById('pay-card').style.display           = '';
     document.getElementById('phone-card').style.display         = '';
     document.getElementById('remark-card').style.display        = '';
-    // 自動帶入已在「設定」頁存過的電話後三碼
+    // 顯示已存的電話後三碼（唯讀，來自設定頁）
     try {
       const saved = localStorage.getItem('phone_last3') || '';
-      if (saved && /^\d{3}$/.test(saved)) {
-        const el = document.getElementById('phone-last3');
-        if (el && !el.value) el.value = saved;
+      const dispEl = document.getElementById('phone-display');
+      if (dispEl) {
+        dispEl.textContent = (saved && /^\d{3}$/.test(saved)) ? `···${saved}` : '（尚未設定）';
+        dispEl.style.color = (saved && /^\d{3}$/.test(saved)) ? 'var(--text)' : '#e53935';
       }
     } catch(e) {}
   }
@@ -962,15 +961,11 @@ async function submitOrder() {
   const totalQty  = selected.reduce((s, v) => s + v.qty, 0);
   if (totalQty < 1) { showToast('請至少勾選一項規格並填入數量 ⚠️'); return; }
 
-  const phoneVal = (document.getElementById('phone-last3')?.value || '').trim();
-  if (!phoneVal) {
-    showToast('請先設定 LINE 電話號碼，以利後續取貨等作業');
-    document.getElementById('phone-last3')?.focus();
-    return;
-  }
-  if (!/^\d{3}$/.test(phoneVal)) {
-    showToast('電話後三碼請填入 3 位數字');
-    document.getElementById('phone-last3')?.focus();
+  // 從 localStorage 讀取設定頁存的電話後三碼
+  let phoneVal = '';
+  try { phoneVal = (localStorage.getItem('phone_last3') || '').trim(); } catch(e) {}
+  if (!phoneVal || !/^\d{3}$/.test(phoneVal)) {
+    showToast('請先至 團購小幫手 → ⚙️設定 中設定電話後三碼，才能下訂單');
     return;
   }
 
