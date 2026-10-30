@@ -414,6 +414,16 @@ tr:hover td { background: var(--green-bg); }
         <div style="font-size:13px;color:var(--muted);margin-bottom:14px">
           顯示已到貨、尚未取貨的訂單，依團員彙總。
         </div>
+        <!-- 電話篩選列 -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 14px;background:var(--surface-2,var(--bg));border:1px solid var(--border);border-radius:8px;flex-wrap:wrap">
+          <span style="font-size:13px;color:var(--muted);white-space:nowrap">團員手機後三碼</span>
+          <input type="text" id="shipping-phone-input" maxlength="3" placeholder="輸入三碼" inputmode="numeric"
+            style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:15px;font-weight:700;letter-spacing:3px;background:var(--card);color:var(--text);text-align:center"
+            onkeydown="if(event.key==='Enter') filterShipping()" />
+          <button class="btn btn-primary btn-sm" onclick="filterShipping()">確定</button>
+          <button class="btn btn-ghost btn-sm" id="shipping-clear-btn" onclick="clearShippingFilter()" style="display:none">✕ 清除</button>
+          <span id="shipping-filter-hint" style="font-size:12px;color:var(--muted)"></span>
+        </div>
         <div id="shipping-list">
           <div class="empty-row" style="text-align:center;padding:24px;color:var(--muted)">載入中…</div>
         </div>
@@ -1053,60 +1063,97 @@ async function doAnnounce() {
 }
 
 // ─── Shipping Summary ─────────────────────────────────
+let _shippingMembers = [];
+
 async function loadShipping() {
   const el = document.getElementById('shipping-list');
   el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted)">載入中…</div>';
+  // 重置篩選
+  const inp = document.getElementById('shipping-phone-input');
+  if (inp) inp.value = '';
+  const clearBtn = document.getElementById('shipping-clear-btn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  const hint = document.getElementById('shipping-filter-hint');
+  if (hint) hint.textContent = '';
   try {
     const data = await api({ action: 'get_shipping_summary', adminSecret: savedSecret });
-    const members = data.members || [];
-    if (!members.length) {
-      el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">🎉 目前沒有待取貨的訂單</div>';
-      return;
-    }
-    el.innerHTML = members.map(m => {
-      const hasPhone = m.phone_last3 && /^\d{3}$/.test(m.phone_last3);
-      const orderRows = m.orders.map(o => {
-        // 解析 variant 字串，加上規格×數量顯示
-        const variantText = o.variant || '—';
-        return `
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${esc(o.product_name)}</div>
-              <div style="font-size:12px;color:var(--muted)">${esc(variantText)}</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:1px">訂單 ${esc(o.order_id)}</div>
-            </div>
-            <div style="font-size:14px;font-weight:700;color:var(--green);white-space:nowrap;padding-left:12px">NT$${o.total}</div>
-          </div>`;
-      }).join('');
-
-      return `
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">
-          <!-- 會員標頭 -->
-          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:color-mix(in srgb,var(--green) 6%,var(--card));border-bottom:1px solid var(--border)">
-            <div style="text-align:center;min-width:72px">
-              <div style="font-size:22px;font-weight:900;letter-spacing:4px;color:var(--text);line-height:1">${hasPhone ? esc(m.phone_last3) : '—'}</div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px">取貨電話後三碼</div>
-            </div>
-            <div style="width:1px;height:36px;background:var(--border)"></div>
-            <div>
-              <div style="font-size:15px;font-weight:700;color:var(--text)">${esc(m.member_name)}</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px">${m.orders.length} 筆訂單待取貨</div>
-            </div>
-          </div>
-          <!-- 商品列表 -->
-          <div style="padding:0 16px">
-            ${orderRows}
-          </div>
-          <!-- 合計 -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:var(--surface-2,var(--bg))">
-            <span style="font-size:13px;color:var(--muted)">合計</span>
-            <span style="font-size:17px;font-weight:900;color:var(--green)">NT$${m.grand_total}</span>
-          </div>
-        </div>`;
-    }).join('');
+    _shippingMembers = data.members || [];
+    // 初始不列出，等待輸入電話後三碼再顯示
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px">請輸入團員手機後三碼後按「確定」查詢</div>';
   } catch(e) {
     el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red)">載入失敗：${esc(e.message)}</div>`;
   }
+}
+
+function filterShipping() {
+  const phone = (document.getElementById('shipping-phone-input')?.value || '').trim();
+  const hint  = document.getElementById('shipping-filter-hint');
+  const clearBtn = document.getElementById('shipping-clear-btn');
+  if (!phone || !/^\d{1,3}$/.test(phone)) {
+    renderShippingList(_shippingMembers, null);
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (hint) hint.textContent = '';
+    return;
+  }
+  const filtered = _shippingMembers.filter(m => m.phone_last3 === phone);
+  renderShippingList(filtered, phone);
+  if (clearBtn) clearBtn.style.display = '';
+  if (hint) hint.textContent = filtered.length ? `找到 ${filtered.length} 位` : '查無此電話';
+}
+
+function clearShippingFilter() {
+  const inp = document.getElementById('shipping-phone-input');
+  if (inp) inp.value = '';
+  const clearBtn = document.getElementById('shipping-clear-btn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  const hint = document.getElementById('shipping-filter-hint');
+  if (hint) hint.textContent = '';
+  renderShippingList(_shippingMembers, null);
+}
+
+function renderShippingList(members, filterPhone) {
+  const el = document.getElementById('shipping-list');
+  if (!members.length) {
+    el.innerHTML = filterPhone
+      ? `<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">查無電話後三碼 <strong>${esc(filterPhone)}</strong> 的待取貨訂單</div>`
+      : '<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">🎉 目前沒有待取貨的訂單</div>';
+    return;
+  }
+  el.innerHTML = members.map(m => {
+    const hasPhone = m.phone_last3 && /^\d{3}$/.test(m.phone_last3);
+    const orderRows = m.orders.map(o => {
+      const variantText = o.variant || '—';
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${esc(o.product_name)}</div>
+            <div style="font-size:12px;color:var(--muted)">${esc(variantText)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">訂單 ${esc(o.order_id)}</div>
+          </div>
+          <div style="font-size:14px;font-weight:700;color:var(--green);white-space:nowrap;padding-left:12px">NT$${o.total}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:color-mix(in srgb,var(--green) 6%,var(--card));border-bottom:1px solid var(--border)">
+          <div style="text-align:center;min-width:72px">
+            <div style="font-size:22px;font-weight:900;letter-spacing:4px;color:var(--text);line-height:1">${hasPhone ? esc(m.phone_last3) : '—'}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">取貨電話後三碼</div>
+          </div>
+          <div style="width:1px;height:36px;background:var(--border)"></div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--text)">${esc(m.member_name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${m.orders.length} 筆訂單待取貨</div>
+          </div>
+        </div>
+        <div style="padding:0 16px">${orderRows}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:var(--surface-2,var(--bg))">
+          <span style="font-size:13px;color:var(--muted)">合計</span>
+          <span style="font-size:17px;font-weight:900;color:var(--green)">NT$${m.grand_total}</span>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // ─── Orders ───────────────────────────────────────────
