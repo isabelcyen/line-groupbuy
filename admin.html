@@ -1111,7 +1111,8 @@ function clearShippingFilter() {
   if (clearBtn) clearBtn.style.display = 'none';
   const hint = document.getElementById('shipping-filter-hint');
   if (hint) hint.textContent = '';
-  renderShippingList(_shippingMembers, null);
+  const el = document.getElementById('shipping-list');
+  if (el) el.innerHTML = '';
 }
 
 function renderShippingList(members, filterPhone) {
