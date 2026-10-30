@@ -415,14 +415,17 @@ tr:hover td { background: var(--green-bg); }
           顯示已到貨、尚未取貨的訂單，依團員彙總。
         </div>
         <!-- 電話篩選列 -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 14px;background:var(--surface-2,var(--bg));border:1px solid var(--border);border-radius:8px;flex-wrap:wrap">
-          <span style="font-size:13px;color:var(--muted);white-space:nowrap">團員手機後三碼</span>
-          <input type="text" id="shipping-phone-input" maxlength="3" placeholder="輸入三碼" inputmode="numeric"
-            style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:15px;font-weight:700;letter-spacing:3px;background:var(--card);color:var(--text);text-align:center"
-            onkeydown="if(event.key==='Enter') filterShipping()" />
-          <button class="btn btn-primary btn-sm" onclick="filterShipping()">確定</button>
-          <button class="btn btn-ghost btn-sm" id="shipping-clear-btn" onclick="clearShippingFilter()" style="display:none">✕ 清除</button>
-          <span id="shipping-filter-hint" style="font-size:12px;color:var(--muted)"></span>
+        <div style="margin-bottom:16px;padding:12px 14px;background:var(--surface-2,var(--bg));border:1px solid var(--border);border-radius:8px">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px">團員手機後三碼</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">輸入後三碼後按「確定」查詢</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input type="text" id="shipping-phone-input" maxlength="3" placeholder="" inputmode="numeric"
+              style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:15px;font-weight:700;letter-spacing:3px;background:var(--card);color:var(--text);text-align:center"
+              onkeydown="if(event.key==='Enter') filterShipping()" />
+            <button class="btn btn-primary btn-sm" onclick="filterShipping()">確定</button>
+            <button class="btn btn-ghost btn-sm" id="shipping-clear-btn" onclick="clearShippingFilter()" style="display:none">✕ 清除</button>
+            <span id="shipping-filter-hint" style="font-size:12px;color:var(--muted)"></span>
+          </div>
         </div>
         <div id="shipping-list">
           <div class="empty-row" style="text-align:center;padding:24px;color:var(--muted)">載入中…</div>
@@ -1079,7 +1082,7 @@ async function loadShipping() {
     const data = await api({ action: 'get_shipping_summary', adminSecret: savedSecret });
     _shippingMembers = data.members || [];
     // 初始不列出，等待輸入電話後三碼再顯示
-    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px">請輸入團員手機後三碼後按「確定」查詢</div>';
+    el.innerHTML = '';
   } catch(e) {
     el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red)">載入失敗：${esc(e.message)}</div>`;
   }
