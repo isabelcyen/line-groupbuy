@@ -397,7 +397,7 @@ tr:hover td { background: var(--green-bg); }
         </div>
         <table>
           <thead><tr>
-            <th>圖片</th><th>名稱</th><th>售價</th><th>截止</th><th>狀態</th><th>參團數</th><th>操作</th>
+            <th>圖片</th><th>名稱</th><th>截止</th><th>狀態</th><th>參團數</th><th>參團統計</th><th>操作</th>
           </tr></thead>
           <tbody id="product-list"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
         </table>
@@ -570,6 +570,17 @@ tr:hover td { background: var(--green-bg); }
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="closeModal('announce-modal')">取消</button>
       <button class="btn btn-primary" onclick="doAnnounce()">📣 發送</button>
+    </div>
+  </div>
+</div>
+
+<!-- 參團統計 Modal -->
+<div class="modal-bg" id="stats-modal">
+  <div class="modal" style="max-width:560px;max-height:80vh;overflow-y:auto">
+    <h3 id="stats-modal-title">參團統計</h3>
+    <div id="stats-content" style="margin-top:14px"></div>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeModal('stats-modal')">關閉</button>
     </div>
   </div>
 </div>
@@ -844,17 +855,20 @@ async function loadProducts() {
   tbody.innerHTML = allProducts.map(p => {
     const imgs = (p.image_url || '').split(',').map(s=>s.trim()).filter(Boolean);
     const img = imgs.length ? `<img class="img-thumb" src="${esc(imgs[0])}" alt="">` : '—';
+    const pJson = JSON.stringify(p).replace(/"/g,'&quot;');
     return `<tr>
       <td>${img}</td>
       <td style="font-weight:600">${esc(p.name)}</td>
-      <td>NT$${p.price}</td>
       <td style="font-size:12px;color:var(--muted)">${p.deadline ? fmt(p.deadline) : '—'}</td>
       <td>${statusBadge(p.status)}</td>
       <td style="text-align:center">${p.order_count || 0}</td>
+      <td style="text-align:center">
+        <button class="btn btn-ghost btn-sm" onclick="showProductStats('${esc(p.product_id)}','${esc(p.name)}')">📊 統計</button>
+      </td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn btn-amber btn-sm" onclick="openAnnounceModal('${esc(p.product_id)}','${esc(p.name)}')">📣</button>
-          <button class="btn btn-ghost btn-sm" onclick="editProduct(${JSON.stringify(p).replace(/"/g,'&quot;')})">編輯</button>
+          <button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製</button>
           ${p.status === 'open'
             ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button>`
             : p.status === 'notified'
@@ -1026,6 +1040,95 @@ async function saveProduct() {
     await loadProducts();
     loaded.products = true;
   } catch(e) { toast('失敗：' + e.message); }
+}
+
+/** 複製團購：帶入現有資料但清空 product_id，存檔時視為新建 */
+function copyProduct(p) {
+  ensureImgInputBound();
+  prodImageUrls = (p.image_url || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
+  document.getElementById('prod-id').value = '';          // 空 ID → 建立新團
+  document.getElementById('prod-modal-title').textContent = '複製團購（新建）';
+  document.getElementById('prod-name').value  = (p.name || '') + '（複製）';
+  document.getElementById('prod-desc').value  = p.description || '';
+  try {
+    const vs = JSON.parse(p.variants || '[]');
+    document.getElementById('prod-variants').value = vs.map(v => {
+      if (typeof v === 'string') return v;
+      const price = v.price || 0;
+      const quota = v.quota || 0;
+      return quota > 0 ? `${v.name}(${price}/${quota})` : `${v.name}(${price})`;
+    }).join('\n');
+  } catch { document.getElementById('prod-variants').value = ''; }
+  document.getElementById('prod-deadline').value = '';    // 截止時間清空
+  document.getElementById('prod-secret').value = savedSecret;
+  renderImgSlots();
+  document.getElementById('product-modal').classList.add('open');
+}
+
+/** 顯示商品參團統計 Modal */
+async function showProductStats(pid, pname) {
+  document.getElementById('stats-modal-title').textContent = `「${pname}」參團統計`;
+  document.getElementById('stats-content').innerHTML = '<p style="color:var(--muted);text-align:center;padding:24px">載入中…</p>';
+  document.getElementById('stats-modal').classList.add('open');
+  try {
+    const data = await api({ action: 'get_product_stats', productId: pid, adminSecret: savedSecret });
+    const variantTotals = data.variantTotals || {};
+    const memberList    = data.memberList    || [];
+    const orderCount    = data.orderCount    || 0;
+
+    let html = '';
+
+    // ── 規格統計 ──
+    html += `<div style="margin-bottom:18px">
+      <div style="font-weight:600;margin-bottom:8px">規格購買統計（共 ${orderCount} 筆）</div>`;
+    const vKeys = Object.keys(variantTotals);
+    if (vKeys.length === 0) {
+      html += '<p style="color:var(--muted);font-size:13px">無規格資料</p>';
+    } else {
+      html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+      html += '<thead><tr style="background:var(--surface-2,var(--bg));font-weight:600">';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">規格</th>';
+      html += '<th style="padding:6px 10px;text-align:right;border-bottom:1px solid var(--border)">總數量</th>';
+      html += '</tr></thead><tbody>';
+      vKeys.forEach(v => {
+        html += `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:6px 10px">${esc(v)}</td>
+          <td style="padding:6px 10px;text-align:right;font-weight:700">${variantTotals[v]}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    // ── 團員列表（按電話後三碼） ──
+    html += `<div>
+      <div style="font-weight:600;margin-bottom:8px">團員訂購（按電話後三碼）</div>`;
+    if (memberList.length === 0) {
+      html += '<p style="color:var(--muted);font-size:13px">尚無訂單</p>';
+    } else {
+      html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+      html += '<thead><tr style="background:var(--surface-2,var(--bg));font-weight:600">';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">後三碼</th>';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">姓名</th>';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">訂購規格</th>';
+      html += '</tr></thead><tbody>';
+      memberList.forEach(m => {
+        const varStr = Object.entries(m.variants || {})
+          .map(([v, q]) => `${esc(v)}×${q}`).join('、');
+        html += `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:6px 10px;font-weight:700">${esc(m.phone)}</td>
+          <td style="padding:6px 10px">${esc(m.name)}</td>
+          <td style="padding:6px 10px;color:var(--muted)">${varStr || '—'}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    document.getElementById('stats-content').innerHTML = html;
+  } catch(e) {
+    document.getElementById('stats-content').innerHTML = `<p style="color:var(--red)">載入失敗：${e.message}</p>`;
+  }
 }
 
 async function notifyArrived(pid, pname) {
