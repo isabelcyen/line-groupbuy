@@ -559,20 +559,8 @@ tr:hover td { background: var(--green-bg); }
 </div>
 
 <!-- ─── Modal: 通知群組 ─── -->
-<div class="modal-bg" id="announce-modal">
-  <div class="modal">
-    <h3>📣 發送群組通知</h3>
-    <p style="font-size:13px;color:var(--sub);margin-bottom:14px">確認要發送「<span id="announce-name"></span>」的團購通知到群組嗎？</p>
-    <div class="form-row">
-      <label>管理員密碼</label>
-      <input type="password" id="announce-secret" placeholder="ADMIN_SECRET">
-    </div>
-    <div class="modal-btns">
-      <button class="btn btn-ghost" onclick="closeModal('announce-modal')">取消</button>
-      <button class="btn btn-primary" onclick="doAnnounce()">📣 發送</button>
-    </div>
-  </div>
-</div>
+
+<!-- ▼ announce-modal 已移除：不再需要「發送群組通知」按鈕 -->
 
 <!-- 參團統計 Modal -->
 <div class="modal-bg" id="stats-modal">
@@ -611,7 +599,6 @@ let savedSecret = localStorage.getItem('admin_secret') || '';
   }
 })();
 let allProducts = [];
-let announceProductId = '';
 
 // ─── API ─────────────────────────────────────────────
 async function api(body) {
@@ -867,8 +854,7 @@ async function loadProducts() {
       </td>
       <td>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-amber btn-sm" onclick="openAnnounceModal('${esc(p.product_id)}','${esc(p.name)}')">📣</button>
-          <button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製</button>
+          <button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>
           ${p.status === 'open'
             ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button>`
             : p.status === 'notified'
@@ -1042,6 +1028,15 @@ async function saveProduct() {
   } catch(e) { toast('失敗：' + e.message); }
 }
 
+/** 編輯前先確認有無訂單，有訂單則禁止編輯 */
+function editProductGuarded(p) {
+  if ((p.order_count || 0) > 0) {
+    alert(`「${p.name || p.product_id}」已有 ${p.order_count} 筆訂單，無法編輯。\n\n若確需更改規格或價格，請先至「訂單管理」處理相關訂單後再操作。`);
+    return;
+  }
+  editProduct(p);
+}
+
 /** 複製團購：帶入現有資料但清空 product_id，存檔時視為新建 */
 function copyProduct(p) {
   ensureImgInputBound();
@@ -1079,8 +1074,10 @@ async function showProductStats(pid, pname) {
     let html = '';
 
     // ── 規格統計 ──
+    const totalQty     = Object.values(variantTotals).reduce((s, n) => s + n, 0);
+    const totalMembers = memberList.length;
     html += `<div style="margin-bottom:18px">
-      <div style="font-weight:600;margin-bottom:8px">規格購買統計（共 ${orderCount} 筆）</div>`;
+      <div style="font-weight:600;margin-bottom:8px">規格購買統計（${totalMembers} 人參團，共 ${totalQty} 件）</div>`;
     const vKeys = Object.keys(variantTotals);
     if (vKeys.length === 0) {
       html += '<p style="color:var(--muted);font-size:13px">無規格資料</p>';
@@ -1152,22 +1149,6 @@ async function openProduct(pid) {
 }
 
 // ─── Announce product to group ───────────────────────
-function openAnnounceModal(pid, name) {
-  announceProductId = pid;
-  document.getElementById('announce-name').textContent = name;
-  document.getElementById('announce-secret').value = savedSecret;
-  document.getElementById('announce-modal').classList.add('open');
-}
-async function doAnnounce() {
-  const secret = getSecret('announce-secret');
-  if (!secret) { toast('請填寫管理員密碼'); return; }
-  try {
-    await api({ action: 'announce_product', productId: announceProductId, adminSecret: secret });
-    closeModal('announce-modal');
-    toast('✅ 已發送群組通知');
-  } catch(e) { toast('失敗：' + e.message); }
-}
-
 // ─── Shipping Summary ─────────────────────────────────
 let _shippingMembers = [];
 
