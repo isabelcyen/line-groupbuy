@@ -1239,8 +1239,44 @@ function renderShippingList(members, filterPhone) {
           <span style="font-size:13px;color:var(--muted)">合計</span>
           <span style="font-size:17px;font-weight:900;color:var(--green)">NT$${m.grand_total}</span>
         </div>
+        <div style="display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border)">
+          <button class="btn btn-primary btn-sm" style="flex:1" onclick="bulkMarkPaid(${JSON.stringify(m.orders.map(o=>o.order_id))})">✅ 已付款</button>
+          <button class="btn btn-amber btn-sm" style="flex:1" onclick="bulkMarkShipped(${JSON.stringify(m.orders.map(o=>o.order_id))})">🚚 已出貨</button>
+        </div>
       </div>`;
   }).join('');
+}
+
+async function bulkMarkPaid(orderIds) {
+  if (!orderIds.length) return;
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  if (!confirm(`確定將這 ${orderIds.length} 筆訂單全部標為「已付款」？`)) return;
+  try {
+    let ok = 0;
+    for (const oid of orderIds) {
+      try { await api({ action: 'confirm_payment', orderId: oid, adminSecret: secret }); ok++; } catch(e) {}
+    }
+    toast(`✅ 已標記 ${ok} 筆為已付款`);
+    loaded.shipping = false; loadShipping();
+    refresh(['orders', 'dashboard']);
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+async function bulkMarkShipped(orderIds) {
+  if (!orderIds.length) return;
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  if (!confirm(`確定將這 ${orderIds.length} 筆訂單全部標為「已出貨」？`)) return;
+  try {
+    let ok = 0;
+    for (const oid of orderIds) {
+      try { await api({ action: 'mark_shipping', orderId: oid, adminSecret: secret }); ok++; } catch(e) {}
+    }
+    toast(`🚚 已標記 ${ok} 筆為已出貨`);
+    loaded.shipping = false; loadShipping();
+    refresh(['orders', 'dashboard']);
+  } catch(e) { toast('失敗：' + e.message); }
 }
 
 // ─── Orders ───────────────────────────────────────────
