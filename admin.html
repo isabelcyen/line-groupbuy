@@ -858,7 +858,7 @@ async function loadProducts() {
           ${p.status === 'open'
             ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button>`
             : p.status === 'notified'
-              ? `<span style="color:var(--muted);font-size:12px;padding:4px 6px">✅已通知</span>`
+              ? `<span style="color:var(--muted);font-size:12px;padding:4px 6px">✅已通知</span><button class="btn btn-ghost btn-sm" onclick="openProduct('${esc(p.product_id)}')">重開</button>`
               : `<button class="btn btn-ghost btn-sm" onclick="openProduct('${esc(p.product_id)}')">重開</button>`}
         </div>
       </td>
