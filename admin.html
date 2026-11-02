@@ -1307,10 +1307,10 @@ function updateOrderRowInPlace(oid, newStatus) {
   document.querySelectorAll(`tr[data-oid="${oid}"]`).forEach(row => {
     const cells = row.cells;
     if (!cells || cells.length < 7) return;
-    // 第 6 格：狀態 badge
-    cells[5].innerHTML = statusBadge(newStatus);
-    // 第 7 格：操作按鈕 — 出貨後清空（無進一步操作）
-    cells[6].innerHTML = '<div style="display:flex;gap:4px;flex-wrap:wrap"></div>';
+    // 第 7 格（index 6）：狀態 badge
+    cells[6].innerHTML = statusBadge(newStatus);
+    // 第 8 格（index 7）：操作按鈕
+    cells[7].innerHTML = '<div style="display:flex;gap:4px;flex-wrap:wrap"></div>';
   });
 }
 
