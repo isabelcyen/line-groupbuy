@@ -1198,8 +1198,12 @@ function clearShippingFilter() {
   if (el) el.innerHTML = '';
 }
 
+const _shippingOrderMap = {};
+
 function renderShippingList(members, filterPhone) {
   const el = document.getElementById('shipping-list');
+  // 重建 order map
+  members.forEach(m => { _shippingOrderMap[m.phone_last3 || '__'] = m.orders.map(o => o.order_id); });
   if (!members.length) {
     el.innerHTML = filterPhone
       ? `<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">查無電話後三碼 <strong>${esc(filterPhone)}</strong> 的待取貨訂單</div>`
@@ -1240,14 +1244,15 @@ function renderShippingList(members, filterPhone) {
           <span style="font-size:17px;font-weight:900;color:var(--green)">NT$${m.grand_total}</span>
         </div>
         <div style="display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border)">
-          <button class="btn btn-primary btn-sm" style="flex:1" onclick="bulkMarkPaid(${JSON.stringify(m.orders.map(o=>o.order_id))})">✅ 已付款</button>
-          <button class="btn btn-amber btn-sm" style="flex:1" onclick="bulkMarkShipped(${JSON.stringify(m.orders.map(o=>o.order_id))})">🚚 已出貨</button>
+          <button class="btn btn-primary btn-sm" style="flex:1" onclick="bulkMarkPaid('${esc(m.phone_last3||'__')}')">✅ 已付款</button>
+          <button class="btn btn-amber btn-sm" style="flex:1" onclick="bulkMarkShipped('${esc(m.phone_last3||'__')}')">🚚 已出貨</button>
         </div>
       </div>`;
   }).join('');
 }
 
-async function bulkMarkPaid(orderIds) {
+async function bulkMarkPaid(phoneKey) {
+  const orderIds = _shippingOrderMap[phoneKey] || [];
   if (!orderIds.length) return;
   const secret = savedSecret || prompt('管理員密碼');
   if (!secret) return;
@@ -1263,7 +1268,8 @@ async function bulkMarkPaid(orderIds) {
   } catch(e) { toast('失敗：' + e.message); }
 }
 
-async function bulkMarkShipped(orderIds) {
+async function bulkMarkShipped(phoneKey) {
+  const orderIds = _shippingOrderMap[phoneKey] || [];
   if (!orderIds.length) return;
   const secret = savedSecret || prompt('管理員密碼');
   if (!secret) return;
