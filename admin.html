@@ -302,15 +302,11 @@ tr:hover td { background: var(--green-bg); }
     <p>Admin v5</p>
   </div>
   <div class="nav-section">
-    <div class="nav-label">總覽</div>
     <div class="nav-item active" data-panel="dashboard">
-      <span class="ni">📊</span><span class="label">儀表板</span>
+      <span class="ni">📊</span><span class="label">總覽</span>
     </div>
-  </div>
-  <div class="nav-section">
-    <div class="nav-label">公告</div>
     <div class="nav-item" data-panel="announcements">
-      <span class="ni">📢</span><span class="label">一般公告</span>
+      <span class="ni">📢</span><span class="label">公告</span>
     </div>
   </div>
   <div class="nav-section">
@@ -336,7 +332,7 @@ tr:hover td { background: var(--green-bg); }
 <!-- Main -->
 <div class="main">
   <div class="topbar">
-    <h2 id="panel-title">儀表板</h2>
+    <h2 id="panel-title">總覽</h2>
     <div class="topbar-actions" id="topbar-actions"></div>
   </div>
 
@@ -683,7 +679,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 // ─── Navigation ───────────────────────────────────────
 const titles = {
-  dashboard: '儀表板', announcements: '一般公告', products: '團購管理',
+  dashboard: '總覽', announcements: '公告', products: '團購管理',
   shipping: '出貨管理', orders: '訂單管理', payments: '付款記錄',
 };
 const loaded = {};
