@@ -1212,6 +1212,7 @@ function renderShippingList(members, filterPhone) {
   }
   el.innerHTML = members.map(m => {
     const hasPhone = m.phone_last3 && /^\d{3}$/.test(m.phone_last3);
+    const unprocessed = m.orders.filter(o => !['shipped','received','cancelled'].includes(o.pay_status)).length;
     const orderRows = m.orders.map(o => {
       const variantText = o.variant || '—';
       return `
@@ -1221,7 +1222,10 @@ function renderShippingList(members, filterPhone) {
             <div style="font-size:12px;color:var(--muted)">${esc(variantText)}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:1px">訂單 ${esc(o.order_id)}</div>
           </div>
-          <div style="font-size:14px;font-weight:700;color:var(--green);white-space:nowrap;padding-left:12px">NT$${o.total}</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-left:12px">
+            <div style="font-size:14px;font-weight:700;color:var(--green);white-space:nowrap">NT$${o.total}</div>
+            <div style="transform:scale(0.85);transform-origin:right center">${statusBadge(o.pay_status)}</div>
+          </div>
         </div>`;
     }).join('');
 
@@ -1235,7 +1239,7 @@ function renderShippingList(members, filterPhone) {
           <div style="width:1px;height:36px;background:var(--border)"></div>
           <div>
             <div style="font-size:15px;font-weight:700;color:var(--text)">${esc(m.member_name)}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${m.orders.length} 筆訂單待取貨</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${m.orders.length} 筆訂單${unprocessed > 0 ? `，<span style="color:var(--amber,#d97706);font-weight:600">${unprocessed} 筆未出貨</span>` : '，<span style="color:var(--green);font-weight:600">全部已出貨</span>'}</div>
           </div>
         </div>
         <div style="padding:0 16px">${orderRows}</div>
