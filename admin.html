@@ -351,9 +351,9 @@ tr:hover td { background: var(--green-bg); }
           <div class="stat-sub">需確認</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">出貨未領訂單</div>
+          <div class="stat-label">已通知未領取訂單</div>
           <div class="stat-value" id="s-shipped">—</div>
-          <div class="stat-sub">已出貨待領取</div>
+          <div class="stat-sub">已到貨待現場領取</div>
         </div>
       </div>
       <div class="section-card">
@@ -707,22 +707,25 @@ loadPanel('dashboard');
 
 // ─── Dashboard ────────────────────────────────────────
 async function loadDashboard() {
-  const [prodData, orderData, payData] = await Promise.all([
-    api({ action: 'list_products', adminSecret: savedSecret }),
-    api({ action: 'list_orders',   adminSecret: savedSecret }),
-    api({ action: 'list_payments', adminSecret: savedSecret }),
+  const [prodData, orderData, payData, shipData] = await Promise.all([
+    api({ action: 'list_products',       adminSecret: savedSecret }),
+    api({ action: 'list_orders',         adminSecret: savedSecret }),
+    api({ action: 'list_payments',       adminSecret: savedSecret }),
+    api({ action: 'get_shipping_summary', adminSecret: savedSecret }),
   ]);
-  const prods   = prodData.products  || [];
-  const orders  = orderData.orders   || [];
-  const payments = payData.payments  || [];
+  const prods    = prodData.products  || [];
+  const orders   = orderData.orders   || [];
+  const payments = payData.payments   || [];
+  const members  = shipData.members   || [];
   allProducts = prods;
 
   document.getElementById('s-active').textContent =
     prods.filter(p => p.status === 'open').length;
   document.getElementById('s-reviewing').textContent =
     payments.filter(p => p.pay_status === 'reviewing').length;
+  // 已通知到貨但尚未領取的訂單總數（get_shipping_summary 已排除 received/cancelled）
   document.getElementById('s-shipped').textContent =
-    orders.filter(o => o.pay_status === 'shipped').length;
+    members.reduce((sum, m) => sum + (m.orders || []).length, 0);
 
   const reviewing = payments.filter(p => p.pay_status === 'reviewing');
   const tbody = document.getElementById('dash-reviewing');
@@ -1212,8 +1215,8 @@ const _shippingOrderMap = {};
 function renderShippingList(members, filterPhone) {
   const el = document.getElementById('shipping-list');
 
-  // 只顯示「尚未出貨」的訂單（排除 shipped / received / cancelled）
-  const DONE_STATUSES = ['shipped', 'received', 'cancelled'];
+  // 只顯示「尚未出貨」的訂單（排除 received / cancelled）
+  const DONE_STATUSES = ['received', 'cancelled'];
   const activeMembers = members.map(m => ({
     ...m,
     orders: m.orders.filter(o => !DONE_STATUSES.includes(o.pay_status)),
@@ -1398,9 +1401,9 @@ async function markShipped(oid) {
   if (!secret) return;
   try {
     await api({ action: 'mark_shipping', orderId: oid, adminSecret: secret });
-    toast('🚚 已標記出貨');
+    toast('✅ 已出貨（取貨完成）');
     // 直接更新該列狀態與按鈕，不重整整張表
-    updateOrderRowInPlace(oid, 'shipped');
+    updateOrderRowInPlace(oid, 'received');
     refresh(['dashboard']);
   } catch(e) { toast('失敗：' + e.message); }
 }
