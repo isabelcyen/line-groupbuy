@@ -660,7 +660,7 @@ function statusBadge(st) {
     pending:   ['b-pending',   '⏳待付款'],
     reviewing: ['b-reviewing', '🔍審核中'],
     paid:      ['b-paid',      '✅已付款'],
-    shipped:   ['b-shipped',   '🚚已出貨'],   // ← 改為「已出貨」
+    shipped:   ['b-shipped',   '✅已領貨'],
     received:  ['b-received',  '🎉已收貨'],
     cancelled: ['b-cancelled', '❌已取消'],
     open:      ['b-open',      '✅開放中'],
@@ -1281,7 +1281,7 @@ function renderShippingList(members, filterPhone) {
         </div>
         <div style="display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border)">
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="bulkMarkPaid('${esc(m.phone_last3||'__')}')">✅ 已付款</button>
-          <button class="btn btn-amber btn-sm" style="flex:1" onclick="bulkMarkShipped('${esc(m.phone_last3||'__')}')">🚚 已出貨</button>
+          <button class="btn btn-amber btn-sm" style="flex:1" onclick="bulkMarkShipped('${esc(m.phone_last3||'__')}')">✅ 已領貨</button>
         </div>
       </div>`;
   }).join('');
@@ -1329,12 +1329,12 @@ async function bulkMarkPaid(phoneKey) {
 async function bulkMarkShipped(phoneKey) {
   // 只處理 checkbox 已勾選且尚未出貨的訂單
   const checked = getCheckedOrders(phoneKey);
-  const targets = checked.filter(o => !['shipped','received','cancelled'].includes(o.status));
+  const targets = checked.filter(o => !['received','cancelled'].includes(o.status));
   if (!checked.length) { toast('請先勾選要處理的訂單'); return; }
-  if (!targets.length) { toast('勾選的訂單都已出貨，無需再標記'); return; }
+  if (!targets.length) { toast('勾選的訂單都已領貨，無需再標記'); return; }
   const secret = savedSecret || prompt('管理員密碼');
   if (!secret) return;
-  if (!confirm(`確定將這 ${targets.length} 筆訂單標為「已出貨」？`)) return;
+  if (!confirm(`確定將這 ${targets.length} 筆訂單標為「已領貨」？`)) return;
   try {
     let ok = 0;
     for (const o of targets) {
@@ -1347,7 +1347,7 @@ async function bulkMarkShipped(phoneKey) {
         ok++;
       } catch(e) {}
     }
-    toast(`🚚 已標記 ${ok} 筆為已出貨`);
+    toast(`✅ 已標記 ${ok} 筆為已領貨`);
     loaded.shipping = false; loadShipping(true);
     refresh(['orders', 'dashboard']);
   } catch(e) { toast('失敗：' + e.message); }
@@ -1378,7 +1378,7 @@ function renderOrderRow(o, compact) {
     <td>${statusBadge(o.pay_status)}</td>
     <td><div style="display:flex;gap:4px;flex-wrap:wrap">
       ${o.pay_status === 'reviewing' ? `<button class="btn btn-primary btn-sm" onclick="confirmPayment('${esc(o.order_id)}')">✅確認</button>` : ''}
-      ${o.pay_status === 'paid'      ? `<button class="btn btn-amber btn-sm" onclick="markShipped('${esc(o.order_id)}')">🚚出貨</button>` : ''}
+      ${o.pay_status === 'paid'      ? `<button class="btn btn-amber btn-sm" onclick="markShipped('${esc(o.order_id)}')">✅領貨</button>` : ''}
       ${o.pay_status === 'pending'   ? `<button class="btn btn-danger btn-sm" onclick="cancelOrder('${esc(o.order_id)}')">取消</button>` : ''}
     </div></td>
   </tr>`;
@@ -1401,7 +1401,7 @@ async function markShipped(oid) {
   if (!secret) return;
   try {
     await api({ action: 'mark_shipping', orderId: oid, adminSecret: secret });
-    toast('✅ 已出貨（取貨完成）');
+    toast('✅ 已領貨');
     // 直接更新該列狀態與按鈕，不重整整張表
     updateOrderRowInPlace(oid, 'received');
     refresh(['dashboard']);
