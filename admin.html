@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>團購管理後台 v5</title>
+<title>團購管理後台</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -90,7 +90,7 @@ body {
 
 /* ── Stats bar ── */
 .stats-bar {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 12px; margin-bottom: 20px;
 }
 .stat-card {
@@ -299,7 +299,6 @@ tr:hover td { background: var(--green-bg); }
 <nav class="sidebar">
   <div class="sidebar-logo">
     <h1>🛒 團購後台</h1>
-    <p>Admin v5</p>
   </div>
   <div class="nav-section">
     <div class="nav-item active" data-panel="dashboard">
@@ -347,28 +346,23 @@ tr:hover td { background: var(--green-bg); }
           <div class="stat-sub">開放中</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">待付款訂單</div>
-          <div class="stat-value" id="s-pending">—</div>
-          <div class="stat-sub">需要跟催</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">待審核付款</div>
+          <div class="stat-label">待審核付款訂單</div>
           <div class="stat-value" id="s-reviewing">—</div>
           <div class="stat-sub">需確認</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">待出貨訂單</div>
-          <div class="stat-value" id="s-paid">—</div>
-          <div class="stat-sub">已付款可出貨</div>
+          <div class="stat-label">出貨未領訂單</div>
+          <div class="stat-value" id="s-shipped">—</div>
+          <div class="stat-sub">已出貨待領取</div>
         </div>
       </div>
       <div class="section-card">
-        <div class="section-header"><h3>近期訂單</h3></div>
+        <div class="section-header"><h3>待審核付款訂單</h3></div>
         <table>
           <thead><tr>
-            <th>訂單</th><th>團購</th><th>團員</th><th>電話</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
+            <th>訂單</th><th>團購</th><th>末五碼</th><th>截圖</th><th>狀態</th><th>時間</th><th>操作</th>
           </tr></thead>
-          <tbody id="dash-orders"><tr><td colspan="8" class="loading-row">載入中…</td></tr></tbody>
+          <tbody id="dash-reviewing"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -713,28 +707,39 @@ loadPanel('dashboard');
 
 // ─── Dashboard ────────────────────────────────────────
 async function loadDashboard() {
-  const [prodData, orderData] = await Promise.all([
+  const [prodData, orderData, payData] = await Promise.all([
     api({ action: 'list_products', adminSecret: savedSecret }),
     api({ action: 'list_orders',   adminSecret: savedSecret }),
+    api({ action: 'list_payments', adminSecret: savedSecret }),
   ]);
-  const prods = prodData.products || [];
-  const orders = orderData.orders || [];
+  const prods   = prodData.products  || [];
+  const orders  = orderData.orders   || [];
+  const payments = payData.payments  || [];
   allProducts = prods;
+
   document.getElementById('s-active').textContent =
     prods.filter(p => p.status === 'open').length;
-  document.getElementById('s-pending').textContent =
-    orders.filter(o => o.pay_status === 'pending').length;
   document.getElementById('s-reviewing').textContent =
-    orders.filter(o => o.pay_status === 'reviewing').length;
-  document.getElementById('s-paid').textContent =
-    orders.filter(o => o.pay_status === 'paid').length;
+    payments.filter(p => p.pay_status === 'reviewing').length;
+  document.getElementById('s-shipped').textContent =
+    orders.filter(o => o.pay_status === 'shipped').length;
 
-  const recent = orders.slice(0, 20);
-  const tbody = document.getElementById('dash-orders');
-  if (!recent.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">尚無訂單</td></tr>'; return;
+  const reviewing = payments.filter(p => p.pay_status === 'reviewing');
+  const tbody = document.getElementById('dash-reviewing');
+  if (!reviewing.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">目前沒有待審核付款</td></tr>'; return;
   }
-  tbody.innerHTML = recent.map(o => renderOrderRow(o, true)).join('');
+  tbody.innerHTML = reviewing.map(p => `<tr>
+    <td style="font-size:11px;color:var(--muted)">${esc(p.order_id)}</td>
+    <td style="font-weight:600">${esc(p.product_name)}</td>
+    <td>${esc(p.transfer_ref || '—')}</td>
+    <td>${p.screenshot_url
+      ? `<a href="${esc(p.screenshot_url)}" target="_blank"><img class="img-thumb" src="${esc(p.screenshot_url)}" alt="截圖"></a>`
+      : '—'}</td>
+    <td>${statusBadge(p.pay_status)}</td>
+    <td style="font-size:12px;color:var(--muted)">${fmt(p.submitted_at)}</td>
+    <td><button class="btn btn-primary btn-sm" onclick="confirmPayment('${esc(p.order_id)}')">✅確認</button></td>
+  </tr>`).join('');
 }
 
 // ─── Announcements ────────────────────────────────────
