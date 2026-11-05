@@ -901,9 +901,8 @@ function renderOrderCard(o, variantDefs = []) {
       </div>`;
   }).join('');
 
-  const img = o.product_image
-    ? `<img class="order-img" src="${esc(o.product_image)}" alt="" loading="lazy">`
-    : `<div class="order-img" style="display:flex;align-items:center;justify-content:center;font-size:24px;">📦</div>`;
+  // 我的參團一律顯示佔位圖示，不載入商品圖片（節省流量，團員可由名稱及品項辨識）
+  const img = `<div class="order-img" style="display:flex;align-items:center;justify-content:center;font-size:24px;">📦</div>`;
 
   let actions = '';
   if (o.pay_status === 'pending') {
