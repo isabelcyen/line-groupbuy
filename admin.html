@@ -57,6 +57,18 @@ body {
 }
 .sidebar-logo h1 { color: var(--green); font-size: 16px; font-weight: 700; }
 .sidebar-logo p  { color: var(--sidebar-m); font-size: 12px; margin-top: 3px; }
+.sidebar-logout {
+  margin-top: auto; padding: 12px 10px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.logout-btn {
+  width: 100%; background: none; border: 1px solid rgba(255,255,255,.12);
+  color: var(--sidebar-m); border-radius: 8px;
+  padding: 8px 12px; font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: background .15s, color .15s;
+}
+.logout-btn:hover { background: rgba(255,255,255,.08); color: var(--sidebar-t); }
 .nav-section { padding: 12px 10px 6px; }
 .nav-label { color: var(--sidebar-m); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 0 8px; margin-bottom: 4px; }
 .nav-item {
@@ -259,7 +271,8 @@ tr:hover td { background: var(--green-bg); }
 /* ── Responsive (simplified) ── */
 @media (max-width: 768px) {
   .sidebar { width: 60px; }
-  .sidebar-logo p, .nav-item span.label, .nav-label { display: none; }
+  .sidebar-logo p, .nav-item span.label, .nav-label, .logout-btn span.label { display: none; }
+  .logout-btn { justify-content: center; padding: 8px; }
   .nav-item { justify-content: center; padding: 10px; }
   .main { margin-left: 60px; }
   .stats-bar { grid-template-columns: 1fr 1fr; }
@@ -325,6 +338,9 @@ tr:hover td { background: var(--green-bg); }
     <div class="nav-item" data-panel="payments">
       <span class="ni">💳</span><span class="label">付款記錄</span>
     </div>
+  </div>
+  <div class="sidebar-logout">
+    <button class="logout-btn" onclick="logout()">🔒 <span class="label">登出</span></button>
   </div>
 </nav>
 
@@ -575,6 +591,13 @@ const GITHUB_OWNER = 'isabelcyen';
 const GITHUB_REPO  = 'line-groupbuy';
 
 let savedSecret = localStorage.getItem('admin_secret') || '';
+
+function logout() {
+  if (!confirm('確定要登出？')) return;
+  localStorage.removeItem('admin_secret');
+  savedSecret = '';
+  location.reload();
+}
 
 // 初次進入若無密碼，立即要求輸入
 (function checkSecret() {
