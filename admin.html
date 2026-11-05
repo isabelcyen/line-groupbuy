@@ -621,7 +621,32 @@ async function api(body) {
     body: JSON.stringify(body),
   });
   const j = await r.json();
-  if (!j.ok) throw new Error(j.error || '請求失敗');
+  if (!j.ok) {
+    // 密碼錯誤時清除快取，重新要求輸入
+    const errMsg = j.error || '請求失敗';
+    if (errMsg.includes('未授權') || r.status === 401 || r.status === 403) {
+      localStorage.removeItem('admin_secret');
+      savedSecret = '';
+      const newSecret = prompt('密碼錯誤，請重新輸入管理員密碼：');
+      if (newSecret && newSecret.trim()) {
+        savedSecret = newSecret.trim();
+        localStorage.setItem('admin_secret', savedSecret);
+        // 用新密碼重試一次
+        body.adminSecret = savedSecret;
+        const r2 = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const j2 = await r2.json();
+        if (!j2.ok) throw new Error(j2.error || '請求失敗');
+        return j2.data;
+      } else {
+        throw new Error('未輸入密碼，請重新整理頁面再試。');
+      }
+    }
+    throw new Error(errMsg);
+  }
   return j.data;
 }
 function getSecret(fieldId) {
