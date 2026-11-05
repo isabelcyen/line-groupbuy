@@ -584,7 +584,7 @@ textarea.remark-input:focus { border-color: var(--green); }
 
 <!-- 👤 userId 除錯列（確認 LINE ID 是否已取得）-->
 <div id="uid-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.72);
-  color:#fff;font-size:10px;padding:4px 12px;text-align:center;z-index:9999;
+  color:transparent;font-size:10px;padding:4px 12px;text-align:center;z-index:9999;
   font-family:monospace;letter-spacing:.3px;"></div>
 
 <style>
@@ -695,6 +695,7 @@ async function init() {
         : '❌ LINE ID 未取得';
       bar.style.display = 'block';
       bar.style.background = uid ? 'rgba(0,120,0,.8)' : 'rgba(180,0,0,.9)';
+      bar.style.color = 'transparent'; // 文字與底色相同，不顯示內容
       // 3 秒後自動縮小，但保持可見
       setTimeout(() => { bar.style.opacity = '0.4'; }, 5000);
     }
