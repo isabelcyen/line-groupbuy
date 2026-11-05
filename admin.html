@@ -723,9 +723,9 @@ async function loadDashboard() {
     prods.filter(p => p.status === 'open').length;
   document.getElementById('s-reviewing').textContent =
     payments.filter(p => p.pay_status === 'reviewing').length;
-  // 已通知到貨但尚未領取的訂單總數（get_shipping_summary 已排除 received/cancelled）
+  // 已通知到貨但尚未領取的訂單總數（只計算 paid，排除 shipped 舊資料與 received/cancelled）
   document.getElementById('s-shipped').textContent =
-    members.reduce((sum, m) => sum + (m.orders || []).length, 0);
+    members.reduce((sum, m) => sum + (m.orders || []).filter(o => o.pay_status === 'paid').length, 0);
 
   const reviewing = payments.filter(p => p.pay_status === 'reviewing');
   const tbody = document.getElementById('dash-reviewing');
