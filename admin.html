@@ -585,10 +585,7 @@ tr:hover td { background: var(--green-bg); }
 // ─── 設定 ─────────────────────────────────────────────
 const API = 'https://line-group-buy.isabelcyen.workers.dev';
 
-// ── GitHub 圖片上傳設定（若需更換 PAT，只改這裡）──
-const GITHUB_PAT   = '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';  // ← 貼上新 PAT
-const GITHUB_OWNER = 'isabelcyen';
-const GITHUB_REPO  = 'line-groupbuy';
+// ── 圖片上傳改走 Cloudflare Worker，PAT 不再放在這裡 ──
 
 let savedSecret = localStorage.getItem('admin_secret') || '';
 
@@ -655,38 +652,18 @@ function getSecret(fieldId) {
   return v;
 }
 
-// ─── GitHub 圖片上傳 ────────────────────────────────
+// ─── 圖片上傳（透過 Cloudflare Worker，PAT 存在 Worker 環境變數）────
 async function uploadToGitHub(b64, fileName) {
-  if (!GITHUB_PAT || GITHUB_PAT === 'YOUR_GITHUB_PAT_HERE') {
-    throw new Error('請先在 admin.html 的 GITHUB_PAT 填入 Personal Access Token');
-  }
-  const ext  = (fileName.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-  const name = `prod_${Date.now()}.${ext}`;
-  const path = `images/${name}`;
-
-  const resp = await fetch(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`,
-    {
-      method: 'PUT',
-      headers: {
-        'Authorization': `token ${GITHUB_PAT}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github+json',
-      },
-      body: JSON.stringify({
-        message: `Upload product image ${name}`,
-        content: b64,
-      }),
-    }
-  );
-
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.message || `GitHub API 錯誤 ${resp.status}`);
-  }
-
-  return `https://${GITHUB_OWNER}.github.io/${GITHUB_REPO}/${path}`;
+  const resp = await fetch(`${API}/upload-image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ b64, fileName }),
+  });
+  const j = await resp.json();
+  if (!j.ok) throw new Error(j.error || '上傳失敗');
+  return j.url;
 }
+
 
 // ─── Util ─────────────────────────────────────────────
 function toast(msg, dur=2500) {
