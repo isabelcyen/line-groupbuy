@@ -1089,12 +1089,8 @@ async function saveProduct() {
   } catch(e) { toast('失敗：' + e.message); }
 }
 
-/** 編輯前先確認有無訂單，有訂單則禁止編輯 */
+/** 直接開啟編輯（移除訂單數量限制） */
 function editProductGuarded(p) {
-  if ((p.order_count || 0) > 0) {
-    alert(`「${p.name || p.product_id}」已有 ${p.order_count} 筆訂單，無法編輯。\n\n若確需更改規格或價格，請先至「訂單管理」處理相關訂單後再操作。`);
-    return;
-  }
   editProduct(p);
 }
 
