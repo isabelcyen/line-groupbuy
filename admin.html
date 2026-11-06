@@ -1547,9 +1547,9 @@ async function deleteComment(commentId) {
 
 // ─── Payments ─────────────────────────────────────────
 async function loadPayments() {
-  const [payData, memberData] = await Promise.all([
-    api({ action: 'list_payments', adminSecret: savedSecret }),
-    api({ action: 'list_members',  adminSecret: savedSecret }),
+  const [payData, shipData] = await Promise.all([
+    api({ action: 'list_payments',       adminSecret: savedSecret }),
+    api({ action: 'get_shipping_summary', adminSecret: savedSecret }),
   ]);
   const payments = payData.payments || [];
   const tbody = document.getElementById('payment-list');
@@ -1557,9 +1557,9 @@ async function loadPayments() {
     tbody.innerHTML = '<tr><td colspan="7" class="empty-row">沒有付款出貨紀錄</td></tr>'; return;
   }
 
-  // 建立 order_id → { line_user_id, phone_last3 } 對照表
+  // 建立 order_id → { line_user_id, phone_last3 } 對照表（來自 get_shipping_summary）
   const orderMap = {};
-  (memberData.members || []).forEach(m => {
+  (shipData.members || []).forEach(m => {
     (m.orders || []).forEach(o => {
       orderMap[o.order_id] = {
         line_user_id: m.line_user_id || '',
