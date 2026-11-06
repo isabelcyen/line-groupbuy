@@ -381,6 +381,15 @@ tr:hover td { background: var(--green-bg); }
           <tbody id="dash-reviewing"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
         </table>
       </div>
+      <div class="section-card">
+        <div class="section-header"><h3>已通知但未領取訂單</h3></div>
+        <table>
+          <thead><tr>
+            <th>訂單</th><th>團購</th><th>品項</th><th>團員</th><th>電話末三碼</th><th>付款狀態</th><th>金額</th>
+          </tr></thead>
+          <tbody id="dash-notified"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ─── 公告管理 ─── -->
@@ -748,26 +757,50 @@ async function loadDashboard() {
     prods.filter(p => p.status === 'open').length;
   document.getElementById('s-reviewing').textContent =
     payments.filter(p => p.pay_status === 'reviewing').length;
-  // 已通知到貨但尚未領取的訂單總數（只計算 paid，排除 shipped 舊資料與 received/cancelled）
+  // 已通知到貨的訂單總數（含現場付款，以 product_status=notified 為準）
   document.getElementById('s-shipped').textContent =
-    members.reduce((sum, m) => sum + (m.orders || []).filter(o => o.pay_status === 'paid').length, 0);
+    members.reduce((sum, m) => sum + (m.orders || []).filter(o => o.product_status === 'notified').length, 0);
 
+  // ── 待審核付款訂單 ──
   const reviewing = payments.filter(p => p.pay_status === 'reviewing');
   const tbody = document.getElementById('dash-reviewing');
   if (!reviewing.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">目前沒有待審核付款</td></tr>'; return;
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">目前沒有待審核付款</td></tr>';
+  } else {
+    tbody.innerHTML = reviewing.map(p => `<tr>
+      <td style="font-size:11px;color:var(--muted)">${esc(p.order_id)}</td>
+      <td style="font-weight:600">${esc(p.product_name)}</td>
+      <td>${esc(p.transfer_ref || '—')}</td>
+      <td>${p.screenshot_url
+        ? `<a href="${esc(p.screenshot_url)}" target="_blank"><img class="img-thumb" src="${esc(p.screenshot_url)}" alt="截圖"></a>`
+        : '—'}</td>
+      <td>${statusBadge(p.pay_status)}</td>
+      <td style="font-size:12px;color:var(--muted)">${fmt(p.submitted_at)}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="confirmPayment('${esc(p.order_id)}')">✅確認</button></td>
+    </tr>`).join('');
   }
-  tbody.innerHTML = reviewing.map(p => `<tr>
-    <td style="font-size:11px;color:var(--muted)">${esc(p.order_id)}</td>
-    <td style="font-weight:600">${esc(p.product_name)}</td>
-    <td>${esc(p.transfer_ref || '—')}</td>
-    <td>${p.screenshot_url
-      ? `<a href="${esc(p.screenshot_url)}" target="_blank"><img class="img-thumb" src="${esc(p.screenshot_url)}" alt="截圖"></a>`
-      : '—'}</td>
-    <td>${statusBadge(p.pay_status)}</td>
-    <td style="font-size:12px;color:var(--muted)">${fmt(p.submitted_at)}</td>
-    <td><button class="btn btn-primary btn-sm" onclick="confirmPayment('${esc(p.order_id)}')">✅確認</button></td>
-  </tr>`).join('');
+
+  // ── 已通知訂單（含現場付款，以 product_status=notified 為準）──
+  const notifiedRows = [];
+  members.forEach(m => {
+    (m.orders || []).filter(o => o.product_status === 'notified').forEach(o => {
+      notifiedRows.push({ ...o, member_name: m.member_name, phone_last3: m.phone_last3 });
+    });
+  });
+  const tbodyN = document.getElementById('dash-notified');
+  if (!notifiedRows.length) {
+    tbodyN.innerHTML = '<tr><td colspan="7" class="empty-row">目前沒有已通知的訂單</td></tr>';
+  } else {
+    tbodyN.innerHTML = notifiedRows.map(o => `<tr>
+      <td style="font-size:11px;color:var(--muted)">${esc(o.order_id)}</td>
+      <td style="font-weight:600">${esc(o.product_name)}</td>
+      <td style="color:var(--muted)">${esc(o.variant || '—')}</td>
+      <td>${esc(o.member_name || '—')}</td>
+      <td style="font-weight:700;letter-spacing:2px;text-align:center">${esc(o.phone_last3 || '—')}</td>
+      <td>${statusBadge(o.pay_status)}</td>
+      <td style="color:var(--green);font-weight:600">NT$${o.total || '—'}</td>
+    </tr>`).join('');
+  }
 }
 
 // ─── Announcements ────────────────────────────────────
