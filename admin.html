@@ -1547,23 +1547,43 @@ async function deleteComment(commentId) {
 
 // ─── Payments ─────────────────────────────────────────
 async function loadPayments() {
-  const data = await api({ action: 'list_payments', adminSecret: savedSecret });
-  const payments = data.payments || [];
+  const [payData, memberData] = await Promise.all([
+    api({ action: 'list_payments', adminSecret: savedSecret }),
+    api({ action: 'list_members',  adminSecret: savedSecret }),
+  ]);
+  const payments = payData.payments || [];
   const tbody = document.getElementById('payment-list');
   if (!payments.length) {
     tbody.innerHTML = '<tr><td colspan="7" class="empty-row">沒有付款出貨紀錄</td></tr>'; return;
   }
-  tbody.innerHTML = payments.map(p => `<tr>
-    <td style="font-size:11px;color:var(--muted)">${esc(p.order_id)}</td>
-    <td style="font-weight:600">${esc(p.product_name)}</td>
-    <td style="font-size:11px;color:var(--muted)">${esc(p.line_user_id || '—')}</td>
-    <td>${esc(p.transfer_ref || '—')}</td>
-    <td>${p.screenshot_url
-      ? `<a href="${esc(p.screenshot_url)}" target="_blank"><img class="img-thumb" src="${esc(p.screenshot_url)}" alt="截圖"></a>`
-      : '—'}</td>
-    <td>${statusBadge(p.pay_status)}</td>
-    <td style="font-size:12px;color:var(--muted)">${fmt(p.submitted_at)}</td>
-  </tr>`).join('');
+
+  // 建立 order_id → { line_user_id, phone_last3 } 對照表
+  const orderMap = {};
+  (memberData.members || []).forEach(m => {
+    (m.orders || []).forEach(o => {
+      orderMap[o.order_id] = {
+        line_user_id: m.line_user_id || '',
+        phone_last3:  m.phone_last3  || '',
+      };
+    });
+  });
+
+  tbody.innerHTML = payments.map(p => {
+    const info = orderMap[p.order_id] || {};
+    const lineId   = p.line_user_id  || info.line_user_id  || '—';
+    const phone3   = p.phone_last3   || info.phone_last3   || '—';
+    return `<tr>
+      <td style="font-size:11px;color:var(--muted)">${esc(p.order_id)}</td>
+      <td style="font-weight:600">${esc(p.product_name)}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(lineId)}</td>
+      <td style="font-weight:700;letter-spacing:2px;text-align:center">${esc(phone3)}</td>
+      <td>${p.screenshot_url
+        ? `<a href="${esc(p.screenshot_url)}" target="_blank"><img class="img-thumb" src="${esc(p.screenshot_url)}" alt="截圖"></a>`
+        : '—'}</td>
+      <td>${statusBadge(p.pay_status)}</td>
+      <td style="font-size:12px;color:var(--muted)">${fmt(p.submitted_at)}</td>
+    </tr>`;
+  }).join('');
 }
 
 function refreshOrders() {
