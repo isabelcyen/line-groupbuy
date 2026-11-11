@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>團購管理後台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:     #06C755;
+  --green-dk:  #04A544;
+  --green-bg:  #F0FBF3;
+  --bg:        #F2F4F2;
+  --card:      #FFFFFF;
+  --text:      #1A1F1A;
+  --sub:       #5A6B5A;
+  --muted:     #8A9A8A;
+  --border:    #E2EAE2;
+  --red:       #E84040;
+  --amber:     #F59E0B;
+  --blue:      #3B82F6;
+  --pin:       #FF6B35;
+  --sidebar:   #1A2B1A;
+  --sidebar-t: #E8F5E8;
+  --sidebar-m: #A8C4A8;
+  --radius:    10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111811; --card: #1B241B; --text: #E8F0E8;
+    --sub: #92A892; --muted: #6A7E6A; --border: #253025; --green-bg: #0D2014;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111811; --card: #1B241B; --text: #E8F0E8;
+  --sub: #92A892; --muted: #6A7E6A; --border: #253025; --green-bg: #0D2014;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans TC', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  display: flex; min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--sidebar);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  z-index: 100; overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.sidebar-logo h1 { color: var(--green); font-size: 16px; font-weight: 700; }
+.sidebar-logo p  { color: var(--sidebar-m); font-size: 12px; margin-top: 3px; }
+.sidebar-logout {
+  margin-top: auto; padding: 12px 10px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.logout-btn {
+  width: 100%; background: none; border: 1px solid rgba(255,255,255,.12);
+  color: var(--sidebar-m); border-radius: 8px;
+  padding: 8px 12px; font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: background .15s, color .15s;
+}
+.logout-btn:hover { background: rgba(255,255,255,.08); color: var(--sidebar-t); }
+.nav-section { padding: 12px 10px 6px; }
+.nav-label { color: var(--sidebar-m); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 0 8px; margin-bottom: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px; cursor: pointer;
+  color: var(--sidebar-m); font-size: 14px;
+  transition: background .15s, color .15s;
+  user-select: none;
+}
+.nav-item:hover { background: rgba(255,255,255,.07); color: var(--sidebar-t); }
+.nav-item.active { background: var(--green); color: #fff; }
+.nav-item .ni { width: 18px; text-align: center; font-size: 16px; }
+
+/* ── Main ── */
+.main {
+  margin-left: 220px; flex: 1;
+  display: flex; flex-direction: column; min-height: 100vh;
+}
+.topbar {
+  padding: 16px 24px; background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.topbar h2 { font-size: 18px; font-weight: 700; flex: 1; }
+.topbar-actions { display: flex; gap: 8px; }
+.content-area { flex: 1; padding: 20px 24px; }
+
+/* ── Panels ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Stats bar ── */
+.stats-bar {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.stat-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.stat-value { font-size: 24px; font-weight: 700; color: var(--green); }
+.stat-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+/* ── Card / table ── */
+.section-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; margin-bottom: 16px;
+}
+.section-header {
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.section-header h3 { font-size: 15px; font-weight: 700; flex: 1; }
+table { width: 100%; border-collapse: collapse; }
+th { padding: 10px 14px; font-size: 12px; color: var(--muted); font-weight: 600; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg); }
+td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--green-bg); }
+
+/* ── Buttons ── */
+.btn {
+  padding: 8px 14px; border-radius: 8px;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: opacity .15s;
+}
+.btn:hover { opacity: .88; }
+.btn-primary { background: var(--green); color: #fff; }
+.btn-danger  { background: var(--red); color: #fff; }
+.btn-ghost   { background: var(--border); color: var(--sub); }
+.btn-amber   { background: var(--amber); color: #fff; }
+.btn-blue    { background: var(--blue); color: #fff; }
+.btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+
+/* ── Status badges ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.b-pending   { background: #FFF3E0; color: #E65100; }
+.b-reviewing { background: #E3F2FD; color: #1565C0; }
+.b-paid      { background: #E8F5E9; color: #2E7D32; }
+.b-shipped   { background: #FFF8E1; color: #F57F17; }
+.b-received  { background: #F3E5F5; color: #6A1B9A; }
+.b-cancelled { background: var(--border); color: var(--muted); }
+.b-open      { background: var(--green-bg); color: var(--green); }
+.b-closed    { background: var(--border); color: var(--muted); }
+.b-pinned    { background: #FFF0E8; color: var(--pin); }
+
+/* ── Modal ── */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-bg.open { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--card); border-radius: 14px;
+  padding: 24px; width: min(92vw, 480px);
+  transform: scale(.95); transition: transform .2s;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-bg.open .modal { transform: scale(1); }
+.modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+.form-row { margin-bottom: 14px; }
+.form-row label { display: block; font-size: 13px; color: var(--sub); font-weight: 500; margin-bottom: 5px; }
+.form-row input, .form-row textarea, .form-row select {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--text);
+  font-family: inherit; font-size: 14px;
+}
+.form-row input:focus, .form-row textarea:focus, .form-row select:focus { border-color: var(--green); outline: none; }
+.form-row textarea { min-height: 80px; resize: vertical; }
+.form-row .toggle-row { display: flex; align-items: center; gap: 10px; }
+.toggle { position: relative; width: 40px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0; border-radius: 22px;
+  background: var(--border); cursor: pointer; transition: background .2s;
+}
+.toggle input:checked + .toggle-track { background: var(--green); }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: left .2s;
+  pointer-events: none;
+}
+.toggle input:checked ~ .toggle-thumb { left: 21px; }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); }
+.check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--green); }
+
+/* ── 圖片上傳格子 ── */
+.img-upload-grid {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.img-slot {
+  width: 80px; height: 80px; border-radius: 10px;
+  border: 2px dashed var(--border); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  background: var(--bg); transition: border-color .2s;
+  box-sizing: border-box;
+}
+.img-slot:hover { border-color: var(--green); }
+.img-slot .plus-icon { font-size: 28px; color: var(--muted); line-height: 1; user-select: none; }
+.img-slot img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 8px; }
+.img-slot .rm-btn {
+  position: absolute; top: 3px; right: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(0,0,0,.55); color: #fff;
+  border: none; cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1; z-index: 2; padding: 0;
+}
+.img-slot.uploading::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,.65);
+  display: flex; align-items: center; justify-content: center;
+}
+.img-slot.uploading::before {
+  content: '';
+  position: absolute; z-index: 3;
+  width: 22px; height: 22px;
+  border: 3px solid var(--green); border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.img-upload-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1A1A1A; color: #fff;
+  padding: 10px 20px; border-radius: 24px; font-size: 14px;
+  opacity: 0; transition: opacity .25s, transform .25s;
+  pointer-events: none; z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Ann card (announcement list) ── */
+.ann-row {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.ann-row:last-child { border-bottom: none; }
+.ann-row-body { flex: 1; min-width: 0; }
+.ann-row-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.ann-row-content { font-size: 12px; color: var(--sub); line-height: 1.5; white-space: pre-wrap; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ann-row-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.ann-row-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: flex-start; }
+
+/* ── Responsive (simplified) ── */
+@media (max-width: 768px) {
+  .sidebar { width: 60px; }
+  .sidebar-logo p, .nav-item span.label, .nav-label, .logout-btn span.label { display: none; }
+  .logout-btn { justify-content: center; padding: 8px; }
+  .nav-item { justify-content: center; padding: 10px; }
+  .main { margin-left: 60px; }
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+  .topbar h2 { font-size: 15px; }
+  .content-area { padding: 14px 12px; }
+}
+
+/* ── Image thumb ── */
+.img-thumb {
+  width: 40px; height: 40px; border-radius: 6px;
+  object-fit: cover; background: var(--border);
+}
+/* ── Loading ── */
+.loading-row { text-align: center; padding: 28px; color: var(--muted); font-size: 14px; }
+/* ── Empty ── */
+.empty-row { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+/* ── Comment panel ── */
+.comment-item {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.comment-item:last-child { border-bottom: none; }
+.comment-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── variant chips ── */
+.variant-chip {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  background: var(--green-bg); color: var(--green);
+  font-size: 11px; font-weight: 600; margin: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>🛒 團購後台</h1>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item active" data-panel="dashboard">
+      <span class="ni">📊</span><span class="label">總覽</span>
+    </div>
+    <div class="nav-item" data-panel="announcements">
+      <span class="ni">📢</span><span class="label">公告</span>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">團購管理</div>
+    <div class="nav-item" data-panel="products">
+      <span class="ni">📦</span><span class="label">團購管理</span>
+    </div>
+    <div class="nav-item" data-panel="shipping">
+      <span class="ni">🚚</span><span class="label">出貨管理</span>
+    </div>
+    <div class="nav-item" data-panel="orders">
+      <span class="ni">📋</span><span class="label">訂單管理</span>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">財務</div>
+    <div class="nav-item" data-panel="payments">
+      <span class="ni">💳</span><span class="label">付款出貨紀錄</span>
+    </div>
+  </div>
+  <div class="sidebar-logout">
+    <button class="logout-btn" onclick="logout()">🔒 <span class="label">登出</span></button>
+  </div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <h2 id="panel-title">總覽</h2>
+    <div class="topbar-actions" id="topbar-actions"></div>
+  </div>
+
+  <div class="content-area">
+
+    <!-- ─── 儀表板 ─── -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-label">進行中團購</div>
+          <div class="stat-value" id="s-active">—</div>
+          <div class="stat-sub">開放中</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">待審核付款訂單</div>
+          <div class="stat-value" id="s-reviewing">—</div>
+          <div class="stat-sub">需確認</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">已通知未領取訂單</div>
+          <div class="stat-value" id="s-shipped">—</div>
+          <div class="stat-sub">已到貨待現場領取</div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header"><h3>待審核付款訂單</h3></div>
+        <table>
+          <thead><tr>
+            <th>訂單</th><th>團購</th><th>末五碼</th><th>截圖</th><th>狀態</th><th>時間</th><th>操作</th>
+          </tr></thead>
+          <tbody id="dash-reviewing"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="section-card">
+        <div class="section-header"><h3>已通知但未領取訂單</h3></div>
+        <table>
+          <thead><tr>
+            <th>訂單</th><th>團購</th><th>品項</th><th>團員</th><th>電話末三碼</th><th>付款狀態</th><th>金額</th>
+          </tr></thead>
+          <tbody id="dash-notified"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── 公告管理 ─── -->
+    <div class="panel" id="panel-announcements">
+      <div class="section-card">
+        <div class="section-header">
+          <h3>一般公告</h3>
+          <button class="btn btn-primary" onclick="openAnnModal()">＋ 新增公告</button>
+        </div>
+        <div id="ann-list"><div class="loading-row">載入中…</div></div>
+      </div>
+    </div>
+
+    <!-- ─── 團購管理 ─── -->
+    <div class="panel" id="panel-products">
+      <div class="section-card">
+        <div class="section-header">
+          <h3>團購列表</h3>
+          <button class="btn btn-primary" onclick="openProductModal()">＋ 建立團購</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th>圖片</th><th>名稱</th><th>截止</th><th>狀態</th><th>參團人數</th><th>參團統計</th><th>操作</th>
+          </tr></thead>
+          <tbody id="product-list"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── 出貨管理 ─── -->
+    <div class="panel" id="panel-shipping">
+      <div class="section-card">
+        <div class="section-header">
+          <h3>出貨管理</h3>
+          <button class="btn btn-ghost btn-sm" onclick="loadShipping()">🔄 重新整理</button>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px">
+          顯示已到貨、尚未取貨的訂單，依團員彙總。
+        </div>
+        <!-- 電話篩選列 -->
+        <div style="margin-bottom:16px;padding:12px 14px;background:var(--surface-2,var(--bg));border:1px solid var(--border);border-radius:8px">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px">團員手機後三碼</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">輸入後三碼後按「確定」查詢</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input type="text" id="shipping-phone-input" maxlength="3" placeholder="" inputmode="numeric"
+              style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:15px;font-weight:700;letter-spacing:3px;background:var(--card);color:var(--text);text-align:center"
+              onkeydown="if(event.key==='Enter') filterShipping()" />
+            <button class="btn btn-primary btn-sm" onclick="filterShipping()">確定</button>
+            <button class="btn btn-ghost btn-sm" id="shipping-clear-btn" onclick="clearShippingFilter()" style="display:none">✕ 清除</button>
+            <span id="shipping-filter-hint" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+        </div>
+        <div id="shipping-list">
+          <div class="empty-row" style="text-align:center;padding:24px;color:var(--muted)">載入中…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 訂單管理 ─── -->
+    <div class="panel" id="panel-orders">
+      <div class="section-card">
+        <div class="section-header">
+          <h3>訂單列表</h3>
+          <select id="order-status-filter" onchange="loadOrders()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px">
+            <option value="">全部狀態</option>
+            <option value="pending">待付款</option>
+            <option value="reviewing">審核中</option>
+            <option value="paid">已付款</option>
+            <option value="shipped">已出貨</option>
+            <option value="received">已收貨</option>
+            <option value="cancelled">已取消</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="refreshOrders()" title="重新整理" style="margin-left:6px">🔄</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th>訂單</th><th>團購</th><th>團員</th><th>電話</th><th>規格</th><th>金額</th><th>狀態</th><th>操作</th>
+          </tr></thead>
+          <tbody id="order-list"><tr><td colspan="8" class="loading-row">載入中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- ─── 付款出貨紀錄 ─── -->
+    <div class="panel" id="panel-payments">
+      <div class="section-card">
+        <div class="section-header"><h3>付款出貨紀錄</h3></div>
+        <table>
+          <thead><tr>
+            <th>訂單</th><th>團購</th><th>Line ID</th><th>末三碼</th><th>上傳付款圖</th><th>狀態</th><th>時間</th>
+          </tr></thead>
+          <tbody id="payment-list"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── Modal: 公告 ─── -->
+<div class="modal-bg" id="ann-modal">
+  <div class="modal">
+    <h3 id="ann-modal-title">新增公告</h3>
+    <input type="hidden" id="ann-id">
+    <div class="form-row">
+      <label>標題 *</label>
+      <input type="text" id="ann-title" placeholder="公告標題">
+    </div>
+    <div class="form-row">
+      <label>內容</label>
+      <textarea id="ann-content" placeholder="公告內容（選填）"></textarea>
+    </div>
+    <div class="form-row">
+      <label>圖片網址</label>
+      <input type="url" id="ann-image" placeholder="https://…（選填）">
+    </div>
+    <div class="form-row">
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="ann-pinned">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+        <span>📌 置頂公告</span>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="check-row">
+        <input type="checkbox" id="ann-notify">
+        <label for="ann-notify">同時發送 LINE 群組通知</label>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>管理員密碼</label>
+      <input type="password" id="ann-secret" placeholder="ADMIN_SECRET">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('ann-modal')">取消</button>
+      <button class="btn btn-primary" onclick="saveAnnouncement()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: 團購 ─── -->
+<div class="modal-bg" id="product-modal">
+  <div class="modal">
+    <h3 id="prod-modal-title">建立團購</h3>
+    <input type="hidden" id="prod-id">
+    <div class="form-row">
+      <label>團購名稱 *</label>
+      <input type="text" id="prod-name" placeholder="例：胖蔬農場週末蔬菜箱">
+    </div>
+    <div class="form-row">
+      <label>描述</label>
+      <textarea id="prod-desc" rows="7" placeholder="描述（選填）" style="min-height:60px;resize:vertical"></textarea>
+    </div>
+    <div class="form-row">
+      <label>截止時間</label>
+      <input type="datetime-local" id="prod-deadline">
+    </div>
+    <div class="form-row">
+      <label>圖片（最多 4 張，點格子上傳）</label>
+      <div class="img-upload-grid" id="prod-img-grid"></div>
+      <div class="img-upload-hint">支援 JPG / PNG / WEBP，上傳後自動存至 GitHub（LINE 可正常顯示）</div>
+      <input type="file" id="prod-img-input" accept="image/*" style="display:none">
+    </div>
+    <div class="form-row">
+      <label>規格 *（一行一個，格式：<code>品項(價格)</code> 或 <code>品項(價格/限量)</code>）</label>
+      <textarea id="prod-variants" placeholder="珍珠芭樂(150)&#10;甜心芥藍菜(120)&#10;綜合蔬菜箱(200/30)" style="min-height:90px"></textarea>
+      <small style="color:var(--muted);font-size:11px">限量填 0 表示不限；第一個規格的價格作為顯示售價</small>
+    </div>
+    <div class="form-row">
+      <label>管理員密碼</label>
+      <input type="password" id="prod-secret" placeholder="ADMIN_SECRET">
+    </div>
+    <div class="form-row" style="display:flex;align-items:center;gap:8px;padding:4px 0">
+      <input type="checkbox" id="prod-notify-group" style="width:16px;height:16px;cursor:pointer">
+      <label for="prod-notify-group" style="cursor:pointer;font-size:13px;color:var(--sub)">📢 儲存後傳送 LINE 群組通知</label>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('product-modal')">取消</button>
+      <button class="btn btn-primary" onclick="saveProduct()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: 通知群組 ─── -->
+
+<!-- ▼ announce-modal 已移除：不再需要「發送群組通知」按鈕 -->
+
+<!-- 參團統計 Modal -->
+<div class="modal-bg" id="stats-modal">
+  <div class="modal" style="max-width:560px;max-height:80vh;overflow-y:auto">
+    <h3 id="stats-modal-title">參團統計</h3>
+    <div id="stats-content" style="margin-top:14px"></div>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeModal('stats-modal')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── 設定 ─────────────────────────────────────────────
+const API = 'https://line-group-buy.isabelcyen.workers.dev';
+
+// ── 圖片上傳改走 Cloudflare Worker，PAT 不再放在這裡 ──
+
+let savedSecret = localStorage.getItem('admin_secret') || '';
+
+function logout() {
+  if (!confirm('確定要登出？')) return;
+  localStorage.removeItem('admin_secret');
+  savedSecret = '';
+  location.reload();
+}
+
+// 初次進入若無密碼，立即要求輸入
+(function checkSecret() {
+  if (!savedSecret) {
+    const s = prompt('請輸入管理員密碼（ADMIN_SECRET）：');
+    if (s && s.trim()) {
+      savedSecret = s.trim();
+      localStorage.setItem('admin_secret', savedSecret);
+    } else {
+      alert('未輸入密碼，部分功能將無法使用。請重新整理頁面再試。');
+    }
+  }
+})();
+let allProducts = [];
+
+// ─── API ─────────────────────────────────────────────
+async function api(body) {
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json();
+  if (!j.ok) {
+    // 密碼錯誤時清除快取，重新要求輸入
+    const errMsg = j.error || '請求失敗';
+    if (errMsg.includes('未授權') || r.status === 401 || r.status === 403) {
+      localStorage.removeItem('admin_secret');
+      savedSecret = '';
+      const newSecret = prompt('密碼錯誤，請重新輸入管理員密碼：');
+      if (newSecret && newSecret.trim()) {
+        savedSecret = newSecret.trim();
+        localStorage.setItem('admin_secret', savedSecret);
+        // 用新密碼重試一次
+        body.adminSecret = savedSecret;
+        const r2 = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const j2 = await r2.json();
+        if (!j2.ok) throw new Error(j2.error || '請求失敗');
+        return j2.data;
+      } else {
+        throw new Error('未輸入密碼，請重新整理頁面再試。');
+      }
+    }
+    throw new Error(errMsg);
+  }
+  return j.data;
+}
+function getSecret(fieldId) {
+  const v = document.getElementById(fieldId)?.value || savedSecret;
+  if (v) { savedSecret = v; localStorage.setItem('admin_secret', v); }
+  return v;
+}
+
+// ─── 圖片上傳（透過 Cloudflare Worker，PAT 存在 Worker 環境變數）────
+async function uploadToGitHub(b64, fileName) {
+  const resp = await fetch(`${API}/upload-image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ b64, fileName }),
+  });
+  const j = await resp.json();
+  if (!j.ok) throw new Error(j.error || '上傳失敗');
+  return j.url;
+}
+
+
+// ─── Util ─────────────────────────────────────────────
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function fmt(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function statusBadge(st) {
+  const map = {
+    pending:   ['b-pending',   '⏳待付款'],
+    reviewing: ['b-reviewing', '🔍審核中'],
+    paid:      ['b-paid',      '✅已付款'],
+    shipped:   ['b-shipped',   '✅已領貨'],
+    received:  ['b-received',  '🎉已收貨'],
+    cancelled: ['b-cancelled', '❌已取消'],
+    open:      ['b-open',      '✅開放中'],
+    closed:    ['b-closed',    '關閉'],
+    expired:   ['b-closed',    '⏰ 團購截止'],
+  };
+  const [cls, lbl] = map[st] || ['b-cancelled', st];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── Navigation ───────────────────────────────────────
+const titles = {
+  dashboard: '總覽', announcements: '公告', products: '團購管理',
+  shipping: '出貨管理', orders: '訂單管理', payments: '付款出貨紀錄',
+};
+const loaded = {};
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    const p = el.dataset.panel;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.panel').forEach(pn => pn.classList.remove('active'));
+    document.getElementById('panel-' + p).classList.add('active');
+    document.getElementById('panel-title').textContent = titles[p] || p;
+    if (!loaded[p] || p === 'orders') { loaded[p] = true; loadPanel(p); }
+  });
+});
+
+function loadPanel(p) {
+  const fn = {
+    dashboard: loadDashboard,
+    announcements: loadAnnouncements,
+    products: loadProducts,
+    shipping: loadShipping,
+    orders: loadOrders,
+    payments: loadPayments,
+  }[p];
+  if (fn) fn().catch(e => toast('載入失敗：' + e.message));
+}
+
+// ── Auto-load dashboard
+loaded.dashboard = true;
+loadPanel('dashboard');
+
+// ─── Dashboard ────────────────────────────────────────
+async function loadDashboard() {
+  const [prodData, orderData, payData, shipData] = await Promise.all([
+    api({ action: 'list_products',       adminSecret: savedSecret }),
+    api({ action: 'list_orders',         adminSecret: savedSecret }),
+    api({ action: 'list_payments',       adminSecret: savedSecret }),
+    api({ action: 'get_shipping_summary', adminSecret: savedSecret }),
+  ]);
+  const prods    = prodData.products  || [];
+  const orders   = orderData.orders   || [];
+  const payments = payData.payments   || [];
+  const members  = shipData.members   || [];
+  allProducts = prods;
+
+  document.getElementById('s-active').textContent =
+    prods.filter(p => p.status === 'open').length;
+  document.getElementById('s-reviewing').textContent =
+    payments.filter(p => p.pay_status === 'reviewing').length;
+  // 已通知到貨的訂單總數（含現場付款，以 product_status=notified 為準）
+  document.getElementById('s-shipped').textContent =
+    members.reduce((sum, m) => sum + (m.orders || []).filter(o => o.product_status === 'notified').length, 0);
+
+  // ── 待審核付款訂單 ──
+  const reviewing = payments.filter(p => p.pay_status === 'reviewing');
+  const tbody = document.getElementById('dash-reviewing');
+  if (!reviewing.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">目前沒有待審核付款</td></tr>';
+  } else {
+    tbody.innerHTML = reviewing.map(p => `<tr>
+      <td style="font-size:11px;color:var(--muted)">${esc(p.order_id)}</td>
+      <td style="font-weight:600">${esc(p.product_name)}</td>
+      <td>${esc(p.transfer_ref || '—')}</td>
+      <td>${p.screenshot_url
+        ? `<a href="${esc(p.screenshot_url)}" target="_blank"><img class="img-thumb" src="${esc(p.screenshot_url)}" alt="截圖"></a>`
+        : '—'}</td>
+      <td>${statusBadge(p.pay_status)}</td>
+      <td style="font-size:12px;color:var(--muted)">${fmt(p.submitted_at)}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="confirmPayment('${esc(p.order_id)}')">✅確認</button></td>
+    </tr>`).join('');
+  }
+
+  // ── 已通知訂單（含現場付款，以 product_status=notified 為準）──
+  const notifiedRows = [];
+  members.forEach(m => {
+    (m.orders || []).filter(o => o.product_status === 'notified').forEach(o => {
+      notifiedRows.push({ ...o, member_name: m.member_name, phone_last3: m.phone_last3 });
+    });
+  });
+  const tbodyN = document.getElementById('dash-notified');
+  if (!notifiedRows.length) {
+    tbodyN.innerHTML = '<tr><td colspan="7" class="empty-row">目前沒有已通知的訂單</td></tr>';
+  } else {
+    tbodyN.innerHTML = notifiedRows.map(o => `<tr>
+      <td style="font-size:11px;color:var(--muted)">${esc(o.order_id)}</td>
+      <td style="font-weight:600">${esc(o.product_name)}</td>
+      <td style="color:var(--muted)">${esc(o.variant || '—')}</td>
+      <td>${esc(o.member_name || '—')}</td>
+      <td style="font-weight:700;letter-spacing:2px;text-align:center">${esc(o.phone_last3 || '—')}</td>
+      <td>${statusBadge(o.pay_status)}</td>
+      <td style="color:var(--green);font-weight:600">NT$${o.total || '—'}</td>
+    </tr>`).join('');
+  }
+}
+
+// ─── Announcements ────────────────────────────────────
+async function loadAnnouncements() {
+  const el = document.getElementById('ann-list');
+  el.innerHTML = '<div class="loading-row">載入中…</div>';
+  const data = await api({ action: 'get_general_announcements' });
+  const anns = (data.announcements || []).filter(a => a.title !== '__DELETED__');
+  if (!anns.length) {
+    el.innerHTML = '<div class="empty-row">目前沒有公告</div>'; return;
+  }
+  el.innerHTML = anns.map(a => {
+    const pinned = String(a.pinned).toLowerCase() === 'true';
+    return `
+      <div class="ann-row">
+        <div class="ann-row-body">
+          <div class="ann-row-title">
+            ${pinned ? '<span class="badge b-pinned">📌 置頂</span> ' : ''}${esc(a.title)}
+          </div>
+          ${a.content ? `<div class="ann-row-content">${esc(a.content)}</div>` : ''}
+          <div class="ann-row-meta">${fmt(a.created_at)}</div>
+        </div>
+        <div class="ann-row-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editAnn(${JSON.stringify(a).replace(/"/g,'&quot;')})">編輯</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAnn('${esc(a.ann_id)}')">刪除</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openAnnModal() {
+  document.getElementById('ann-id').value = '';
+  document.getElementById('ann-modal-title').textContent = '新增公告';
+  document.getElementById('ann-title').value = '';
+  document.getElementById('ann-content').value = '';
+  document.getElementById('ann-image').value = '';
+  document.getElementById('ann-pinned').checked = false;
+  document.getElementById('ann-notify').checked = false;
+  document.getElementById('ann-secret').value = savedSecret;
+  document.getElementById('ann-modal').classList.add('open');
+}
+
+function editAnn(a) {
+  document.getElementById('ann-id').value = a.ann_id;
+  document.getElementById('ann-modal-title').textContent = '編輯公告';
+  document.getElementById('ann-title').value = a.title || '';
+  document.getElementById('ann-content').value = a.content || '';
+  document.getElementById('ann-image').value = a.image_url || '';
+  document.getElementById('ann-pinned').checked = String(a.pinned).toLowerCase() === 'true';
+  document.getElementById('ann-notify').checked = false;
+  document.getElementById('ann-secret').value = savedSecret;
+  document.getElementById('ann-modal').classList.add('open');
+}
+
+async function saveAnnouncement() {
+  const annId   = document.getElementById('ann-id').value;
+  const title   = document.getElementById('ann-title').value.trim();
+  const content = document.getElementById('ann-content').value.trim();
+  const imageUrl = document.getElementById('ann-image').value.trim();
+  const pinned  = document.getElementById('ann-pinned').checked;
+  const notify  = document.getElementById('ann-notify').checked;
+  const secret  = getSecret('ann-secret');
+  if (!title) { toast('請填寫標題'); return; }
+  if (!secret) { toast('請填寫管理員密碼'); return; }
+  try {
+    if (annId) {
+      await api({ action: 'update_announcement', annId, title, content, imageUrl, pinned, adminSecret: secret });
+    } else {
+      await api({ action: 'create_announcement', title, content, imageUrl, pinned, notifyGroup: notify, adminSecret: secret });
+    }
+    closeModal('ann-modal');
+    toast('✅ 公告已' + (annId ? '更新' : '建立'));
+    loaded.announcements = false;
+    await loadAnnouncements();
+    loaded.announcements = true;
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+async function deleteAnn(annId) {
+  if (!confirm('確定刪除此公告？')) return;
+  const secret = savedSecret || prompt('請輸入管理員密碼');
+  if (!secret) return;
+  try {
+    await api({ action: 'delete_announcement', annId, adminSecret: secret });
+    toast('✅ 公告已刪除');
+    loaded.announcements = false;
+    await loadAnnouncements();
+    loaded.announcements = true;
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+// ─── Products ─────────────────────────────────────────
+async function loadProducts() {
+  const data = await api({ action: 'list_products', adminSecret: savedSecret });
+  allProducts = data.products || [];
+
+  const tbody = document.getElementById('product-list');
+  if (!allProducts.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">尚無團購</td></tr>'; return;
+  }
+  tbody.innerHTML = allProducts.map(p => {
+    const imgs = (p.image_url || '').split(',').map(s=>s.trim()).filter(Boolean);
+    const img = imgs.length ? `<img class="img-thumb" src="${esc(imgs[0])}" alt="">` : '—';
+    const pJson = JSON.stringify(p).replace(/"/g,'&quot;');
+    // 若狀態為 open 但截止日期已過，顯示「團購截止」
+    const isExpired = p.status === 'open' && p.deadline && new Date(p.deadline) < new Date();
+    const displayStatus = isExpired ? 'expired' : p.status;
+    return `<tr>
+      <td>${img}</td>
+      <td style="font-weight:600">${esc(p.name)}</td>
+      <td style="font-size:12px;color:var(--muted)">${p.deadline ? fmt(p.deadline) : '—'}</td>
+      <td>${statusBadge(displayStatus)}</td>
+      <td style="text-align:center">${p.order_count || 0}</td>
+      <td style="text-align:center">
+        <button class="btn btn-ghost btn-sm" onclick="showProductStats('${esc(p.product_id)}','${esc(p.name)}')">📊 統計</button>
+      </td>
+      <td>
+        <div style="display:flex;gap:6px">
+          ${p.status === 'open'
+            ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
+            : p.status === 'notified'
+              ? `<span style="color:var(--muted);font-size:12px;padding:4px 6px">✅已通知</span><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
+              : `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/** 解析規格字串 "名稱(價格)" 或 "名稱(價格/限量)" */
+function parseVariantDef(str) {
+  const s = String(str || '').trim();
+  const m = s.match(/^(.+?)\((\d+(?:\.\d+)?)(?:\/(\d+))?\)$/);
+  if (m) return { name: m[1].trim(), price: Number(m[2]), quota: m[3] !== undefined ? Number(m[3]) : 0 };
+  return null;
+}
+
+/* ══ 圖片上傳：最多 4 格 ══ */
+let prodImageUrls = [];
+let _pendingSlot  = -1;
+
+function renderImgSlots() {
+  const grid = document.getElementById('prod-img-grid');
+  grid.innerHTML = '';
+  const MAX = 4;
+  prodImageUrls.forEach((url, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'img-slot';
+    slot.innerHTML = `<img src="${url}" alt="圖片${i+1}">
+      <button class="rm-btn" onclick="removeImgSlot(${i})" title="移除">✕</button>`;
+    grid.appendChild(slot);
+  });
+  if (prodImageUrls.length < MAX) {
+    const add = document.createElement('div');
+    add.className = 'img-slot';
+    add.title = '點擊上傳圖片';
+    add.innerHTML = '<span class="plus-icon">＋</span>';
+    add.onclick = () => pickImage(prodImageUrls.length);
+    grid.appendChild(add);
+  }
+}
+
+function pickImage(slotIdx) {
+  _pendingSlot = slotIdx;
+  const inp = document.getElementById('prod-img-input');
+  inp.value = '';
+  inp.click();
+}
+
+function removeImgSlot(idx) {
+  prodImageUrls.splice(idx, 1);
+  renderImgSlots();
+}
+
+let _imgInputBound = false;
+function ensureImgInputBound() {
+  if (_imgInputBound) return;
+  _imgInputBound = true;
+  document.getElementById('prod-img-input').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file || _pendingSlot < 0) return;
+    const idx = _pendingSlot;
+    _pendingSlot = -1;
+
+    const grid = document.getElementById('prod-img-grid');
+    const slots = grid.querySelectorAll('.img-slot');
+    if (slots[idx]) slots[idx].classList.add('uploading');
+
+    try {
+      const b64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = e => res(e.target.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+
+      toast('⏳ 上傳中…');
+      const url = await uploadToGitHub(b64, file.name || ('img_' + Date.now() + '.jpg'));
+      prodImageUrls[idx] = url;
+      toast('✅ 圖片上傳成功！');
+    } catch(e) {
+      toast('圖片上傳失敗：' + e.message);
+    }
+    renderImgSlots();
+  });
+}
+
+function openProductModal() {
+  ensureImgInputBound();
+  prodImageUrls = [];
+  document.getElementById('prod-id').value = '';
+  document.getElementById('prod-modal-title').textContent = '建立團購';
+  ['prod-name','prod-desc','prod-variants'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('prod-deadline').value = '';
+  document.getElementById('prod-secret').value = savedSecret;
+  renderImgSlots();
+  document.getElementById('product-modal').classList.add('open');
+}
+
+function editProduct(p) {
+  ensureImgInputBound();
+  prodImageUrls = (p.image_url || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
+  document.getElementById('prod-id').value = p.product_id;
+  document.getElementById('prod-modal-title').textContent = '編輯團購';
+  document.getElementById('prod-name').value  = p.name || '';
+  document.getElementById('prod-desc').value  = p.description || '';
+  try {
+    const vs = JSON.parse(p.variants || '[]');
+    document.getElementById('prod-variants').value = vs.map(v => {
+      if (typeof v === 'string') return v;
+      const price = v.price || 0;
+      const quota = v.quota || 0;
+      return quota > 0 ? `${v.name}(${price}/${quota})` : `${v.name}(${price})`;
+    }).join('\n');
+  } catch { document.getElementById('prod-variants').value = ''; }
+  if (p.deadline) {
+    const d = new Date(p.deadline);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    document.getElementById('prod-deadline').value = d.toISOString().slice(0,16);
+  } else {
+    document.getElementById('prod-deadline').value = '';
+  }
+  document.getElementById('prod-secret').value = savedSecret;
+  renderImgSlots();
+  document.getElementById('product-modal').classList.add('open');
+}
+
+async function saveProduct() {
+  const prodId  = document.getElementById('prod-id').value;
+  const name    = document.getElementById('prod-name').value.trim();
+  const secret  = getSecret('prod-secret');
+  const variantRaw = document.getElementById('prod-variants').value;
+
+  if (!name) { toast('請填寫團購名稱'); return; }
+  if (!secret) { toast('請填寫管理員密碼'); return; }
+
+  const description  = document.getElementById('prod-desc').value.trim();
+  const deadline     = document.getElementById('prod-deadline').value || '';
+  const variantLines = variantRaw.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!variantLines.length) { toast('請至少填寫一個規格，格式：品項(價格)'); return; }
+
+  const variants = variantLines.map(l => {
+    const def = parseVariantDef(l);
+    if (!def) { toast('規格格式錯誤：' + l + '\n請用「品項(價格)」或「品項(價格/限量)」'); return null; }
+    return def;
+  });
+  if (variants.some(v => v === null)) return;
+
+  const basePrice = variants[0].price;
+  const variantsStr = variantLines.join(',');
+
+  const body = {
+    action:      prodId ? 'update_product' : 'create_product',
+    productId:   prodId || undefined,
+    name,
+    price:       basePrice,
+    unit:        '份',
+    description: document.getElementById('prod-desc').value.trim(),
+    imageUrl:    prodImageUrls.join(','),
+    deadline:    document.getElementById('prod-deadline').value || '',
+    variants:    variantsStr,
+    adminSecret: secret,
+  };
+  const notifyGroup = document.getElementById('prod-notify-group')?.checked;
+  try {
+    const result = await api(body);
+    closeModal('product-modal');
+    toast('✅ 團購已' + (prodId ? '更新' : '建立'));
+    // 傳送 LINE 群組通知（在重新載入清單之前先送，避免清單載入失敗阻斷通知）
+    if (notifyGroup && !prodId) {
+      await sendGroupProductNotice({ name, description, deadline, variants: variantLines, imageUrl: prodImageUrls.join(','), secret });
+    }
+    loaded.products = false;
+    await loadProducts();
+    loaded.products = true;
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+/** 直接開啟編輯（移除訂單數量限制） */
+function editProductGuarded(p) {
+  editProduct(p);
+}
+
+/** 複製團購：帶入現有資料但清空 product_id，存檔時視為新建 */
+function copyProduct(p) {
+  ensureImgInputBound();
+  prodImageUrls = (p.image_url || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
+  document.getElementById('prod-id').value = '';          // 空 ID → 建立新團
+  document.getElementById('prod-modal-title').textContent = '複製團購（新建）';
+  document.getElementById('prod-name').value  = (p.name || '') + '（複製）';
+  document.getElementById('prod-desc').value  = p.description || '';
+  try {
+    const vs = JSON.parse(p.variants || '[]');
+    document.getElementById('prod-variants').value = vs.map(v => {
+      if (typeof v === 'string') return v;
+      const price = v.price || 0;
+      const quota = v.quota || 0;
+      return quota > 0 ? `${v.name}(${price}/${quota})` : `${v.name}(${price})`;
+    }).join('\n');
+  } catch { document.getElementById('prod-variants').value = ''; }
+  document.getElementById('prod-deadline').value = '';    // 截止時間清空
+  document.getElementById('prod-secret').value = savedSecret;
+  renderImgSlots();
+  document.getElementById('product-modal').classList.add('open');
+}
+
+/** 顯示商品參團統計 Modal */
+async function showProductStats(pid, pname) {
+  document.getElementById('stats-modal-title').textContent = `「${pname}」參團統計`;
+  document.getElementById('stats-content').innerHTML = '<p style="color:var(--muted);text-align:center;padding:24px">載入中…</p>';
+  document.getElementById('stats-modal').classList.add('open');
+  try {
+    const data = await api({ action: 'get_product_stats', productId: pid, adminSecret: savedSecret });
+    const variantTotals = data.variantTotals || {};
+    const memberList    = data.memberList    || [];
+    const orderCount    = data.orderCount    || 0;
+
+    let html = '';
+
+    // ── 規格統計 ──
+    const totalQty     = Object.values(variantTotals).reduce((s, n) => s + n, 0);
+    const totalMembers = memberList.length;
+    html += `<div style="margin-bottom:18px">
+      <div style="font-weight:600;margin-bottom:8px">規格購買統計（${totalMembers} 人參團，共 ${totalQty} 件）</div>`;
+    const vKeys = Object.keys(variantTotals);
+    if (vKeys.length === 0) {
+      html += '<p style="color:var(--muted);font-size:13px">無規格資料</p>';
+    } else {
+      html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+      html += '<thead><tr style="background:var(--surface-2,var(--bg));font-weight:600">';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">規格</th>';
+      html += '<th style="padding:6px 10px;text-align:right;border-bottom:1px solid var(--border)">總數量</th>';
+      html += '</tr></thead><tbody>';
+      vKeys.forEach(v => {
+        html += `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:6px 10px">${esc(v)}</td>
+          <td style="padding:6px 10px;text-align:right;font-weight:700">${variantTotals[v]}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    // ── 團員列表（按電話後三碼） ──
+    html += `<div>
+      <div style="font-weight:600;margin-bottom:8px">團員訂購（按電話後三碼）</div>`;
+    if (memberList.length === 0) {
+      html += '<p style="color:var(--muted);font-size:13px">尚無訂單</p>';
+    } else {
+      html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+      html += '<thead><tr style="background:var(--surface-2,var(--bg));font-weight:600">';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">後三碼</th>';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">姓名</th>';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">訂購規格</th>';
+      html += '</tr></thead><tbody>';
+      memberList.forEach(m => {
+        const varStr = Object.entries(m.variants || {})
+          .map(([v, q]) => `${esc(v)}×${q}`).join('、');
+        html += `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:6px 10px;font-weight:700">${esc(m.phone)}</td>
+          <td style="padding:6px 10px">${esc(m.name)}</td>
+          <td style="padding:6px 10px;color:var(--muted)">${varStr || '—'}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    document.getElementById('stats-content').innerHTML = html;
+  } catch(e) {
+    document.getElementById('stats-content').innerHTML = `<p style="color:var(--red)">載入失敗：${e.message}</p>`;
+  }
+}
+
+async function notifyArrived(pid, pname) {
+  if (!confirm(`確定發送「${pname}」到貨通知到群組？`)) return;
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  try {
+    await api({ action: 'notify_arrived', productId: pid, adminSecret: secret });
+    toast('📢 到貨通知已發送至群組');
+    loaded.products = false; loadProducts(); loaded.products = true;
+  } catch(e) { toast('失敗：' + e.message); }
+}
+async function openProduct(pid) {
+  if (!confirm('確定重新開放？')) return;
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  try {
+    await api({ action: 'update_product', productId: pid, status: 'open', adminSecret: secret });
+    toast('✅ 已重新開放'); loaded.products = false; loadProducts(); loaded.products = true;
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+// ─── 傳送開團通知到 LINE 群組（Flex Message 卡片格式）──
+async function sendGroupProductNotice({ name, description, deadline, variants, imageUrl, secret }) {
+  const liffUrl = 'https://liff.line.me/2011684954-yOthIDvq';
+
+  // 開團時間
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const openStr = `${now.getMonth()+1}/${now.getDate()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  // 截止時間格式化
+  const dlStr = deadline
+    ? deadline.slice(0, 16).replace('T', ' ').replace(/-/g, '/')
+    : '';
+
+  // body 內容
+  const bodyContents = [];
+  if (description) {
+    bodyContents.push({ type: 'text', text: description, wrap: true, size: 'sm', color: '#555555' });
+    bodyContents.push({ type: 'separator', margin: 'md' });
+  }
+  bodyContents.push({
+    type: 'box', layout: 'horizontal', margin: 'md',
+    contents: [
+      { type: 'text', text: '🟢 開團', size: 'sm', color: '#555555', flex: 2 },
+      { type: 'text', text: openStr, size: 'sm', color: '#00B8A9', flex: 3, align: 'end' },
+    ],
+  });
+  if (dlStr) {
+    bodyContents.push({
+      type: 'box', layout: 'horizontal', margin: 'sm',
+      contents: [
+        { type: 'text', text: '⏰ 截止', size: 'sm', color: '#555555', flex: 2 },
+        { type: 'text', text: dlStr, size: 'sm', color: '#FF4444', flex: 3, align: 'end' },
+      ],
+    });
+  }
+
+  // 組合 Bubble
+  const bubble = {
+    type: 'bubble',
+    header: {
+      type: 'box', layout: 'vertical', paddingAll: '16px',
+      backgroundColor: '#00B8A9',
+      contents: [
+        { type: 'text', text: '🛒 團購開團囉！', color: '#FFFFFF', size: 'sm' },
+        { type: 'text', text: name, color: '#FFFFFF', size: 'xl', weight: 'bold', wrap: true },
+      ],
+    },
+    body: { type: 'box', layout: 'vertical', paddingAll: '16px', contents: bodyContents },
+    footer: {
+      type: 'box', layout: 'vertical', paddingAll: '12px',
+      contents: [{
+        type: 'button', style: 'primary', color: '#00B8A9',
+        action: { type: 'uri', label: '立即參團 🎉', uri: liffUrl },
+      }],
+    },
+  };
+
+  // 加入圖片（有的話取第一張）
+  const imgUrls = (imageUrl || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (imgUrls.length) {
+    bubble.hero = {
+      type: 'image', url: imgUrls[0], size: 'full',
+      aspectRatio: '20:13', aspectMode: 'cover',
+    };
+  }
+
+  const messages = [{
+    type: 'flex',
+    altText: `🛒 新團購開啟！${name}`,
+    contents: bubble,
+  }];
+
+  try {
+    const res = await fetch(`${API}/push-group`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, adminSecret: secret }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    toast('📢 已傳送開團通知到群組！');
+  } catch(e) {
+    toast('⚠️ 群組通知失敗：' + e.message);
+  }
+}
+
+// ─── Shipping Summary ─────────────────────────────────
+let _shippingMembers = [];
+
+async function loadShipping(keepPhone = false) {
+  const el = document.getElementById('shipping-list');
+  el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted)">載入中…</div>';
+  const inp = document.getElementById('shipping-phone-input');
+  // 記住目前電話（keepPhone=true 時，操作後自動重新顯示同一人）
+  const phoneToRestore = keepPhone ? (inp?.value || '').trim() : '';
+  if (!keepPhone) {
+    if (inp) inp.value = '';
+    const clearBtn = document.getElementById('shipping-clear-btn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    const hint = document.getElementById('shipping-filter-hint');
+    if (hint) hint.textContent = '';
+  }
+  try {
+    const data = await api({ action: 'get_shipping_summary', adminSecret: savedSecret });
+    _shippingMembers = data.members || [];
+    if (keepPhone && phoneToRestore && /^\d{1,3}$/.test(phoneToRestore)) {
+      // 自動重新套用同一電話篩選
+      if (inp) inp.value = phoneToRestore;
+      filterShipping();
+    } else {
+      el.innerHTML = '';
+    }
+  } catch(e) {
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red)">載入失敗：${esc(e.message)}</div>`;
+  }
+}
+
+function filterShipping() {
+  const phone = (document.getElementById('shipping-phone-input')?.value || '').trim();
+  const hint  = document.getElementById('shipping-filter-hint');
+  const clearBtn = document.getElementById('shipping-clear-btn');
+  if (!phone || !/^\d{1,3}$/.test(phone)) {
+    renderShippingList(_shippingMembers, null);
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (hint) hint.textContent = '';
+    return;
+  }
+  const filtered = _shippingMembers.filter(m => m.phone_last3 === phone);
+  renderShippingList(filtered, phone);
+  if (clearBtn) clearBtn.style.display = '';
+  if (hint) hint.textContent = filtered.length ? `找到 ${filtered.length} 位` : '查無此電話';
+}
+
+function clearShippingFilter() {
+  const inp = document.getElementById('shipping-phone-input');
+  if (inp) inp.value = '';
+  const clearBtn = document.getElementById('shipping-clear-btn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  const hint = document.getElementById('shipping-filter-hint');
+  if (hint) hint.textContent = '';
+  const el = document.getElementById('shipping-list');
+  if (el) el.innerHTML = '';
+}
+
+const _shippingOrderMap = {};
+
+function renderShippingList(members, filterPhone) {
+  const el = document.getElementById('shipping-list');
+
+  // 只顯示「尚未出貨」的訂單（排除 received / cancelled）
+  const DONE_STATUSES = ['received', 'cancelled'];
+  const activeMembers = members.map(m => ({
+    ...m,
+    orders: m.orders.filter(o => !DONE_STATUSES.includes(o.pay_status)),
+  })).filter(m => m.orders.length > 0);
+
+  // 重建 order map（只含待處理訂單，存 {id, status, product_status}）
+  activeMembers.forEach(m => {
+    _shippingOrderMap[m.phone_last3 || '__'] = m.orders.map(o => ({
+      id: o.order_id,
+      status: o.pay_status,
+      product_status: o.product_status || '',
+    }));
+  });
+
+  if (!activeMembers.length) {
+    el.innerHTML = filterPhone
+      ? `<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">查無電話後三碼 <strong>${esc(filterPhone)}</strong> 的待取貨訂單</div>`
+      : '<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">🎉 目前沒有待取貨的訂單</div>';
+    return;
+  }
+  el.innerHTML = activeMembers.map(m => {
+    const key = m.phone_last3 || '__';
+    const hasPhone = m.phone_last3 && /^\d{3}$/.test(m.phone_last3);
+    const unprocessed = m.orders.filter(o => o.product_status === 'notified').length;
+    const orderRows = m.orders.map(o => {
+      const variantText = o.variant || '—';
+      // 只有 product_status = notified 的訂單才預設勾選
+      const preChecked = o.product_status === 'notified';
+      return `
+        <div style="display:flex;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="chk-${esc(o.order_id)}" ${preChecked ? 'checked' : ''} style="margin-top:3px;margin-right:10px;flex-shrink:0;width:16px;height:16px;cursor:pointer">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${esc(o.product_name)}</div>
+            <div style="font-size:12px;color:var(--muted)">${esc(variantText)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">訂單 ${esc(o.order_id)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-left:8px;flex-shrink:0">
+            <div style="font-size:14px;font-weight:700;color:var(--green);white-space:nowrap">NT$${o.total}</div>
+            <div style="transform:scale(0.82);transform-origin:right center">${statusBadge(o.pay_status)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:color-mix(in srgb,var(--green) 6%,var(--card));border-bottom:1px solid var(--border)">
+          <div style="text-align:center;min-width:72px">
+            <div style="font-size:22px;font-weight:900;letter-spacing:4px;color:var(--text);line-height:1">${hasPhone ? esc(m.phone_last3) : '—'}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">取貨電話後三碼</div>
+          </div>
+          <div style="width:1px;height:36px;background:var(--border)"></div>
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:700;color:var(--text)">${esc(m.member_name)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${m.orders.length} 筆待取貨${unprocessed > 0 ? `，<span style="color:var(--amber,#d97706);font-weight:600">${unprocessed} 筆已通知</span>` : ''}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px" onclick="toggleSelectAll('${esc(key)}')">全選/取消</button>
+        </div>
+        <div style="padding:0 16px">${orderRows}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:var(--surface-2,var(--bg))">
+          <span style="font-size:13px;color:var(--muted)">合計</span>
+          <span style="font-size:17px;font-weight:900;color:var(--green)">NT$${m.orders.reduce((s,o)=>s+Number(o.total||0),0)}</span>
+        </div>
+        <div style="display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border)">
+          <button class="btn btn-primary btn-sm" style="flex:1" onclick="bulkMarkPaid('${esc(m.phone_last3||'__')}')">✅ 已付款</button>
+          <button class="btn btn-amber btn-sm" style="flex:1" onclick="bulkMarkShipped('${esc(m.phone_last3||'__')}')">✅ 已領貨</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleSelectAll(phoneKey) {
+  const orders = _shippingOrderMap[phoneKey] || [];
+  const allChecked = orders.every(o => {
+    const chk = document.getElementById(`chk-${o.id}`);
+    return !chk || chk.checked;
+  });
+  orders.forEach(o => {
+    const chk = document.getElementById(`chk-${o.id}`);
+    if (chk) chk.checked = !allChecked;
+  });
+}
+
+function getCheckedOrders(phoneKey) {
+  return (_shippingOrderMap[phoneKey] || []).filter(o => {
+    const chk = document.getElementById(`chk-${o.id}`);
+    return chk && chk.checked;
+  });
+}
+
+async function bulkMarkPaid(phoneKey) {
+  // 只處理 checkbox 已勾選且狀態為 pending / reviewing 的訂單
+  const checked = getCheckedOrders(phoneKey);
+  const targets = checked.filter(o => o.status === 'pending' || o.status === 'reviewing');
+  if (!checked.length) { toast('請先勾選要處理的訂單'); return; }
+  if (!targets.length) { toast('勾選的訂單都已付款，無需再標記'); return; }
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  if (!confirm(`確定將這 ${targets.length} 筆訂單標為「已付款」？`)) return;
+  try {
+    let ok = 0;
+    for (const o of targets) {
+      try { await api({ action: 'confirm_payment', orderId: o.id, adminSecret: secret }); ok++; } catch(e) {}
+    }
+    toast(`✅ 已標記 ${ok} 筆為已付款`);
+    loaded.shipping = false; loadShipping(true);
+    refresh(['orders', 'dashboard']);
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+async function bulkMarkShipped(phoneKey) {
+  // 只處理 checkbox 已勾選且尚未出貨的訂單
+  const checked = getCheckedOrders(phoneKey);
+  const targets = checked.filter(o => !['received','cancelled'].includes(o.status));
+  if (!checked.length) { toast('請先勾選要處理的訂單'); return; }
+  if (!targets.length) { toast('勾選的訂單都已領貨，無需再標記'); return; }
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  if (!confirm(`確定將這 ${targets.length} 筆訂單標為「已領貨」？`)) return;
+  try {
+    let ok = 0;
+    for (const o of targets) {
+      try {
+        // pending / reviewing → 先轉付款，再出貨
+        if (o.status === 'pending' || o.status === 'reviewing') {
+          await api({ action: 'confirm_payment', orderId: o.id, adminSecret: secret });
+        }
+        await api({ action: 'mark_shipping', orderId: o.id, adminSecret: secret });
+        ok++;
+      } catch(e) {}
+    }
+    toast(`✅ 已標記 ${ok} 筆為已領貨`);
+    loaded.shipping = false; loadShipping(true);
+    refresh(['orders', 'dashboard']);
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+// ─── Orders ───────────────────────────────────────────
+async function loadOrders() {
+  const filter = document.getElementById('order-status-filter')?.value || '';
+  const data = await api({ action: 'list_orders', adminSecret: savedSecret });
+  let orders = data.orders || [];
+  if (filter) orders = orders.filter(o => o.pay_status === filter);
+  const tbody = document.getElementById('order-list');
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-row">沒有符合的訂單</td></tr>'; return;
+  }
+  tbody.innerHTML = orders.map(o => renderOrderRow(o, false)).join('');
+}
+
+function renderOrderRow(o, compact) {
+  // 每列加 data-oid 屬性，供出貨後直接更新該列
+  return `<tr data-oid="${esc(o.order_id)}">
+    <td style="font-size:11px;color:var(--muted)">${esc(o.order_id)}</td>
+    <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${esc(o.product_name)}</td>
+    <td style="font-size:12px">${esc(o.member_name||o.line_user_id||'—')}</td>
+    <td style="font-size:13px;font-weight:600;color:var(--text);letter-spacing:1px">${o.phone_last3 ? `···${esc(o.phone_last3)}` : '—'}</td>
+    <td style="font-size:12px">${esc(o.variant||'—')} x${o.qty}</td>
+    <td style="font-weight:600;color:var(--green)">NT$${o.total}</td>
+    <td>${statusBadge(o.pay_status)}</td>
+    <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+      ${o.pay_status === 'reviewing' ? `<button class="btn btn-primary btn-sm" onclick="confirmPayment('${esc(o.order_id)}')">✅確認</button>` : ''}
+      ${o.pay_status === 'paid'      ? `<button class="btn btn-amber btn-sm" onclick="markShipped('${esc(o.order_id)}')">✅領貨</button>` : ''}
+      ${o.pay_status === 'pending'   ? `<button class="btn btn-danger btn-sm" onclick="cancelOrder('${esc(o.order_id)}')">取消</button>` : ''}
+    </div></td>
+  </tr>`;
+}
+
+async function confirmPayment(oid) {
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  try {
+    await api({ action: 'confirm_payment', orderId: oid, adminSecret: secret });
+    toast('✅ 已確認付款');
+    // 直接更新該列，不重整整張表
+    updateOrderRowInPlace(oid, 'paid');
+    refresh(['dashboard', 'payments']);
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+async function markShipped(oid) {
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  try {
+    await api({ action: 'mark_shipping', orderId: oid, adminSecret: secret });
+    toast('✅ 已領貨');
+    // 直接更新該列狀態與按鈕，不重整整張表
+    updateOrderRowInPlace(oid, 'received');
+    refresh(['dashboard']);
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+/**
+ * 出貨 / 確認付款後直接更新該列，避免整張表閃爍重整。
+ * 同時更新儀表板和訂單列表中相同 order_id 的列。
+ */
+function updateOrderRowInPlace(oid, newStatus) {
+  // 找出所有帶此 oid 的列（儀表板 + 訂單管理可能各有一列）
+  document.querySelectorAll(`tr[data-oid="${oid}"]`).forEach(row => {
+    const cells = row.cells;
+    if (!cells || cells.length < 7) return;
+    // 第 7 格（index 6）：狀態 badge
+    cells[6].innerHTML = statusBadge(newStatus);
+    // 第 8 格（index 7）：操作按鈕
+    cells[7].innerHTML = '<div style="display:flex;gap:4px;flex-wrap:wrap"></div>';
+  });
+}
+
+async function cancelOrder(oid) {
+  if (!confirm('確定取消此訂單？')) return;
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  try {
+    await api({ action: 'cancel_order', orderId: oid, adminSecret: secret });
+    toast('✅ 已取消訂單');
+    updateOrderRowInPlace(oid, 'cancelled');
+    refresh(['dashboard']);
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+function refresh(panels) {
+  panels.forEach(p => { loaded[p] = false; });
+  const active = document.querySelector('.nav-item.active')?.dataset.panel;
+  if (active && panels.includes(active)) { loadPanel(active); loaded[active] = true; }
+}
+
+// ─── Comments (removed) ───────────────────────────────
+async function loadComments() {
+  if (!allProducts.length) await loadProducts();
+
+  let allComments = [];
+  const prodList = pid ? [{ product_id: pid }] : allProducts;
+  for (const p of prodList) {
+    try {
+      const data = await api({ action: 'get_comments', productId: p.product_id });
+      const cmts = (data.comments || [])
+        .filter(c => c.content !== '__DELETED__')
+        .map(c => ({ ...c, product_name: p.name || p.product_id }));
+      allComments = allComments.concat(cmts);
+    } catch(e) {}
+  }
+  allComments.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+  if (!allComments.length) {
+    el.innerHTML = '<div class="empty-row">沒有留言</div>'; return;
+  }
+  el.innerHTML = allComments.map(c => `
+    <div class="comment-item">
+      <div style="flex:1">
+        <div style="font-size:13px">
+          <strong>${esc(c.member_name)}</strong>
+          <span style="color:var(--muted);font-size:11px"> 在「${esc(c.product_name||c.product_id)}」</span>
+        </div>
+        <div style="font-size:13px;color:var(--sub);margin-top:3px">${esc(c.content)}</div>
+        <div class="comment-meta">${fmt(c.created_at)}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteComment('${esc(c.comment_id)}')">刪除</button>
+    </div>`).join('');
+}
+
+async function deleteComment(commentId) {
+  if (!confirm('確定刪除此留言？')) return;
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  try {
+    await api({ action: 'delete_comment', commentId, adminSecret: secret });
+    toast('✅ 留言已刪除');
+    loaded.comments = false; loadComments(); loaded.comments = true;
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+// ─── Payments ─────────────────────────────────────────
+async function loadPayments() {
+  const [payData, shipData] = await Promise.all([
+    api({ action: 'list_payments',       adminSecret: savedSecret }),
+    api({ action: 'get_shipping_summary', adminSecret: savedSecret }),
+  ]);
+  const payments = payData.payments || [];
+  const tbody = document.getElementById('payment-list');
+  if (!payments.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">沒有付款出貨紀錄</td></tr>'; return;
+  }
+
+  // 建立 order_id → { line_user_id, phone_last3 } 對照表（來自 get_shipping_summary）
+  const orderMap = {};
+  (shipData.members || []).forEach(m => {
+    (m.orders || []).forEach(o => {
+      orderMap[o.order_id] = {
+        line_user_id: m.line_user_id || '',
+        phone_last3:  m.phone_last3  || '',
+      };
+    });
+  });
+
+  tbody.innerHTML = payments.map(p => {
+    const info = orderMap[p.order_id] || {};
+    const lineId   = p.line_user_id  || info.line_user_id  || '—';
+    const phone3   = p.phone_last3   || info.phone_last3   || '—';
+    return `<tr>
+      <td style="font-size:11px;color:var(--muted)">${esc(p.order_id)}</td>
+      <td style="font-weight:600">${esc(p.product_name)}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(lineId)}</td>
+      <td style="font-weight:700;letter-spacing:2px;text-align:center">${esc(phone3)}</td>
+      <td>${p.screenshot_url
+        ? `<a href="${esc(p.screenshot_url)}" target="_blank"><img class="img-thumb" src="${esc(p.screenshot_url)}" alt="截圖"></a>`
+        : '—'}</td>
+      <td>${statusBadge(p.pay_status)}</td>
+      <td style="font-size:12px;color:var(--muted)">${fmt(p.submitted_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function refreshOrders() {
+  loaded.orders = false;
+  loadPanel('orders');
+  loaded.orders = true;
+  toast('🔄 訂單已重新整理');
+}
+</script>
+</body>
+</html>
