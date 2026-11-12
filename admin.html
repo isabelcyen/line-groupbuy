@@ -918,7 +918,7 @@ async function loadProducts() {
       <td style="font-weight:600">${esc(p.name)}</td>
       <td style="font-size:12px;color:var(--muted)">${p.deadline ? fmt(p.deadline) : '—'}</td>
       <td>${statusBadge(displayStatus)}</td>
-      <td style="text-align:center">${p.order_count || 0}</td>
+      <td style="text-align:center">${p.member_count ?? p.order_count ?? 0}</td>
       <td style="text-align:center">
         <button class="btn btn-ghost btn-sm" onclick="showProductStats('${esc(p.product_id)}','${esc(p.name)}')">📊 統計</button>
       </td>
@@ -1096,7 +1096,7 @@ async function saveProduct() {
     toast('✅ 團購已' + (prodId ? '更新' : '建立'));
     // 傳送 LINE 群組通知（在重新載入清單之前先送，避免清單載入失敗阻斷通知）
     if (notifyGroup && !prodId) {
-      await sendGroupProductNotice({ name, description, deadline, variants: variantLines, imageUrl: prodImageUrls.join(','), secret });
+      await sendGroupProductNotice({ name, description, deadline, variants: variantLines, imageUrl: prodImageUrls.join(','), secret, productId: result.data.product_id });
     }
     loaded.products = false;
     await loadProducts();
@@ -1142,14 +1142,31 @@ async function showProductStats(pid, pname) {
     const variantTotals = data.variantTotals || {};
     const memberList    = data.memberList    || [];
     const orderCount    = data.orderCount    || 0;
+    const orderList     = data.orderList     || [];
+
+    // 解析各規格名稱總件數（"a×3, b×5" → {a:3, b:5}）
+    function parseVarStr(s) {
+      const map = {};
+      (s || '').split(/[,，]/).map(p => p.trim()).forEach(p => {
+        const m = p.match(/^(.+?)×(\d+)$/);
+        if (m) map[m[1].trim()] = (map[m[1].trim()] || 0) + parseInt(m[2]);
+      });
+      return map;
+    }
+    const nameQtyMap = {};
+    orderList.forEach(o => {
+      Object.entries(parseVarStr(o.variant)).forEach(([n, q]) => {
+        nameQtyMap[n] = (nameQtyMap[n] || 0) + q;
+      });
+    });
+    const nameSummary = Object.entries(nameQtyMap).map(([n, q]) => `${esc(n)} ${q}件`).join('、') || '—';
+    const totalMembers = memberList.length;
 
     let html = '';
 
     // ── 規格統計 ──
-    const totalQty     = Object.values(variantTotals).reduce((s, n) => s + n, 0);
-    const totalMembers = memberList.length;
     html += `<div style="margin-bottom:18px">
-      <div style="font-weight:600;margin-bottom:8px">規格購買統計（${totalMembers} 人參團，共 ${totalQty} 件）</div>`;
+      <div style="font-weight:600;margin-bottom:8px">規格購買統計（${totalMembers} 人參團，${nameSummary}）</div>`;
     const vKeys = Object.keys(variantTotals);
     if (vKeys.length === 0) {
       html += '<p style="color:var(--muted);font-size:13px">無規格資料</p>';
@@ -1169,10 +1186,10 @@ async function showProductStats(pid, pname) {
     }
     html += '</div>';
 
-    // ── 團員列表（按電話後三碼） ──
+    // ── 訂單列表（按下單時間新→舊） ──
     html += `<div>
-      <div style="font-weight:600;margin-bottom:8px">團員訂購（按電話後三碼）</div>`;
-    if (memberList.length === 0) {
+      <div style="font-weight:600;margin-bottom:8px">團員訂購（按下單時間新→舊）</div>`;
+    if (orderList.length === 0) {
       html += '<p style="color:var(--muted);font-size:13px">尚無訂單</p>';
     } else {
       html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
@@ -1180,14 +1197,22 @@ async function showProductStats(pid, pname) {
       html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">後三碼</th>';
       html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">姓名</th>';
       html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">訂購規格</th>';
+      html += '<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">下單時間</th>';
       html += '</tr></thead><tbody>';
-      memberList.forEach(m => {
-        const varStr = Object.entries(m.variants || {})
-          .map(([v, q]) => `${esc(v)}×${q}`).join('、');
+      // 轉換 UTC → 台灣時間 (UTC+8)
+      function toTW(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        const tw = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+        return tw.toISOString().replace('T',' ').slice(0,16);
+      }
+      orderList.forEach(o => {
+        const dt = toTW(o.created_at);
         html += `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:6px 10px;font-weight:700">${esc(m.phone)}</td>
-          <td style="padding:6px 10px">${esc(m.name)}</td>
-          <td style="padding:6px 10px;color:var(--muted)">${varStr || '—'}</td>
+          <td style="padding:6px 10px;font-weight:700">${esc(o.phone_last3 || '—')}</td>
+          <td style="padding:6px 10px">${esc(o.member_name || '—')}</td>
+          <td style="padding:6px 10px;color:var(--muted)">${esc(o.variant || '—')}</td>
+          <td style="padding:6px 10px;color:var(--muted);font-size:12px">${dt}</td>
         </tr>`;
       });
       html += '</tbody></table>';
@@ -1221,8 +1246,8 @@ async function openProduct(pid) {
 }
 
 // ─── 傳送開團通知到 LINE 群組（Flex Message 卡片格式）──
-async function sendGroupProductNotice({ name, description, deadline, variants, imageUrl, secret }) {
-  const liffUrl = 'https://liff.line.me/2011684954-yOthIDvq';
+async function sendGroupProductNotice({ name, description, deadline, variants, imageUrl, secret, productId }) {
+  const liffUrl = `https://liff.line.me/2011684954-yOthIDvq${productId ? '?pid=' + productId : ''}`;
 
   // 開團時間
   const now = new Date();
@@ -1304,7 +1329,8 @@ async function sendGroupProductNotice({ name, description, deadline, variants, i
     }
     toast('📢 已傳送開團通知到群組！');
   } catch(e) {
-    toast('⚠️ 群組通知失敗：' + e.message);
+    alert('⚠️ 群組通知失敗：\n' + e.message);
+    console.error('群組通知失敗', e.message);
   }
 }
 
