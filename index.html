@@ -538,7 +538,6 @@ button { cursor: pointer; border: none; font-family: inherit; }
     <div style="text-align:center;padding:4px 0 8px">
       <div style="font-size:56px;animation:pop .4s cubic-bezier(.36,.07,.19,.97)">✅</div>
       <div style="font-size:20px;font-weight:700;margin-top:8px">下單成功！</div>
-      <div style="font-size:12px;color:var(--text-2);margin-top:4px">確認通知已傳送至您的 LINE</div>
     </div>
 
     <!-- 訂單明細 -->
@@ -569,7 +568,6 @@ button { cursor: pointer; border: none; font-family: inherit; }
     <!-- 操作按鈕 -->
     <div style="display:flex;flex-direction:column;gap:10px">
       <button class="btn-primary" style="border-radius:var(--radius-sm)" onclick="goToGroup()">回團購群組頁</button>
-      <button class="btn-secondary" style="text-align:center" onclick="goToTracking()">查看訂單追蹤</button>
     </div>
   </div>
 </div>
@@ -627,12 +625,15 @@ function parseVariant(str) {
 // ── 初始化 ────────────────────────────────────────────────────────────────────
 async function init() {
   try {
-    const params   = new URLSearchParams(location.search);
     state.apiBase  = 'https://line-group-buy.isabelcyen.workers.dev/';
     state.liffId   = '2011684954-yOthIDvq';
-    const pid      = params.get('pid') || '';
 
     await liff.init({ liffId: state.liffId });
+
+    // 必須在 liff.init() 之後讀取 pid，因為 liff.state 要在 init 完成後才寫入 URL
+    const params   = new URLSearchParams(location.search);
+    const pid      = params.get('pid') || '';
+    console.log('[LIFF] location.search after init:', location.search, 'pid:', pid);
 
     // ── 三重 fallback 取得 LINE userId ───────────────────────
     // 1️⃣ liff.getContext()：LINE 內部瀏覽器最可靠，不需任何 scope
@@ -1076,6 +1077,8 @@ async function submitOrder() {
 
 // ── ✅ 打開成功 Modal（彈出頁面）────────────────────────────────────────────
 function openSuccessModal(orderId, selected, total) {
+  // 通知會員中心有新訂單（localStorage 跨 LIFF 共享）
+  try { localStorage.setItem('newOrderPlaced', '1'); } catch(e) {}
   const p = state.product;
 
   document.getElementById('receipt-id').textContent      = orderId;
