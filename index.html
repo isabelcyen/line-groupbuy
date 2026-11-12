@@ -630,10 +630,24 @@ async function init() {
 
     await liff.init({ liffId: state.liffId });
 
-    // 必須在 liff.init() 之後讀取 pid，因為 liff.state 要在 init 完成後才寫入 URL
-    const params   = new URLSearchParams(location.search);
-    const pid      = params.get('pid') || '';
-    console.log('[LIFF] location.search after init:', location.search, 'pid:', pid);
+    // 讀取 pid — 三層 fallback：
+    // 1) liff.init() 完成後 LIFF 已把 liff.state 展開成 ?pid=... → 直接讀
+    let pid = new URLSearchParams(location.search).get('pid') || '';
+
+    // 2) URL 仍含 liff.state（部分 LIFF 版本不自動展開）→ 手動 decode
+    if (!pid) {
+      try {
+        const rawState = new URLSearchParams(location.search).get('liff.state');
+        if (rawState) {
+          const decoded = decodeURIComponent(rawState).replace(/^[/?]+/, '');
+          pid = new URLSearchParams(decoded).get('pid') || '';
+          if (pid) console.log('[LIFF] pid from liff.state fallback:', pid);
+        }
+      } catch(e) { console.warn('[LIFF] liff.state parse failed:', e.message); }
+    }
+
+    // 3) 若 pid 仍為空 → Worker 會自動回傳最新 active 商品，不需額外處理
+    console.log('[LIFF] location.search:', location.search, '→ pid:', pid);
 
     // ── 三重 fallback 取得 LINE userId ───────────────────────
     // 1️⃣ liff.getContext()：LINE 內部瀏覽器最可靠，不需任何 scope
@@ -678,8 +692,8 @@ async function init() {
       return;
     }
 
-    await loadProduct(pid);
-    document.getElementById('loading').style.display = 'none';
+    const loadOk = await loadProduct(pid);
+    if (loadOk !== false) document.getElementById('loading').style.display = 'none';
 
     // userId debug 列已關閉
     const bar = document.getElementById('uid-bar');
@@ -711,9 +725,24 @@ async function apiPost(body) {
 // ── 商品載入 ──────────────────────────────────────────────────────────────────
 async function loadProduct(pid) {
   const resp = await apiGet('product', pid ? { pid } : {});
-  if (!resp.ok) { showToast('找不到商品資訊'); return; }
+  if (!resp.ok) {
+    const errMsg = resp.error || '找不到商品資訊';
+    showToast(errMsg);
+    // 保留 loading div 顯示說明（不 hide），方便 debug
+    document.getElementById('loading').innerHTML =
+      `<div style="text-align:center;padding:32px 24px;color:var(--text-2)">
+        <div style="font-size:36px;margin-bottom:12px">❌</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-1)">${errMsg}</div>
+        <div style="font-size:11px;margin-top:12px;color:var(--text-3);word-break:break-all">
+          pid: ${pid || '(empty)'}<br>
+          URL: ${encodeURIComponent(location.search).slice(0,80)}
+        </div>
+      </div>`;
+    return;
+  }
   state.product = resp.data;
   renderProduct(resp.data);
+  return true;
 }
 
 // ── ✅ 渲染商品（主畫面，合併詳情 + 規格 + 摘要）─────────────────────────────
