@@ -704,7 +704,10 @@ function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
-  if (!loaded[tab]) {
+  // 我的參團每次切換都重新載入（確保下單後立即反映）；其他 tab 只載入一次
+  if (tab === 'myorders') {
+    loadTab(tab);
+  } else if (!loaded[tab]) {
     loaded[tab] = true;
     loadTab(tab);
   }
@@ -1142,6 +1145,13 @@ initApp().catch(e => {
       <div style="font-size:32px;margin-bottom:8px">⚠️</div>
       <div style="font-size:15px">初始化失敗<br><small>${e.message}</small></div>
     </div>`;
+});
+
+// 從訂購頁返回時自動重載「我的參團」
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && currentTab === 'myorders') {
+    loadMyOrders();
+  }
 });
 </script>
 </body>
