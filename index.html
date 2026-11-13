@@ -615,8 +615,12 @@ function formatDate(isoStr) {
 
 // ── ✅ 解析「名稱(價格)」格式 ────────────────────────────────────────────────
 function parseVariant(str) {
-  const s = typeof str === 'object' && str !== null ? (str.name || '') : String(str);
-  // 支援 "名稱(價格)" 和 "名稱(價格/限量)"
+  // Worker 回傳 object 格式 {name, price, quota}，直接使用屬性
+  if (typeof str === 'object' && str !== null) {
+    return { name: str.name || '', price: str.price != null ? Number(str.price) : null, quota: Number(str.quota) || 0 };
+  }
+  // 字串格式 "名稱(價格)" 或 "名稱(價格/限量)"
+  const s = String(str);
   const m = s.match(/^(.+?)\((\d+(?:\.\d+)?)(?:\/(\d+))?\)$/);
   if (m) return { name: m[1].trim(), price: Number(m[2]), quota: m[3] ? Number(m[3]) : 0 };
   return { name: s.trim(), price: null, quota: 0 };

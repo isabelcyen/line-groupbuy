@@ -1022,6 +1022,7 @@ function openProductModal() {
   document.getElementById('prod-deadline').value = '';
   document.getElementById('prod-secret').value = savedSecret;
   renderImgSlots();
+  document.getElementById('prod-notify-group').checked = true;
   document.getElementById('product-modal').classList.add('open');
 }
 
@@ -1033,7 +1034,7 @@ function editProduct(p) {
   document.getElementById('prod-name').value  = p.name || '';
   document.getElementById('prod-desc').value  = p.description || '';
   try {
-    const vs = JSON.parse(p.variants || '[]');
+    const vs = Array.isArray(p.variants) ? p.variants : JSON.parse(typeof p.variants === 'string' ? p.variants : '[]');
     document.getElementById('prod-variants').value = vs.map(v => {
       if (typeof v === 'string') return v;
       const price = v.price || 0;
@@ -1050,6 +1051,7 @@ function editProduct(p) {
   }
   document.getElementById('prod-secret').value = savedSecret;
   renderImgSlots();
+  document.getElementById('prod-notify-group').checked = false;
   document.getElementById('product-modal').classList.add('open');
 }
 
