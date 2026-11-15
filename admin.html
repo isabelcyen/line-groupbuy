@@ -157,6 +157,7 @@ tr:hover td { background: var(--green-bg); }
 .b-cancelled { background: var(--border); color: var(--muted); }
 .b-open      { background: var(--green-bg); color: var(--green); }
 .b-closed    { background: var(--border); color: var(--muted); }
+.b-expired   { background: #FFF3CD; color: #856404; }
 .b-pinned    { background: #FFF0E8; color: var(--pin); }
 
 /* ── Modal ── */
@@ -702,8 +703,9 @@ function statusBadge(st) {
     received:  ['b-received',  '🎉已收貨'],
     cancelled: ['b-cancelled', '❌已取消'],
     open:      ['b-open',      '✅開放中'],
+    notified:  ['b-shipped',   '已通知出貨'],
     closed:    ['b-closed',    '關閉'],
-    expired:   ['b-closed',    '⏰ 團購截止'],
+    expired:   ['b-expired',   '已截止'],
   };
   const [cls, lbl] = map[st] || ['b-cancelled', st];
   return `<span class="badge ${cls}">${lbl}</span>`;
@@ -910,8 +912,8 @@ async function loadProducts() {
     const imgs = (p.image_url || '').split(',').map(s=>s.trim()).filter(Boolean);
     const img = imgs.length ? `<img class="img-thumb" src="${esc(imgs[0])}" alt="">` : '—';
     const pJson = JSON.stringify(p).replace(/"/g,'&quot;');
-    // 若狀態為 open 但截止日期已過，顯示「團購截止」
-    const isExpired = p.status === 'open' && p.deadline && new Date(p.deadline) < new Date();
+    // 截止日期已過（且非已通知）→ 顯示「已截止」
+    const isExpired = p.status !== 'notified' && p.deadline && new Date(p.deadline) < new Date();
     const displayStatus = isExpired ? 'expired' : p.status;
     return `<tr>
       <td>${img}</td>
@@ -924,11 +926,13 @@ async function loadProducts() {
       </td>
       <td>
         <div style="display:flex;gap:6px">
-          ${p.status === 'open'
-            ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
-            : p.status === 'notified'
-              ? `<span style="color:var(--muted);font-size:12px;padding:4px 6px">✅已通知</span><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
-              : `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`}
+          ${p.status === 'notified'
+            ? `<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
+            : isExpired
+              ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
+              : p.status === 'open'
+                ? `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
+                : `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`}
         </div>
       </td>
     </tr>`;
