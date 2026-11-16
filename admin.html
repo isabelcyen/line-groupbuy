@@ -839,7 +839,7 @@ async function loadDashboard() {
   // ── 已通知訂單（含現場付款，以 product_status=notified 為準）──
   const notifiedRows = [];
   members.forEach(m => {
-    (m.orders || []).filter(o => o.product_status === 'notified').forEach(o => {
+    (m.orders || []).filter(o => o.product_status === 'notified' && o.pay_status !== 'received' && o.pay_status !== 'shipped').forEach(o => {
       notifiedRows.push({ ...o, member_name: m.member_name, phone_last3: m.phone_last3 });
     });
   });
