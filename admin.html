@@ -345,6 +345,9 @@ tr:hover td { background: var(--green-bg); }
   </div>
   <div class="sidebar-logout">
     <button class="logout-btn" onclick="logout()">🔒 <span class="label">登出</span></button>
+    <div class="nav-item" data-panel="set-phone">
+      <span class="ni">📱</span><span class="label">設定後三碼</span>
+    </div>
   </div>
 </nav>
 
@@ -496,6 +499,34 @@ tr:hover td { background: var(--green-bg); }
           </tr></thead>
           <tbody id="payment-list"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ─── 設定後三碼 ─── -->
+    <div class="panel" id="panel-set-phone">
+      <div class="section-card">
+        <div class="section-header"><h3>設定買家後三碼</h3></div>
+        <div style="max-width:420px">
+          <div class="form-row">
+            <label>買家 LINE ID</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="sp-line-id" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                autocomplete="off"
+                style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:14px">
+              <button class="btn btn-ghost btn-sm" onclick="spLookup()">查詢</button>
+            </div>
+          </div>
+          <div id="sp-member-info" style="display:none;padding:10px 14px;background:var(--bg2,#f5f5f5);border-radius:8px;margin-bottom:12px;font-size:14px"></div>
+          <div class="form-row" id="sp-phone-row" style="display:none">
+            <label>電話後三碼</label>
+            <input type="text" id="sp-phone" maxlength="3" inputmode="numeric" autocomplete="off"
+              placeholder="例：123"
+              style="width:100px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:16px;font-weight:700;letter-spacing:3px;text-align:center">
+          </div>
+          <div id="sp-btn-row" style="display:none;margin-top:4px">
+            <button class="btn btn-primary btn-sm" onclick="spSave()">儲存</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -726,7 +757,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 // ─── Navigation ───────────────────────────────────────
 const titles = {
   dashboard: '總覽', announcements: '公告', products: '團購管理',
-  shipping: '出貨管理', orders: '訂單管理', 'payment-summary': '付款', payments: '付款出貨紀錄',
+  shipping: '出貨管理', orders: '訂單管理', 'payment-summary': '付款', payments: '付款出貨紀錄', 'set-phone': '設定後三碼',
 };
 const loaded = {};
 document.querySelectorAll('.nav-item').forEach(el => {
@@ -750,6 +781,7 @@ function loadPanel(p) {
     orders: loadOrders,
     'payment-summary': loadPaymentSummary,
     payments: loadPayments,
+    'set-phone': () => Promise.resolve(),
   }[p];
   if (fn) fn().catch(e => toast('載入失敗：' + e.message));
 }
@@ -1686,6 +1718,43 @@ async function deleteComment(commentId) {
     await api({ action: 'delete_comment', commentId, adminSecret: secret });
     toast('✅ 留言已刪除');
     loaded.comments = false; loadComments(); loaded.comments = true;
+  } catch(e) { toast('失敗：' + e.message); }
+}
+
+// ─── Set Phone ────────────────────────────────────────
+async function spLookup() {
+  const lineId = document.getElementById('sp-line-id').value.trim();
+  if (!lineId) { toast('請輸入 LINE ID'); return; }
+  const info = document.getElementById('sp-member-info');
+  const phoneRow = document.getElementById('sp-phone-row');
+  const btnRow = document.getElementById('sp-btn-row');
+  try {
+    const data = await api({ action: 'admin_get_member', lineUserId: lineId, adminSecret: savedSecret });
+    const m = data.member;
+    info.style.display = 'block';
+    info.innerHTML = '👤 <strong>' + esc(m.member_name || '（無名稱）') + '</strong>' +
+      '&nbsp;&nbsp;目前後三碼：<strong>' + (m.phone_last3 ? esc(m.phone_last3) : '未設定') + '</strong>';
+    document.getElementById('sp-phone').value = m.phone_last3 || '';
+    phoneRow.style.display = '';
+    btnRow.style.display = '';
+  } catch(e) {
+    info.style.display = 'block';
+    info.innerHTML = '<span style="color:#c00">❌ ' + esc(e.message) + '</span>';
+    phoneRow.style.display = 'none';
+    btnRow.style.display = 'none';
+  }
+}
+async function spSave() {
+  const lineId = document.getElementById('sp-line-id').value.trim();
+  const phone  = document.getElementById('sp-phone').value.trim();
+  if (!lineId || !phone) { toast('LINE ID 與後三碼皆必填'); return; }
+  if (!/^\d{3}$/.test(phone)) { toast('後三碼須為 3 位數字'); return; }
+  try {
+    await api({ action: 'admin_set_phone', lineUserId: lineId, phone, adminSecret: savedSecret });
+    toast('✅ 後三碼已更新為 ' + phone);
+    // 更新顯示
+    const info = document.getElementById('sp-member-info');
+    info.innerHTML = info.innerHTML.replace(/目前後三碼：<strong>.*?<\/strong>/, '目前後三碼：<strong>' + esc(phone) + '</strong>');
   } catch(e) { toast('失敗：' + e.message); }
 }
 
