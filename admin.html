@@ -481,7 +481,7 @@ tr:hover td { background: var(--green-bg); }
     <!-- ─── 付款 ─── -->
     <div class="panel" id="panel-payment-summary">
       <div class="section-card">
-        <div class="section-header"><h3>付款統計</h3></div>
+        <div class="section-header"><h3>付款統計（已出貨商品）</h3></div>
         <div id="payment-summary-list"><p style="text-align:center;padding:24px;color:var(--muted)">載入中…</p></div>
       </div>
     </div>
@@ -1729,7 +1729,7 @@ async function loadPaymentSummary() {
     '</tr></thead><tbody>' +
     products.map(([pid, p]) => {
       const unpaidRows = p.unpaidList.length
-        ? '<div style="font-size:12px;font-weight:700;color:#E05C00;margin-bottom:6px">▼ 未付款（' + p.unpaidList.length + ' 人）</div>' +
+        ? '<div style="font-size:12px;font-weight:700;color:#E05C00;margin-bottom:6px">▼ 未付款（' + p.unpaidList.length + ' 筆）</div>' +
           p.unpaidList.map(r =>
             '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border)">' +
             '<span>' + esc(r.name) + (r.phone ? ' <span style="color:var(--muted);font-size:11px">(末三碼 ' + esc(r.phone) + ')</span>' : '') + '</span>' +
@@ -1737,7 +1737,7 @@ async function loadPaymentSummary() {
           ).join('')
         : '<div style="color:var(--muted);font-size:12px">無未付款訂單</div>';
       const paidRows = p.paidList.length
-        ? '<div style="font-size:12px;font-weight:700;color:var(--green);margin:10px 0 6px">▼ 已付款（' + p.paidList.length + ' 人）</div>' +
+        ? '<div style="font-size:12px;font-weight:700;color:var(--green);margin:10px 0 6px">▼ 已付款（' + p.paidList.length + ' 筆）</div>' +
           p.paidList.map(r =>
             '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border)">' +
             '<span>' + esc(r.name) + (r.phone ? ' <span style="color:var(--muted);font-size:11px">(末三碼 ' + esc(r.phone) + ')</span>' : '') + '</span>' +
