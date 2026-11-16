@@ -1695,10 +1695,10 @@ async function loadPaymentSummary() {
   const members = data.members || [];
   const el = document.getElementById('payment-summary-list');
 
-  // 依商品聚合
+  // 依商品聚合（只統計已出貨商品）
   const productMap = {};
   members.forEach(m => {
-    (m.orders || []).forEach(o => {
+    (m.orders || []).filter(o => o.product_status === 'notified').forEach(o => {
       const pid = o.product_id;
       if (!productMap[pid]) {
         productMap[pid] = { name: o.product_name, paid: 0, unpaid: 0, paidList: [], unpaidList: [] };
