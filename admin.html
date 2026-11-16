@@ -1406,11 +1406,10 @@ const _shippingOrderMap = {};
 function renderShippingList(members, filterPhone) {
   const el = document.getElementById('shipping-list');
 
-  // 只顯示「尚未出貨」的訂單（排除 received / cancelled）
-  const DONE_STATUSES = ['received', 'cancelled'];
+  // 只顯示已發出貨通知（product_status = 'notified'）的訂單
   const activeMembers = members.map(m => ({
     ...m,
-    orders: m.orders.filter(o => !DONE_STATUSES.includes(o.pay_status)),
+    orders: m.orders.filter(o => o.product_status === 'notified'),
   })).filter(m => m.orders.length > 0);
 
   // 重建 order map（只含待處理訂單，存 {id, status, product_status}）
