@@ -685,7 +685,15 @@ async function initApp() {
 
   // 讀 URL tab 參數
   const params = new URLSearchParams(liff.getDecodedIDToken ? window.location.search : '');
-  const initTab = params.get('tab') || 'announcements';
+  let initTab = params.get('tab') || 'announcements';
+
+  // 若下單頁留下旗標，自動跳到「我的參團」
+  try {
+    if (localStorage.getItem('newOrderPlaced') === '1') {
+      localStorage.removeItem('newOrderPlaced');
+      initTab = 'myorders';
+    }
+  } catch(e) {}
 
   document.getElementById('loading').style.display = 'none';
 
@@ -1071,7 +1079,7 @@ async function loadSettings() {
   if (me.avatar) { spAvatar.src = me.avatar; spAvatar.style.display = ''; }
   else spAvatar.style.display = 'none';
   spName.textContent = me.name || '—';
-  spId.textContent   = me.userId ? `LINE ID: ${me.userId}` : '';
+  spId.textContent   = '';  // LINE ID 不顯示
 
   const phoneEl = document.getElementById('settings-phone');
   const hintEl  = document.getElementById('phone-hint');
