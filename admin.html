@@ -157,7 +157,6 @@ tr:hover td { background: var(--green-bg); }
 .b-cancelled { background: var(--border); color: var(--muted); }
 .b-open      { background: var(--green-bg); color: var(--green); }
 .b-closed    { background: var(--border); color: var(--muted); }
-.b-expired   { background: #FFF3CD; color: #856404; }
 .b-pinned    { background: #FFF0E8; color: var(--pin); }
 
 /* ── Modal ── */
@@ -336,18 +335,12 @@ tr:hover td { background: var(--green-bg); }
   </div>
   <div class="nav-section">
     <div class="nav-label">財務</div>
-    <div class="nav-item" data-panel="payment-summary">
-      <span class="ni">💰</span><span class="label">付款</span>
-    </div>
     <div class="nav-item" data-panel="payments">
       <span class="ni">💳</span><span class="label">付款出貨紀錄</span>
     </div>
   </div>
   <div class="sidebar-logout">
     <button class="logout-btn" onclick="logout()">🔒 <span class="label">登出</span></button>
-    <div class="nav-item" data-panel="set-phone">
-      <span class="ni">📱</span><span class="label">設定後三碼</span>
-    </div>
   </div>
 </nav>
 
@@ -441,7 +434,7 @@ tr:hover td { background: var(--green-bg); }
           <div style="font-size:13px;color:var(--muted);margin-bottom:6px">團員手機後三碼</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px">輸入後三碼後按「確定」查詢</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <input type="text" id="shipping-phone-input" maxlength="3" placeholder="" inputmode="numeric" autocomplete="off"
+            <input type="text" id="shipping-phone-input" maxlength="3" placeholder="" inputmode="numeric"
               style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:15px;font-weight:700;letter-spacing:3px;background:var(--card);color:var(--text);text-align:center"
               onkeydown="if(event.key==='Enter') filterShipping()" />
             <button class="btn btn-primary btn-sm" onclick="filterShipping()">確定</button>
@@ -481,52 +474,16 @@ tr:hover td { background: var(--green-bg); }
     </div>
 
 
-    <!-- ─── 付款 ─── -->
-    <div class="panel" id="panel-payment-summary">
-      <div class="section-card">
-        <div class="section-header"><h3>付款統計（已出貨商品）</h3></div>
-        <div id="payment-summary-list"><p style="text-align:center;padding:24px;color:var(--muted)">載入中…</p></div>
-      </div>
-    </div>
-
     <!-- ─── 付款出貨紀錄 ─── -->
     <div class="panel" id="panel-payments">
       <div class="section-card">
         <div class="section-header"><h3>付款出貨紀錄</h3></div>
         <table>
           <thead><tr>
-            <th>訂單</th><th>商品名稱</th><th>成員</th><th>末三碼</th><th>金額</th><th>狀態</th><th>時間</th>
+            <th>訂單</th><th>團購</th><th>Line ID</th><th>末三碼</th><th>上傳付款圖</th><th>狀態</th><th>時間</th>
           </tr></thead>
           <tbody id="payment-list"><tr><td colspan="7" class="loading-row">載入中…</td></tr></tbody>
         </table>
-      </div>
-    </div>
-
-    <!-- ─── 設定後三碼 ─── -->
-    <div class="panel" id="panel-set-phone">
-      <div class="section-card">
-        <div class="section-header"><h3>設定買家後三碼</h3></div>
-        <div style="max-width:420px">
-          <div class="form-row">
-            <label>買家 LINE ID</label>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="sp-line-id" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                autocomplete="off"
-                style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:14px">
-              <button class="btn btn-ghost btn-sm" onclick="spLookup()">查詢</button>
-            </div>
-          </div>
-          <div id="sp-member-info" style="display:none;padding:10px 14px;background:var(--bg2,#f5f5f5);border-radius:8px;margin-bottom:12px;font-size:14px"></div>
-          <div class="form-row" id="sp-phone-row" style="display:none">
-            <label>電話後三碼</label>
-            <input type="text" id="sp-phone" maxlength="3" inputmode="numeric" autocomplete="off"
-              placeholder="例：123"
-              style="width:100px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:16px;font-weight:700;letter-spacing:3px;text-align:center">
-          </div>
-          <div id="sp-btn-row" style="display:none;margin-top:4px">
-            <button class="btn btn-primary btn-sm" onclick="spSave()">儲存</button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -745,9 +702,8 @@ function statusBadge(st) {
     received:  ['b-received',  '🎉已收貨'],
     cancelled: ['b-cancelled', '❌已取消'],
     open:      ['b-open',      '✅開放中'],
-    notified:  ['b-shipped',   '已通知出貨'],
     closed:    ['b-closed',    '關閉'],
-    expired:   ['b-expired',   '已截止'],
+    expired:   ['b-closed',    '⏰ 團購截止'],
   };
   const [cls, lbl] = map[st] || ['b-cancelled', st];
   return `<span class="badge ${cls}">${lbl}</span>`;
@@ -757,7 +713,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 // ─── Navigation ───────────────────────────────────────
 const titles = {
   dashboard: '總覽', announcements: '公告', products: '團購管理',
-  shipping: '出貨管理', orders: '訂單管理', 'payment-summary': '付款', payments: '付款出貨紀錄', 'set-phone': '設定後三碼',
+  shipping: '出貨管理', orders: '訂單管理', payments: '付款出貨紀錄',
 };
 const loaded = {};
 document.querySelectorAll('.nav-item').forEach(el => {
@@ -779,9 +735,7 @@ function loadPanel(p) {
     products: loadProducts,
     shipping: loadShipping,
     orders: loadOrders,
-    'payment-summary': loadPaymentSummary,
     payments: loadPayments,
-    'set-phone': () => Promise.resolve(),
   }[p];
   if (fn) fn().catch(e => toast('載入失敗：' + e.message));
 }
@@ -956,8 +910,8 @@ async function loadProducts() {
     const imgs = (p.image_url || '').split(',').map(s=>s.trim()).filter(Boolean);
     const img = imgs.length ? `<img class="img-thumb" src="${esc(imgs[0])}" alt="">` : '—';
     const pJson = JSON.stringify(p).replace(/"/g,'&quot;');
-    // 截止日期已過（且非已通知）→ 顯示「已截止」
-    const isExpired = p.status !== 'notified' && p.deadline && new Date(p.deadline) < new Date();
+    // 若狀態為 open 但截止日期已過，顯示「團購截止」
+    const isExpired = p.status === 'open' && p.deadline && new Date(p.deadline) < new Date();
     const displayStatus = isExpired ? 'expired' : p.status;
     return `<tr>
       <td>${img}</td>
@@ -970,13 +924,11 @@ async function loadProducts() {
       </td>
       <td>
         <div style="display:flex;gap:6px">
-          ${p.status === 'notified'
-            ? `<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
-            : isExpired
-              ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
-              : p.status === 'open'
-                ? `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
-                : `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`}
+          ${p.status === 'open'
+            ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
+            : p.status === 'notified'
+              ? `<span style="color:var(--muted);font-size:12px;padding:4px 6px">✅已通知</span><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
+              : `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`}
         </div>
       </td>
     </tr>`;
@@ -1144,10 +1096,9 @@ async function saveProduct() {
     const result = await api(body);
     closeModal('product-modal');
     toast('✅ 團購已' + (prodId ? '更新' : '建立'));
-    // 傳送 LINE 群組通知（新建或編輯時皆可傳，由 checkbox 控制）
-    if (notifyGroup) {
-      const notifyPid = prodId || result.data?.product_id;
-      await sendGroupProductNotice({ name, description, deadline, variants: variantLines, imageUrl: prodImageUrls.join(','), secret, productId: notifyPid });
+    // 傳送 LINE 群組通知（在重新載入清單之前先送，避免清單載入失敗阻斷通知）
+    if (notifyGroup && !prodId) {
+      await sendGroupProductNotice({ name, description, deadline, variants: variantLines, imageUrl: prodImageUrls.join(','), secret, productId: result.data.product_id });
     }
     loaded.products = false;
     await loadProducts();
@@ -1450,10 +1401,11 @@ const _shippingOrderMap = {};
 function renderShippingList(members, filterPhone) {
   const el = document.getElementById('shipping-list');
 
-  // 只顯示已發出貨通知（product_status = 'notified'）的訂單
+  // 只顯示「尚未出貨」的訂單（排除 received / cancelled）
+  const DONE_STATUSES = ['received', 'cancelled'];
   const activeMembers = members.map(m => ({
     ...m,
-    orders: m.orders.filter(o => o.product_status === 'notified'),
+    orders: m.orders.filter(o => !DONE_STATUSES.includes(o.pay_status)),
   })).filter(m => m.orders.length > 0);
 
   // 重建 order map（只含待處理訂單，存 {id, status, product_status}）
@@ -1721,139 +1673,44 @@ async function deleteComment(commentId) {
   } catch(e) { toast('失敗：' + e.message); }
 }
 
-// ─── Set Phone ────────────────────────────────────────
-async function spLookup() {
-  const lineId = document.getElementById('sp-line-id').value.trim();
-  if (!lineId) { toast('請輸入 LINE ID'); return; }
-  const info = document.getElementById('sp-member-info');
-  const phoneRow = document.getElementById('sp-phone-row');
-  const btnRow = document.getElementById('sp-btn-row');
-  try {
-    const data = await api({ action: 'admin_get_member', lineUserId: lineId, adminSecret: savedSecret });
-    const m = data.member;
-    info.style.display = 'block';
-    info.innerHTML = '👤 <strong>' + esc(m.member_name || '（無名稱）') + '</strong>' +
-      '&nbsp;&nbsp;目前後三碼：<strong>' + (m.phone_last3 ? esc(m.phone_last3) : '未設定') + '</strong>';
-    document.getElementById('sp-phone').value = m.phone_last3 || '';
-    phoneRow.style.display = '';
-    btnRow.style.display = '';
-  } catch(e) {
-    info.style.display = 'block';
-    info.innerHTML = '<span style="color:#c00">❌ ' + esc(e.message) + '</span>';
-    phoneRow.style.display = 'none';
-    btnRow.style.display = 'none';
+// ─── Payments ─────────────────────────────────────────
+async function loadPayments() {
+  const [payData, shipData] = await Promise.all([
+    api({ action: 'list_payments',       adminSecret: savedSecret }),
+    api({ action: 'get_shipping_summary', adminSecret: savedSecret }),
+  ]);
+  const payments = payData.payments || [];
+  const tbody = document.getElementById('payment-list');
+  if (!payments.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">沒有付款出貨紀錄</td></tr>'; return;
   }
-}
-async function spSave() {
-  const lineId = document.getElementById('sp-line-id').value.trim();
-  const phone  = document.getElementById('sp-phone').value.trim();
-  if (!lineId || !phone) { toast('LINE ID 與後三碼皆必填'); return; }
-  if (!/^\d{3}$/.test(phone)) { toast('後三碼須為 3 位數字'); return; }
-  try {
-    await api({ action: 'admin_set_phone', lineUserId: lineId, phone, adminSecret: savedSecret });
-    toast('✅ 後三碼已更新為 ' + phone);
-    // 更新顯示
-    const info = document.getElementById('sp-member-info');
-    info.innerHTML = info.innerHTML.replace(/目前後三碼：<strong>.*?<\/strong>/, '目前後三碼：<strong>' + esc(phone) + '</strong>');
-  } catch(e) { toast('失敗：' + e.message); }
-}
 
-// ─── Payment Summary ──────────────────────────────────
-async function loadPaymentSummary() {
-  const data = await api({ action: 'get_shipping_summary', adminSecret: savedSecret });
-  const members = data.members || [];
-  const el = document.getElementById('payment-summary-list');
-
-  // 依商品聚合（只統計已出貨商品）
-  const productMap = {};
-  members.forEach(m => {
-    (m.orders || []).filter(o => o.product_status === 'notified').forEach(o => {
-      const pid = o.product_id;
-      if (!productMap[pid]) {
-        productMap[pid] = { name: o.product_name, paid: 0, unpaid: 0, paidList: [], unpaidList: [] };
-      }
-      const p = productMap[pid];
-      const isPaid = ['paid', 'shipped', 'received'].includes(o.pay_status);
-      if (isPaid) {
-        p.paid += (o.total || 0);
-        p.paidList.push({ name: m.member_name, phone: m.phone_last3, amount: o.total });
-      } else {
-        p.unpaid += (o.total || 0);
-        p.unpaidList.push({ name: m.member_name, phone: m.phone_last3, amount: o.total });
-      }
+  // 建立 order_id → { line_user_id, phone_last3 } 對照表（來自 get_shipping_summary）
+  const orderMap = {};
+  (shipData.members || []).forEach(m => {
+    (m.orders || []).forEach(o => {
+      orderMap[o.order_id] = {
+        line_user_id: m.line_user_id || '',
+        phone_last3:  m.phone_last3  || '',
+      };
     });
   });
 
-  const products = Object.entries(productMap);
-  if (!products.length) {
-    el.innerHTML = '<p style="text-align:center;padding:24px;color:var(--muted)">目前沒有訂單資料</p>';
-    return;
-  }
-
-  el.innerHTML = '<table><thead><tr>' +
-    '<th>商品名稱</th>' +
-    '<th style="text-align:right">已付款</th>' +
-    '<th style="text-align:right">未付款</th>' +
-    '<th style="text-align:center">明細</th>' +
-    '</tr></thead><tbody>' +
-    products.map(([pid, p]) => {
-      const unpaidRows = p.unpaidList.length
-        ? '<div style="font-size:12px;font-weight:700;color:#E05C00;margin-bottom:6px">▼ 未付款（' + p.unpaidList.length + ' 筆）</div>' +
-          p.unpaidList.map(r =>
-            '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border)">' +
-            '<span>' + esc(r.name) + (r.phone ? ' <span style="color:var(--muted);font-size:11px">(末三碼 ' + esc(r.phone) + ')</span>' : '') + '</span>' +
-            '<span style="font-weight:600;color:#E05C00">NT$' + (r.amount||0).toLocaleString() + '</span></div>'
-          ).join('')
-        : '<div style="color:var(--muted);font-size:12px">無未付款訂單</div>';
-      const paidRows = p.paidList.length
-        ? '<div style="font-size:12px;font-weight:700;color:var(--green);margin:10px 0 6px">▼ 已付款（' + p.paidList.length + ' 筆）</div>' +
-          p.paidList.map(r =>
-            '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border)">' +
-            '<span>' + esc(r.name) + (r.phone ? ' <span style="color:var(--muted);font-size:11px">(末三碼 ' + esc(r.phone) + ')</span>' : '') + '</span>' +
-            '<span style="font-weight:600;color:var(--green)">NT$' + (r.amount||0).toLocaleString() + '</span></div>'
-          ).join('')
-        : '<div style="color:var(--muted);font-size:12px;margin-top:8px">無已付款訂單</div>';
-      return '<tr>' +
-        '<td style="font-weight:600">' + esc(p.name) + '</td>' +
-        '<td style="text-align:right;color:var(--green);font-weight:700">NT$' + p.paid.toLocaleString() + '</td>' +
-        '<td style="text-align:right;color:#E05C00;font-weight:700">NT$' + p.unpaid.toLocaleString() + '</td>' +
-        '<td style="text-align:center"><button class="btn btn-ghost btn-sm" onclick="togglePayDetail(\'' + esc(pid) + '\')">付款明細</button></td>' +
-        '</tr>' +
-        '<tr id="pay-detail-' + esc(pid) + '" hidden>' +
-        '<td colspan="4" style="padding:0">' +
-        '<div style="padding:12px 16px;background:var(--bg2,#f8f8f8);border-radius:8px;margin:4px 8px 10px">' +
-        unpaidRows + paidRows +
-        '</div></td></tr>';
-    }).join('') +
-    '</tbody></table>';
-}
-function togglePayDetail(pid) {
-  const el = document.getElementById('pay-detail-' + pid);
-  if (el) el.hidden = !el.hidden;
-}
-
-// ─── Payments ─────────────────────────────────────────
-async function loadPayments() {
-  const data = await api({ action: 'list_orders', adminSecret: savedSecret });
-  const PAID = ['paid', 'shipped', 'received'];
-  const orders = (data.orders || []).filter(o => PAID.includes(o.pay_status));
-  const tbody = document.getElementById('payment-list');
-  if (!orders.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-row">沒有已付款訂單</td></tr>'; return;
-  }
-  tbody.innerHTML = orders.map(o => {
-    const name  = o.member_name || '—';
-    const phone = o.phone_last3 || '—';
-    const amt   = o.total != null ? 'NT$' + Number(o.total).toLocaleString() : '—';
-    return '<tr>' +
-      '<td style="font-size:11px;color:var(--muted)">' + esc(o.order_id) + '</td>' +
-      '<td style="font-weight:600">' + esc(o.product_name || '—') + '</td>' +
-      '<td>' + esc(name) + '</td>' +
-      '<td style="font-weight:700;letter-spacing:2px;text-align:center">' + esc(phone) + '</td>' +
-      '<td style="text-align:right;font-weight:600;color:var(--green)">' + amt + '</td>' +
-      '<td>' + statusBadge(o.pay_status) + '</td>' +
-      '<td style="font-size:12px;color:var(--muted)">' + fmt(o.created_at) + '</td>' +
-      '</tr>';
+  tbody.innerHTML = payments.map(p => {
+    const info = orderMap[p.order_id] || {};
+    const lineId   = p.line_user_id  || info.line_user_id  || '—';
+    const phone3   = p.phone_last3   || info.phone_last3   || '—';
+    return `<tr>
+      <td style="font-size:11px;color:var(--muted)">${esc(p.order_id)}</td>
+      <td style="font-weight:600">${esc(p.product_name)}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(lineId)}</td>
+      <td style="font-weight:700;letter-spacing:2px;text-align:center">${esc(phone3)}</td>
+      <td>${p.screenshot_url
+        ? `<a href="${esc(p.screenshot_url)}" target="_blank"><img class="img-thumb" src="${esc(p.screenshot_url)}" alt="截圖"></a>`
+        : '—'}</td>
+      <td>${statusBadge(p.pay_status)}</td>
+      <td style="font-size:12px;color:var(--muted)">${fmt(p.submitted_at)}</td>
+    </tr>`;
   }).join('');
 }
 
