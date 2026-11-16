@@ -438,7 +438,7 @@ tr:hover td { background: var(--green-bg); }
           <div style="font-size:13px;color:var(--muted);margin-bottom:6px">團員手機後三碼</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px">輸入後三碼後按「確定」查詢</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <input type="text" id="shipping-phone-input" maxlength="3" placeholder="" inputmode="numeric"
+            <input type="text" id="shipping-phone-input" maxlength="3" placeholder="" inputmode="numeric" autocomplete="off"
               style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:15px;font-weight:700;letter-spacing:3px;background:var(--card);color:var(--text);text-align:center"
               onkeydown="if(event.key==='Enter') filterShipping()" />
             <button class="btn btn-primary btn-sm" onclick="filterShipping()">確定</button>
