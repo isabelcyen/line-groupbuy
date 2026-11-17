@@ -981,30 +981,29 @@ async function loadArrivals() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>目前沒有到貨通知</div>'; return;
   }
   el.innerHTML = orders.map(o => {
-    const shipped = o.pay_status === 'shipped';
     const img = o.product_image
       ? `<img class="arrival-img" src="${esc(o.product_image)}" alt="" loading="lazy">`
       : `<div class="arrival-img" style="display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>`;
+    const variantText = formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || []);
     return `
       <div class="card arrival-card">
         <div class="arrival-top">
           ${img}
           <div class="arrival-info">
             <div class="arrival-name">${esc(o.product_name)}</div>
-            <div class="arrival-variant">${formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || [])}</div>
-            <div style="margin-top:4px">
-              <span class="status-badge ${shipped ? 'st-shipped' : 'st-received'}">
-                ${shipped ? '🚚 等待取貨' : '🎉 已收貨'}
-              </span>
+            <div class="arrival-variant">${variantText}</div>
+            <div style="font-size:13px;color:#555;margin-top:3px">💰 NT$${(o.total || 0).toLocaleString()}</div>
+            <div style="margin-top:5px">
+              <span class="status-badge st-shipped">🚚 待取貨</span>
             </div>
           </div>
         </div>
-        ${shipped ? `<div class="arrival-action">
+        <div class="arrival-action">
           <button class="btn-received" style="width:100%" onclick="confirmReceived('${esc(o.order_id)}')">
-            ✅ 確認收貨
+            ✅ 確認取貨
           </button>
-        </div>` : ''}
-        <div class="arrival-time">更新：${fmt(o.updated_at)}</div>
+        </div>
+        <div class="arrival-time">到貨通知：${fmt(o.updated_at)}</div>
       </div>`;
   }).join('');
 }
