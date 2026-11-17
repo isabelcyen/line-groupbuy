@@ -338,7 +338,7 @@ tr:hover td { background: var(--green-bg); }
   <div class="nav-section">
     <div class="nav-label">財務</div>
     <div class="nav-item" data-panel="payment-summary">
-      <span class="ni">💰</span><span class="label">付款</span>
+      <span class="ni">💰</span><span class="label">收款</span>
     </div>
     <div class="nav-item" data-panel="payments">
       <span class="ni">💳</span><span class="label">付款出貨紀錄</span>
@@ -488,7 +488,7 @@ tr:hover td { background: var(--green-bg); }
     <!-- ─── 付款 ─── -->
     <div class="panel" id="panel-payment-summary">
       <div class="section-card">
-        <div class="section-header"><h3>付款統計（已出貨商品）</h3></div>
+        <div class="section-header"><h3>收款統計（已出貨商品）</h3></div>
         <div id="payment-summary-list"><p style="text-align:center;padding:24px;color:var(--muted)">載入中…</p></div>
       </div>
     </div>
@@ -764,7 +764,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 // ─── Navigation ───────────────────────────────────────
 const titles = {
   dashboard: '總覽', announcements: '公告', products: '團購管理',
-  shipping: '出貨管理', orders: '訂單管理', 'payment-summary': '付款', payments: '付款出貨紀錄', 'set-phone': '設定後三碼',
+  shipping: '出貨管理', orders: '訂單管理', 'payment-summary': '收款', payments: '付款出貨紀錄', 'set-phone': '設定後三碼',
 };
 const loaded = {};
 document.querySelectorAll('.nav-item').forEach(el => {
@@ -1831,32 +1831,32 @@ async function loadPaymentSummary() {
 
   el.innerHTML = '<table><thead><tr>' +
     '<th>商品名稱</th>' +
-    '<th style="text-align:right">已付款</th>' +
-    '<th style="text-align:right">未付款</th>' +
+    '<th style="text-align:right">已收款</th>' +
+    '<th style="text-align:right">未收款</th>' +
     '<th style="text-align:center">明細</th>' +
     '</tr></thead><tbody>' +
     products.map(([pid, p]) => {
       const unpaidRows = p.unpaidList.length
-        ? '<div style="font-size:12px;font-weight:700;color:#E05C00;margin-bottom:6px">▼ 未付款（' + p.unpaidList.length + ' 筆）</div>' +
+        ? '<div style="font-size:12px;font-weight:700;color:#E05C00;margin-bottom:6px">▼ 未收款（' + p.unpaidList.length + ' 筆）</div>' +
           p.unpaidList.map(r =>
             '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border)">' +
             '<span>' + esc(r.name) + (r.phone ? ' <span style="color:var(--muted);font-size:11px">(末三碼 ' + esc(r.phone) + ')</span>' : '') + '</span>' +
             '<span style="font-weight:600;color:#E05C00">NT$' + (r.amount||0).toLocaleString() + '</span></div>'
           ).join('')
-        : '<div style="color:var(--muted);font-size:12px">無未付款訂單</div>';
+        : '<div style="color:var(--muted);font-size:12px">無未收款訂單</div>';
       const paidRows = p.paidList.length
-        ? '<div style="font-size:12px;font-weight:700;color:var(--green);margin:10px 0 6px">▼ 已付款（' + p.paidList.length + ' 筆）</div>' +
+        ? '<div style="font-size:12px;font-weight:700;color:var(--green);margin:10px 0 6px">▼ 已收款（' + p.paidList.length + ' 筆）</div>' +
           p.paidList.map(r =>
             '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border)">' +
             '<span>' + esc(r.name) + (r.phone ? ' <span style="color:var(--muted);font-size:11px">(末三碼 ' + esc(r.phone) + ')</span>' : '') + '</span>' +
             '<span style="font-weight:600;color:var(--green)">NT$' + (r.amount||0).toLocaleString() + '</span></div>'
           ).join('')
-        : '<div style="color:var(--muted);font-size:12px;margin-top:8px">無已付款訂單</div>';
+        : '<div style="color:var(--muted);font-size:12px;margin-top:8px">無已收款訂單</div>';
       return '<tr>' +
         '<td style="font-weight:600">' + esc(p.name) + '</td>' +
         '<td style="text-align:right;color:var(--green);font-weight:700">NT$' + p.paid.toLocaleString() + '</td>' +
         '<td style="text-align:right;color:#E05C00;font-weight:700">NT$' + p.unpaid.toLocaleString() + '</td>' +
-        '<td style="text-align:center"><button class="btn btn-ghost btn-sm" onclick="togglePayDetail(\'' + esc(pid) + '\')">付款明細</button></td>' +
+        '<td style="text-align:center"><button class="btn btn-ghost btn-sm" onclick="togglePayDetail(\'' + esc(pid) + '\')">收款明細</button></td>' +
         '</tr>' +
         '<tr id="pay-detail-' + esc(pid) + '" hidden>' +
         '<td colspan="4" style="padding:0">' +
