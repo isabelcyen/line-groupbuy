@@ -965,7 +965,9 @@ async function loadProducts() {
     const pJson = JSON.stringify(p).replace(/"/g,'&quot;');
     // 截止日期已過（且非已通知）→ 顯示「已截止」
     const isExpired = p.status !== 'notified' && p.deadline && new Date(p.deadline) < new Date();
-    const displayStatus = isExpired ? 'expired' : p.status;
+    // 已通知且無待付款訂單 → 顯示「已結案」
+    const isSettled = p.status === 'notified' && (p.pending_count === 0);
+    const displayStatus = isSettled ? 'settled' : (isExpired ? 'expired' : p.status);
     return `<tr>
       <td>${img}</td>
       <td style="font-weight:600">${esc(p.name)}</td>
@@ -977,7 +979,7 @@ async function loadProducts() {
       </td>
       <td>
         <div style="display:flex;gap:6px">
-          ${p.status === 'notified'
+          ${(p.status === 'notified' || isSettled)
             ? `<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
             : isExpired
               ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
@@ -1457,10 +1459,10 @@ const _shippingOrderMap = {};
 function renderShippingList(members, filterPhone) {
   const el = document.getElementById('shipping-list');
 
-  // 只顯示已發出貨通知（product_status = 'notified'）的訂單
+  // 只顯示已發出貨通知且尚未領取（product_status = 'notified'，排除已收貨/已領貨）
   const activeMembers = members.map(m => ({
     ...m,
-    orders: m.orders.filter(o => o.product_status === 'notified'),
+    orders: m.orders.filter(o => o.product_status === 'notified' && o.pay_status !== 'received' && o.pay_status !== 'shipped'),
   })).filter(m => m.orders.length > 0);
 
   // 重建 order map（只含待處理訂單，存 {id, status, product_status}）
