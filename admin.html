@@ -965,8 +965,9 @@ async function loadProducts() {
     const pJson = JSON.stringify(p).replace(/"/g,'&quot;');
     // 截止日期已過（且非已通知）→ 顯示「已截止」
     const isExpired = p.status !== 'notified' && p.deadline && new Date(p.deadline) < new Date();
-    // 已通知且無待付款訂單 → 顯示「已結案」
-    const isSettled = p.status === 'notified' && (p.pending_count === 0);
+    // 已通知且無待付款訂單，或已截止且無人參團 → 顯示「已結案」
+    const isSettled = (p.status === 'notified' && p.pending_count === 0) ||
+                      (isExpired && (p.member_count === 0));
     const displayStatus = isSettled ? 'settled' : (isExpired ? 'expired' : p.status);
     return `<tr>
       <td>${img}</td>
