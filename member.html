@@ -998,11 +998,6 @@ async function loadArrivals() {
             </div>
           </div>
         </div>
-        <div class="arrival-action">
-          <button class="btn-received" style="width:100%" onclick="confirmReceived('${esc(o.order_id)}')">
-            ✅ 確認取貨
-          </button>
-        </div>
         <div class="arrival-time">到貨通知：${fmt(o.updated_at)}</div>
       </div>`;
   }).join('');
