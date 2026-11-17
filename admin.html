@@ -159,6 +159,7 @@ tr:hover td { background: var(--green-bg); }
 .b-closed    { background: var(--border); color: var(--muted); }
 .b-expired   { background: #FFF3CD; color: #856404; }
 .b-pinned    { background: #FFF0E8; color: var(--pin); }
+.b-settled   { background: #E8EAF6; color: #3949AB; }
 
 /* ── Modal ── */
 .modal-bg {
@@ -751,6 +752,7 @@ function statusBadge(st) {
     cancelled: ['b-cancelled', '❌已取消'],
     open:      ['b-open',      '✅開放中'],
     notified:  ['b-shipped',   '已通知出貨'],
+    settled:   ['b-settled',   '✔ 已結案'],
     closed:    ['b-closed',    '關閉'],
     expired:   ['b-expired',   '已截止'],
   };
@@ -849,7 +851,7 @@ async function loadDashboard() {
   } else {
     tbodyN.innerHTML = notifiedRows.map(o => `<tr>
       <td style="font-size:11px;color:var(--muted)">${esc(o.order_id)}</td>
-      <td style="font-weight:600">${esc(o.product_name)}</td>
+      <td style="font-weight:600">${esc(o.product_name || '—')}</td>
       <td style="color:var(--muted)">${esc(o.variant || '—')}</td>
       <td>${esc(o.member_name || '—')}</td>
       <td style="font-weight:700;letter-spacing:2px;text-align:center">${esc(o.phone_last3 || '—')}</td>
