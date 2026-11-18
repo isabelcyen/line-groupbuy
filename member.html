@@ -767,7 +767,12 @@ async function loadGroups() {
   const el = document.getElementById('group-list');
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>載入中…</div>';
   const data = await api({ action: 'get_active_groups_v2' });
-  const prods = data.products || [];
+  const all = data.products || [];
+  const prods = all.filter(p => {
+    if (p.status === 'closed') return false;
+    if (p.deadline && new Date(p.deadline) < new Date()) return false;
+    return true;
+  });
   if (!prods.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🛒</div>目前沒有進行中的團購</div>'; return;
   }
