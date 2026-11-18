@@ -1439,9 +1439,21 @@ function filterShipping() {
     return;
   }
   const filtered = _shippingMembers.filter(m => m.phone_last3 === phone);
+  if (!filtered.length) {
+    if (hint) hint.textContent = '查無此電話';
+    if (clearBtn) clearBtn.style.display = '';
+    renderShippingList([], phone);
+    return;
+  }
+  // 先算出真正有待取貨訂單的人數，再顯示 hint
+  const activeCount = filtered.filter(m =>
+    (m.orders || []).some(o => o.product_status === 'notified' && o.pay_status !== 'received' && o.pay_status !== 'shipped')
+  ).length;
   renderShippingList(filtered, phone);
   if (clearBtn) clearBtn.style.display = '';
-  if (hint) hint.textContent = filtered.length ? `找到 ${filtered.length} 位` : '查無此電話';
+  if (hint) hint.textContent = activeCount
+    ? `找到 ${activeCount} 位，有待取貨訂單`
+    : `找到成員，但目前無待取貨訂單`;
 }
 
 function clearShippingFilter() {
