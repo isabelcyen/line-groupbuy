@@ -1096,9 +1096,10 @@ async function saveProduct() {
     const result = await api(body);
     closeModal('product-modal');
     toast('✅ 團購已' + (prodId ? '更新' : '建立'));
-    // 傳送 LINE 群組通知（在重新載入清單之前先送，避免清單載入失敗阻斷通知）
-    if (notifyGroup && !prodId) {
-      await sendGroupProductNotice({ name, description, deadline, variants: variantLines, imageUrl: prodImageUrls.join(','), secret, productId: result.data.product_id });
+    // 傳送 LINE 群組通知（新建或編輯時皆可傳，由 checkbox 控制）
+    if (notifyGroup) {
+      const notifyPid = prodId || result.data?.product_id;
+      await sendGroupProductNotice({ name, description, deadline, variants: variantLines, imageUrl: prodImageUrls.join(','), secret, productId: notifyPid });
     }
     loaded.products = false;
     await loadProducts();

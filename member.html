@@ -685,7 +685,15 @@ async function initApp() {
 
   // 讀 URL tab 參數
   const params = new URLSearchParams(liff.getDecodedIDToken ? window.location.search : '');
-  const initTab = params.get('tab') || 'announcements';
+  let initTab = params.get('tab') || 'announcements';
+
+  // 若下單頁留下旗標，自動跳到「我的參團」
+  try {
+    if (localStorage.getItem('newOrderPlaced') === '1') {
+      localStorage.removeItem('newOrderPlaced');
+      initTab = 'myorders';
+    }
+  } catch(e) {}
 
   document.getElementById('loading').style.display = 'none';
 
@@ -759,7 +767,12 @@ async function loadGroups() {
   const el = document.getElementById('group-list');
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>載入中…</div>';
   const data = await api({ action: 'get_active_groups_v2' });
-  const prods = data.products || [];
+  const all = data.products || [];
+  const prods = all.filter(p => {
+    if (p.status === 'closed') return false;
+    if (p.deadline && new Date(p.deadline) < new Date()) return false;
+    return true;
+  });
   if (!prods.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🛒</div>目前沒有進行中的團購</div>'; return;
   }
@@ -973,30 +986,24 @@ async function loadArrivals() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>目前沒有到貨通知</div>'; return;
   }
   el.innerHTML = orders.map(o => {
-    const shipped = o.pay_status === 'shipped';
     const img = o.product_image
       ? `<img class="arrival-img" src="${esc(o.product_image)}" alt="" loading="lazy">`
       : `<div class="arrival-img" style="display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>`;
+    const variantText = formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || []);
     return `
       <div class="card arrival-card">
         <div class="arrival-top">
           ${img}
           <div class="arrival-info">
             <div class="arrival-name">${esc(o.product_name)}</div>
-            <div class="arrival-variant">${formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || [])}</div>
-            <div style="margin-top:4px">
-              <span class="status-badge ${shipped ? 'st-shipped' : 'st-received'}">
-                ${shipped ? '🚚 等待取貨' : '🎉 已收貨'}
-              </span>
+            <div class="arrival-variant">${variantText}</div>
+            <div style="font-size:13px;color:#555;margin-top:3px">💰 NT$${(o.total || 0).toLocaleString()}</div>
+            <div style="margin-top:5px">
+              <span class="status-badge st-shipped">🚚 待取貨</span>
             </div>
           </div>
         </div>
-        ${shipped ? `<div class="arrival-action">
-          <button class="btn-received" style="width:100%" onclick="confirmReceived('${esc(o.order_id)}')">
-            ✅ 確認收貨
-          </button>
-        </div>` : ''}
-        <div class="arrival-time">更新：${fmt(o.updated_at)}</div>
+        <div class="arrival-time">到貨通知：${fmt(o.updated_at)}</div>
       </div>`;
   }).join('');
 }
@@ -1071,7 +1078,7 @@ async function loadSettings() {
   if (me.avatar) { spAvatar.src = me.avatar; spAvatar.style.display = ''; }
   else spAvatar.style.display = 'none';
   spName.textContent = me.name || '—';
-  spId.textContent   = me.userId ? `LINE ID: ${me.userId}` : '';
+  spId.textContent   = '';  // LINE ID 不顯示
 
   const phoneEl = document.getElementById('settings-phone');
   const hintEl  = document.getElementById('phone-hint');
