@@ -1982,11 +1982,11 @@ function showCopyModal({ name, description, deadline, variants, imageUrls, produ
     return `• ${def.name} — $${def.price}${quota}`;
   });
 
-  // 參團連結 → 團購小幫手「開團中」tab，帶 pid 可高亮該商品
-  const memberBase = 'https://isabelcyen.github.io/line-groupbuy/member.html';
+  // 參團連結 → 直接開啟下單頁（與機器人推播 Flex Message 連結相同）
+  const LIFF_ORDER_ID = '2011684954-yOthIDvq';
   const link = productId
-    ? `${memberBase}?tab=groups&pid=${productId}`
-    : `${memberBase}?tab=groups`;
+    ? `https://liff.line.me/${LIFF_ORDER_ID}?liff.state=${encodeURIComponent('?pid=' + productId)}`
+    : `https://liff.line.me/${LIFF_ORDER_ID}`;
 
   // 組合文案
   const lines = [];
@@ -1997,7 +1997,7 @@ function showCopyModal({ name, description, deadline, variants, imageUrls, produ
   variantLinesFmt.forEach(l => lines.push(l));
   lines.push('');
   if (deadlineStr) { lines.push(`⏰ 截止時間：${deadlineStr}`); lines.push(''); }
-  lines.push(`👉 立即參團（點此開啟團購小幫手）：`);
+  lines.push(`👉 立即參團（點此直接下單）：`);
   lines.push(link);
 
   document.getElementById('copy-text').value = lines.join('\n');
