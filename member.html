@@ -687,11 +687,12 @@ async function initApp() {
   const params = new URLSearchParams(liff.getDecodedIDToken ? window.location.search : '');
   let initTab = params.get('tab') || 'announcements';
 
-  // 若下單頁留下旗標，自動跳到「我的參團」
+  // 若下單頁留下旗標，且 URL 沒有明確指定 tab，才自動跳到「我的參團」
+  // （若 URL 帶有 tab= 深層連結，優先尊重，避免蓋掉開團公告連結）
   try {
     if (localStorage.getItem('newOrderPlaced') === '1') {
       localStorage.removeItem('newOrderPlaced');
-      initTab = 'myorders';
+      if (!params.get('tab')) initTab = 'myorders';
     }
   } catch(e) {}
 
