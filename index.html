@@ -415,9 +415,17 @@ button { cursor: pointer; border: none; font-family: inherit; }
 
       <!-- 商品資訊 -->
       <div class="card" id="prod-header-card" style="display:none">
-        <div id="prod-header-img-wrap" style="margin:-16px -16px 12px;overflow:hidden;border-radius:var(--radius) var(--radius) 0 0;display:none">
-          <img id="prod-header-img" src="" alt="" style="width:100%;max-height:220px;object-fit:cover;display:block">
+        <div id="prod-header-img-wrap" style="margin:-16px -16px 12px;border-radius:var(--radius) var(--radius) 0 0;overflow:hidden;display:none;position:relative">
+          <div id="prod-img-carousel" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none"></div>
+          <div id="prod-img-dots" style="display:none;position:absolute;bottom:8px;left:0;right:0;justify-content:center;gap:5px;pointer-events:none"></div>
         </div>
+        <style>
+          #prod-img-carousel::-webkit-scrollbar{display:none}
+          #prod-img-carousel>div{min-width:100%;scroll-snap-align:start}
+          #prod-img-carousel img{width:100%;max-height:220px;object-fit:cover;display:block}
+          .img-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5);transition:background .2s}
+          .img-dot.active{background:#fff}
+        </style>
         <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:.3px;margin-bottom:4px">🛒 團購開團囉！</div>
         <div id="prod-header-name" style="font-size:19px;font-weight:700;line-height:1.35;margin-bottom:12px"></div>
         <div class="stats-strip" id="s1-stats" style="display:none;margin:-1px -16px 12px;border-top:1px solid var(--border)">
@@ -762,12 +770,27 @@ function renderProduct(p) {
   const headerCard = document.getElementById('prod-header-card');
   if (headerCard) {
     headerCard.style.display = '';
-    // 圖片（取第一張）
+    // 圖片輪播（支援多張）
     const imgUrls = (p.imageUrl || '').split(',').map(s => s.trim()).filter(Boolean);
     const imgWrap = document.getElementById('prod-header-img-wrap');
-    const imgEl   = document.getElementById('prod-header-img');
-    if (imgUrls.length && imgWrap && imgEl) {
-      imgEl.src = imgUrls[0];
+    if (imgUrls.length && imgWrap) {
+      const carousel = document.getElementById('prod-img-carousel');
+      const dotsEl   = document.getElementById('prod-img-dots');
+      if (carousel) {
+        carousel.innerHTML = imgUrls.map(url =>
+          `<div style="min-width:100%;scroll-snap-align:start"><img src="${url}" alt=""></div>`
+        ).join('');
+      }
+      if (dotsEl && imgUrls.length > 1) {
+        dotsEl.style.display = 'flex';
+        dotsEl.innerHTML = imgUrls.map((_, i) =>
+          `<span class="img-dot${i === 0 ? ' active' : ''}" data-idx="${i}"></span>`
+        ).join('');
+        carousel.addEventListener('scroll', () => {
+          const idx = Math.round(carousel.scrollLeft / carousel.offsetWidth);
+          dotsEl.querySelectorAll('.img-dot').forEach((d, j) => d.classList.toggle('active', j === idx));
+        }, {passive: true});
+      }
       imgWrap.style.display = '';
     } else if (imgWrap) {
       imgWrap.style.display = 'none';

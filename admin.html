@@ -1393,19 +1393,42 @@ async function sendGroupProductNotice({ name, description, deadline, variants, i
     },
   };
 
-  // 加入圖片（有的話取第一張）
+  // 加入圖片：多張時用 carousel，單張保持 bubble
   const imgUrls = (imageUrl || '').split(',').map(s => s.trim()).filter(Boolean);
   if (imgUrls.length) {
     bubble.hero = {
       type: 'image', url: imgUrls[0], size: 'full',
       aspectRatio: '20:13', aspectMode: 'cover',
+      action: { type: 'uri', label: '立即參團', uri: liffUrl },
     };
+  }
+
+  let flexContents;
+  if (imgUrls.length > 1) {
+    const extraBubbles = imgUrls.slice(1).map(url => ({
+      type: 'bubble',
+      hero: {
+        type: 'image', url, size: 'full',
+        aspectRatio: '20:13', aspectMode: 'cover',
+        action: { type: 'uri', label: '立即參團', uri: liffUrl },
+      },
+      footer: {
+        type: 'box', layout: 'vertical', paddingAll: '12px',
+        contents: [{
+          type: 'button', style: 'primary', color: '#00B8A9',
+          action: { type: 'uri', label: '立即參團 🎉', uri: liffUrl },
+        }],
+      },
+    }));
+    flexContents = { type: 'carousel', contents: [bubble, ...extraBubbles] };
+  } else {
+    flexContents = bubble;
   }
 
   const messages = [{
     type: 'flex',
     altText: `🛒 新團購開啟！${name}`,
-    contents: bubble,
+    contents: flexContents,
   }];
 
   try {
