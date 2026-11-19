@@ -768,6 +768,7 @@ async function loadGroups() {
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>載入中…</div>';
   const data = await api({ action: 'get_active_groups_v2' });
   const all = data.products || [];
+  // 只顯示狀態未關閉且截止時間未到的商品
   const prods = all.filter(p => {
     if (p.status === 'closed') return false;
     if (p.deadline && new Date(p.deadline) < new Date()) return false;
@@ -779,6 +780,20 @@ async function loadGroups() {
   el.innerHTML = prods.map(p => renderGroupCard(p)).join('');
   // Load comments for all products in background
   prods.forEach(p => loadComments(p.product_id));
+  // 若 URL 帶有 pid，捲動到該商品並高亮顯示
+  const targetPid = new URLSearchParams(window.location.search).get('pid');
+  if (targetPid) {
+    setTimeout(() => {
+      const card = el.querySelector(`[data-pid="${targetPid}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.transition = 'outline 0.3s';
+        card.style.outline = '3px solid var(--green, #06C755)';
+        card.style.borderRadius = '12px';
+        setTimeout(() => { card.style.outline = ''; }, 2800);
+      }
+    }, 100);
+  }
 }
 
 function renderGroupCard(p) {
@@ -894,9 +909,11 @@ async function loadMyOrders() {
     api({ action: 'get_my_orders', lineUserId: me.userId }),
     ensureProductsCache(),
   ]);
-  const orders = (data.orders || []).filter(o => o.pay_status !== 'received');
+  const all_orders = data.orders || [];
+  // 隱藏已收貨的訂單，只顯示進行中的
+  const orders = all_orders.filter(o => o.pay_status !== 'received');
   if (!orders.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>您還沒有進行中的參團</div>'; return;
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>您還沒有進行中的參團紀錄</div>'; return;
   }
   el.innerHTML = orders.map(o => renderOrderCard(o, productVariantsCache[o.product_id] || [])).join('');
 }
@@ -986,24 +1003,30 @@ async function loadArrivals() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>目前沒有到貨通知</div>'; return;
   }
   el.innerHTML = orders.map(o => {
+    const shipped = o.pay_status === 'shipped';
     const img = o.product_image
       ? `<img class="arrival-img" src="${esc(o.product_image)}" alt="" loading="lazy">`
       : `<div class="arrival-img" style="display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>`;
-    const variantText = formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || []);
     return `
       <div class="card arrival-card">
         <div class="arrival-top">
           ${img}
           <div class="arrival-info">
             <div class="arrival-name">${esc(o.product_name)}</div>
-            <div class="arrival-variant">${variantText}</div>
-            <div style="font-size:13px;color:#555;margin-top:3px">💰 NT$${(o.total || 0).toLocaleString()}</div>
-            <div style="margin-top:5px">
-              <span class="status-badge st-shipped">🚚 待取貨</span>
+            <div class="arrival-variant">${formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || [])}</div>
+            <div style="margin-top:4px">
+              <span class="status-badge ${shipped ? 'st-shipped' : 'st-received'}">
+                ${shipped ? '🚚 等待取貨' : '🎉 已收貨'}
+              </span>
             </div>
           </div>
         </div>
-        <div class="arrival-time">到貨通知：${fmt(o.updated_at)}</div>
+        ${shipped ? `<div class="arrival-action">
+          <button class="btn-received" style="width:100%" onclick="confirmReceived('${esc(o.order_id)}')">
+            ✅ 確認收貨
+          </button>
+        </div>` : ''}
+        <div class="arrival-time">更新：${fmt(o.updated_at)}</div>
       </div>`;
   }).join('');
 }
