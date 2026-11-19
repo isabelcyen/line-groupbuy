@@ -634,13 +634,16 @@ tr:hover td { background: var(--green-bg); }
 <div class="modal-bg" id="copy-modal">
   <div class="modal" style="max-width:520px">
     <h3>📋 開團文案</h3>
-    <div id="copy-img-row" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div id="copy-img-row" style="display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap"></div>
+    <div id="copy-img-dl-row" style="display:none;margin-bottom:12px">
+      <button class="btn btn-ghost btn-sm" onclick="downloadAllImages()" style="font-size:12px">⬇ 下載全部圖片</button>
+    </div>
     <textarea id="copy-text" rows="13" readonly
       style="width:100%;box-sizing:border-box;font-size:13px;line-height:1.6;
              background:var(--bg);border:1px solid var(--border);border-radius:8px;
              padding:12px;resize:vertical;font-family:inherit;color:var(--text)"></textarea>
     <p style="font-size:11px;color:var(--muted);margin-top:6px">
-      💡 複製後可直接貼到 LINE 社群貼文，圖片請手動附上
+      💡 先點「複製文案」貼到 LINE，再點圖片下方「⬇」下載後手動附圖
     </p>
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="closeModal('copy-modal')">關閉</button>
@@ -1999,18 +2002,60 @@ function showCopyModal({ name, description, deadline, variants, imageUrls, produ
 
   document.getElementById('copy-text').value = lines.join('\n');
 
-  // 顯示圖片縮圖
+  // 顯示圖片縮圖（含下載按鈕）
   const imgRow = document.getElementById('copy-img-row');
+  const dlRow = document.getElementById('copy-img-dl-row');
   imgRow.innerHTML = '';
-  (imageUrls || []).filter(Boolean).slice(0, 4).forEach(url => {
+  const urls = (imageUrls || []).filter(Boolean).slice(0, 4);
+  // 把 urls 存到 modal 供 downloadAllImages 使用
+  imgRow.dataset.urls = JSON.stringify(urls);
+  urls.forEach((url, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px';
+
     const img = document.createElement('img');
     img.src = url;
     img.alt = '';
     img.style.cssText = 'width:76px;height:76px;object-fit:cover;border-radius:8px;border:1px solid var(--border)';
-    imgRow.appendChild(img);
+
+    const btn = document.createElement('button');
+    btn.textContent = '⬇';
+    btn.title = '下載圖片';
+    btn.className = 'btn btn-ghost btn-xs';
+    btn.style.cssText = 'font-size:13px;padding:1px 8px;min-width:0';
+    btn.onclick = () => downloadImage(url, i + 1);
+
+    wrap.appendChild(img);
+    wrap.appendChild(btn);
+    imgRow.appendChild(wrap);
   });
+  dlRow.style.display = urls.length > 1 ? '' : 'none';
 
   document.getElementById('copy-modal').classList.add('open');
+}
+
+async function downloadImage(url, index) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const ext = blob.type.includes('png') ? 'png' : 'jpg';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `product-image-${index}.${ext}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch(e) {
+    window.open(url, '_blank');
+  }
+}
+
+async function downloadAllImages() {
+  const imgRow = document.getElementById('copy-img-row');
+  const urls = JSON.parse(imgRow.dataset.urls || '[]');
+  for (let i = 0; i < urls.length; i++) {
+    await downloadImage(urls[i], i + 1);
+    if (i < urls.length - 1) await new Promise(r => setTimeout(r, 300));
+  }
 }
 
 function copyCopyText() {
