@@ -1004,7 +1004,7 @@ async function loadProducts() {
             : isExpired
               ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
               : p.status === 'open'
-                ? `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
+                ? `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-primary btn-sm" onclick="copyProductText(${pJson})">📋 複製文案</button>`
                 : `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`}
         </div>
       </td>
@@ -1175,13 +1175,13 @@ async function saveProduct() {
     toast('✅ 團購已' + (prodId ? '更新' : '建立'));
     // 新建時自動彈出開團文案 Modal，管理者複製後手動貼到 LINE 社群
     if (!prodId) {
-      const newPid = result.data?.product_id;
+      const newPid = result?.product_id;
       showCopyModal({ name, description, deadline,
         variants: variantLines, imageUrls: [...prodImageUrls], productId: newPid });
     }
     // 傳送 LINE 群組通知（新建或編輯時皆可傳，由 checkbox 控制）
     if (notifyGroup) {
-      const notifyPid = prodId || result.data?.product_id;
+      const notifyPid = prodId || result?.product_id;
       await sendGroupProductNotice({ name, description, deadline, variants: variantLines, imageUrl: prodImageUrls.join(','), secret, productId: notifyPid });
     }
     loaded.products = false;
@@ -1941,6 +1941,27 @@ function refreshOrders() {
 }
 
 // ─── 開團文案 Modal（供管理者手動貼到 LINE 社群）──────────────────────
+
+/** 從商品列表物件呼叫開團文案 Modal（variants 可能是 DB 回傳的物件陣列，需先轉成字串格式） */
+function copyProductText(p) {
+  const imgs = (p.image_url || '').split(',').map(s => s.trim()).filter(Boolean);
+  // DB 回傳的 variants 是 [{name, price, quota}, ...] 物件陣列，轉為 "名稱(價格)" 字串
+  const variantStrs = (Array.isArray(p.variants) ? p.variants : []).map(v => {
+    if (typeof v === 'object' && v !== null) {
+      return `${v.name}(${v.price}${v.quota > 0 ? '/' + v.quota : ''})`;
+    }
+    return String(v);
+  });
+  showCopyModal({
+    name: p.name,
+    description: p.description || '',
+    deadline: p.deadline || '',
+    variants: variantStrs,
+    imageUrls: imgs,
+    productId: p.product_id,
+  });
+}
+
 function showCopyModal({ name, description, deadline, variants, imageUrls, productId }) {
   // 格式化截止時間
   let deadlineStr = '';
