@@ -894,9 +894,9 @@ async function loadMyOrders() {
     api({ action: 'get_my_orders', lineUserId: me.userId }),
     ensureProductsCache(),
   ]);
-  const orders = data.orders || [];
+  const orders = (data.orders || []).filter(o => o.pay_status !== 'received');
   if (!orders.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>您還沒有參團紀錄</div>'; return;
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>您還沒有進行中的參團</div>'; return;
   }
   el.innerHTML = orders.map(o => renderOrderCard(o, productVariantsCache[o.product_id] || [])).join('');
 }
