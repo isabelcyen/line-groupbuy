@@ -821,10 +821,11 @@ function renderProduct(p) {
   }
 
   // ── Stats ────────────────────────────────────────────────
-  document.getElementById('stat-orders').textContent = p.totalOrders ?? 0;
-  // 件已售（variantTotals 加總，或直接取 totalQty）
-  const _totQty = p.totalQty != null
-    ? p.totalQty
+  // 人參團：用 memberCount（獨立成員數）；fallback 到 totalOrders
+  document.getElementById('stat-orders').textContent = p.memberCount ?? p.totalOrders ?? 0;
+  // 件已售：totalOrders 在後端是件數加總；fallback 到 variantTotals 加總
+  const _totQty = (p.totalOrders != null)
+    ? p.totalOrders
     : Object.values(p.variantTotals || {}).reduce((a, b) => a + b, 0);
   const soldEl = document.getElementById('stat-sold-qty');
   if (soldEl) {
