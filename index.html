@@ -430,8 +430,11 @@ button { cursor: pointer; border: none; font-family: inherit; }
         <div id="prod-header-name" style="font-size:19px;font-weight:700;line-height:1.35;margin-bottom:12px"></div>
         <div class="stats-strip" id="s1-stats" style="display:none;margin:-1px -16px 12px;border-top:1px solid var(--border)">
           <div class="stat-cell">
-            <div class="stat-val" id="stat-orders">0</div>
-            <div class="stat-lbl">已參團人數</div>
+            <div style="display:flex;align-items:baseline;gap:3px;justify-content:center">
+              <div class="stat-val" id="stat-orders">0</div>
+              <div class="stat-lbl" style="color:var(--green);font-size:11px">人參團</div>
+            </div>
+            <div class="stat-lbl" id="stat-sold-qty" style="display:none;margin-top:3px"></div>
           </div>
           <div class="stat-cell">
             <div class="stat-val countdown-inline" id="stat-countdown">計算中</div>
@@ -819,6 +822,15 @@ function renderProduct(p) {
 
   // ── Stats ────────────────────────────────────────────────
   document.getElementById('stat-orders').textContent = p.totalOrders ?? 0;
+  // 件已售（variantTotals 加總，或直接取 totalQty）
+  const _totQty = p.totalQty != null
+    ? p.totalQty
+    : Object.values(p.variantTotals || {}).reduce((a, b) => a + b, 0);
+  const soldEl = document.getElementById('stat-sold-qty');
+  if (soldEl) {
+    if (_totQty > 0) { soldEl.textContent = `${_totQty} 件已售`; soldEl.style.display = ''; }
+    else soldEl.style.display = 'none';
+  }
   document.getElementById('s1-stats').style.display = 'grid';
 
   const variantTotals = p.variantTotals || {};
