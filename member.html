@@ -821,7 +821,7 @@ function renderGroupCard(p) {
         ${variants ? `<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">規格：${esc(variants)}</div>` : ''}
         ${p.deadline ? `<div style="font-size:12px;color:${isExpired ? 'var(--red,#e53e3e)' : 'var(--muted)'};margin-bottom:6px;">⏰ 截止：${esc(dlLabel)}</div>` : ''}
         <div class="prod-meta">
-          <div class="prod-stats">${p.totalOrders}人已參團</div>
+          <div class="prod-stats">${p.memberCount ?? p.totalOrders ?? 0}人已參團</div>
         </div>
       </div>
       <div class="prod-footer">
