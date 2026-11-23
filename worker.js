@@ -157,7 +157,7 @@ function buildArrivalBubble(product) {
           action: {
             type: 'uri',
             label: '📲 點此查看到貨通知',
-            uri: `${LIFF_MEMBER}?tab=arrivals`,
+            uri: `${LIFF_MEMBER}?liff.state=${encodeURIComponent('?tab=arrivals')}`,
           },
           style: 'primary',
           color: '#FF6B35',
