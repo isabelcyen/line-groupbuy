@@ -646,7 +646,7 @@ tr:hover td { background: var(--green-bg); }
 <!-- ─── Modal: 開團文案（供 LINE 社群手動張貼用）─── -->
 <div class="modal-bg" id="copy-modal">
   <div class="modal" style="max-width:520px">
-    <h3>📋 開團文案</h3>
+    <h3 id="copy-modal-title">📋 開團文案</h3>
     <div id="copy-img-row" style="display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap"></div>
     <div id="copy-img-dl-row" style="display:none;margin-bottom:12px">
       <button class="btn btn-ghost btn-sm" onclick="downloadAllImages()" style="font-size:12px">⬇ 下載全部圖片</button>
@@ -1016,11 +1016,11 @@ async function loadProducts() {
       <td>
         <div style="display:flex;gap:6px">
           ${(p.status === 'notified' || isSettled)
-            ? `<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
+            ? `${p.status === 'notified' ? `<button class="btn btn-primary btn-sm" onclick="copyShippingText(${pJson})">📦 出貨文案</button>` : ''}<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
             : isExpired
               ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
               : p.status === 'open'
-                ? `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-primary btn-sm" onclick="copyProductText(${pJson})">📋 複製文案</button>`
+                ? `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-primary btn-sm" onclick="copyProductText(${pJson})">📋 開團文案</button>`
                 : `<button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button><button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`}
         </div>
       </td>
@@ -2044,6 +2044,33 @@ function refreshOrders() {
   toast('🔄 訂單已重新整理');
 }
 
+// ─── 出貨文案 Modal（供管理者手動貼到 LINE 社群）──────────────────────
+function copyShippingText(p) {
+  const LIFF_MEMBER = 'https://liff.line.me/2011684954-5YTqdunj';
+  const lines = [];
+  lines.push(`📦【交大嚴選】${p.name} 到貨！`);
+  lines.push('');
+  lines.push('商品已到貨，請盡快來社辦取貨！');
+  lines.push('取貨時間與地點請見公告或記事本"團購小幫手"');
+  lines.push('');
+  lines.push('請儘量備好零錢與購物袋，謝謝您的體貼＆支持環保 ～');
+  lines.push('');
+  lines.push('👉 查看到貨通知：');
+  lines.push(`${LIFF_MEMBER}?tab=arrivals`);
+
+  // 使用同一個 copy-modal，切換標題
+  const titleEl = document.getElementById('copy-modal-title');
+  if (titleEl) titleEl.textContent = '📦 出貨文案';
+  // 隱藏圖片區塊
+  const imgRow = document.getElementById('copy-img-row');
+  const dlRow  = document.getElementById('copy-img-dl-row');
+  if (imgRow) { imgRow.innerHTML = ''; imgRow.dataset.urls = '[]'; }
+  if (dlRow)  dlRow.style.display = 'none';
+
+  document.getElementById('copy-text').value = lines.join('\n');
+  document.getElementById('copy-modal').classList.add('active');
+}
+
 // ─── 開團文案 Modal（供管理者手動貼到 LINE 社群）──────────────────────
 
 /** 從商品列表物件呼叫開團文案 Modal（variants 可能是 DB 回傳的物件陣列，需先轉成字串格式） */
@@ -2067,6 +2094,9 @@ function copyProductText(p) {
 }
 
 function showCopyModal({ name, description, deadline, variants, imageUrls, productId }) {
+  // 恢復開團文案標題（若之前顯示了出貨文案）
+  const titleEl = document.getElementById('copy-modal-title');
+  if (titleEl) titleEl.textContent = '📋 開團文案';
   // 格式化截止時間
   let deadlineStr = '';
   if (deadline) {
