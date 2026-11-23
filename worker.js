@@ -667,6 +667,20 @@ async function handlePost(body, db, env) {
       });
     }
 
+    case 'refresh_arrivals': {
+      // 補標記：已 notified 的商品，把訂單的 product_status 也設成 notified（不重送訊息）
+      requireAdmin(body, env);
+      const { productId } = body;
+      if (!productId) return jsonErr('productId 必填');
+      const product = await db.prepare("SELECT product_id FROM products WHERE product_id=? AND status='notified'").bind(productId).first();
+      if (!product) return jsonErr('找不到已通知的商品', 404);
+      const r = await db.prepare(`
+        UPDATE orders SET product_status='notified'
+        WHERE product_id=? AND pay_status NOT IN ('cancelled','received')
+      `).bind(productId).run();
+      return jsonOk({ updated: r.meta?.changes ?? 0 });
+    }
+
     case 'notify_arrived': {
       requireAdmin(body, env);
       const { productId } = body;

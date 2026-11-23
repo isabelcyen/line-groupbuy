@@ -669,6 +669,10 @@ async function api(body) {
 
 // ─── LIFF init ────────────────────────────────────────────
 async function initApp() {
+  // 在 liff.init() 前先讀 liff.state（init 後 URL 會被替換）
+  const preParams = new URLSearchParams(window.location.search);
+  const liffStateRaw = preParams.get('liff.state');
+
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) { liff.login(); return; }
@@ -683,9 +687,15 @@ async function initApp() {
     me.name   = '訪客';
   }
 
-  // 讀 URL tab 參數
-  const params = new URLSearchParams(liff.getDecodedIDToken ? window.location.search : '');
-  let initTab = params.get('tab') || 'announcements';
+  // 讀 URL tab 參數：優先用 init 後的 URL，備用 init 前的 liff.state
+  const params = new URLSearchParams(window.location.search);
+  let initTab = params.get('tab');
+  if (!initTab && liffStateRaw) {
+    // liff.init() 未更新 URL 時，直接解析原始 liff.state
+    const sp = new URLSearchParams(liffStateRaw.startsWith('?') ? liffStateRaw.slice(1) : liffStateRaw);
+    initTab = sp.get('tab');
+  }
+  initTab = initTab || 'announcements';
 
   // 若下單頁留下旗標，且 URL 沒有明確指定 tab，才自動跳到「我的參團」
   // （若 URL 帶有 tab= 深層連結，優先尊重，避免蓋掉開團公告連結）

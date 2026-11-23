@@ -1016,7 +1016,7 @@ async function loadProducts() {
       <td>
         <div style="display:flex;gap:6px">
           ${(p.status === 'notified' || isSettled)
-            ? `${p.status === 'notified' ? `<button class="btn btn-primary btn-sm" onclick="copyShippingText(${pJson})">📦 出貨文案</button>` : ''}<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
+            ? `${p.status === 'notified' ? `<button class="btn btn-primary btn-sm" onclick="copyShippingText(${pJson})">📦 出貨文案</button><button class="btn btn-ghost btn-sm" title="補標記到貨訂單" onclick="refreshArrivals('${esc(p.product_id)}')">🔄</button>` : ''}<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
             : isExpired
               ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
               : p.status === 'open'
@@ -1327,6 +1327,14 @@ async function showProductStats(pid, pname) {
   }
 }
 
+async function refreshArrivals(pid) {
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  try {
+    const d = await api({ action: 'refresh_arrivals', productId: pid, adminSecret: secret });
+    toast(`✅ 已補標記 ${d.updated} 筆訂單為到貨通知`);
+  } catch(e) { toast('失敗：' + e.message); }
+}
 async function notifyArrived(pid, pname) {
   if (!confirm(`確定發送「${pname}」到貨通知到群組？`)) return;
   const secret = savedSecret || prompt('管理員密碼');
