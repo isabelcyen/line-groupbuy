@@ -149,6 +149,22 @@ function buildArrivalBubble(product) {
         { type: 'text', text: '請儘量備好零錢與購物袋，謝謝您的體貼＆支持環保 ～', wrap: true, size: 'sm', color: '#888888' },
       ],
     },
+    footer: {
+      type: 'box', layout: 'vertical', paddingAll: '12px', paddingTop: '0px',
+      contents: [
+        {
+          type: 'button',
+          action: {
+            type: 'uri',
+            label: '📲 點此查看到貨通知',
+            uri: `${LIFF_MEMBER}?tab=arrivals`,
+          },
+          style: 'primary',
+          color: '#FF6B35',
+          height: 'sm',
+        },
+      ],
+    },
   };
   return bubble;
 }
