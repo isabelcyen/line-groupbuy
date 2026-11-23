@@ -1335,11 +1335,8 @@ async function diagnoseArrivals(pid) {
     const rows = d.rows || [];
     const summary = rows.map(r =>
       `[${r.line_user_id?.slice(-6)}] pay:${r.pay_status} prod:${r.product_status||'null'} qty:${r.qty}`
-    ).join('
-');
-    alert(`📊 ${pid} 訂單診斷 (${rows.length} 筆):
-
-${summary || '（無訂單）'}`);
+    ).join('\n');
+    alert(`📊 ${pid} 訂單診斷 (${rows.length} 筆):\n\n${summary || '（無訂單）'}`);
   } catch(e) { alert('診斷失敗：' + e.message); }
 }
 async function refreshArrivals(pid) {
