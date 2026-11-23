@@ -669,12 +669,6 @@ async function api(body) {
 
 // ─── LIFF init ────────────────────────────────────────────
 async function initApp() {
-  // 在 liff.init() 前先讀 hash（hash 不受 LIFF 處理影響，最可靠）
-  // liff.state=%23arrivals → LIFF 轉為 member.html#arrivals → hash='#arrivals'
-  const preHash = window.location.hash.replace(/^#/, '');
-  // 備用：解析 liff.state 中的 hash 或 tab 參數
-  const preStateRaw = new URLSearchParams(window.location.search).get('liff.state') || '';
-
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) { liff.login(); return; }
@@ -689,24 +683,15 @@ async function initApp() {
     me.name   = '訪客';
   }
 
-  // 決定初始 tab（優先順序：hash → query tab → liff.state 備用）
-  let initTab = window.location.hash.replace(/^#/, '')  // init 後 hash
-    || preHash                                           // init 前 hash
-    || new URLSearchParams(window.location.search).get('tab');  // query param
-  if (!initTab && preStateRaw) {
-    // liff.state 備用解析
-    const st = preStateRaw.startsWith('#') ? preStateRaw.slice(1)
-             : new URLSearchParams(preStateRaw.startsWith('?') ? preStateRaw.slice(1) : preStateRaw).get('tab') || '';
-    initTab = st;
-  }
-  initTab = initTab || 'announcements';
+  // 讀 URL tab 參數
+  const params = new URLSearchParams(liff.getDecodedIDToken ? window.location.search : '');
+  let initTab = params.get('tab') || 'announcements';
 
-  // 若下單頁留下旗標，且 URL 沒有明確指定 tab，才自動跳到「我的參團」
-  // （若 URL 帶有 tab= 深層連結，優先尊重，避免蓋掉開團公告連結）
+  // 若下單頁留下旗標，自動跳到「我的參團」
   try {
     if (localStorage.getItem('newOrderPlaced') === '1') {
       localStorage.removeItem('newOrderPlaced');
-      if (!params.get('tab')) initTab = 'myorders';
+      initTab = 'myorders';
     }
   } catch(e) {}
 
@@ -783,7 +768,6 @@ async function loadGroups() {
   el.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>載入中…</div>';
   const data = await api({ action: 'get_active_groups_v2' });
   const all = data.products || [];
-  // 只顯示狀態未關閉且截止時間未到的商品
   const prods = all.filter(p => {
     if (p.status === 'closed') return false;
     if (p.deadline && new Date(p.deadline) < new Date()) return false;
@@ -795,20 +779,6 @@ async function loadGroups() {
   el.innerHTML = prods.map(p => renderGroupCard(p)).join('');
   // Load comments for all products in background
   prods.forEach(p => loadComments(p.product_id));
-  // 若 URL 帶有 pid，捲動到該商品並高亮顯示
-  const targetPid = new URLSearchParams(window.location.search).get('pid');
-  if (targetPid) {
-    setTimeout(() => {
-      const card = el.querySelector(`[data-pid="${targetPid}"]`);
-      if (card) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        card.style.transition = 'outline 0.3s';
-        card.style.outline = '3px solid var(--green, #06C755)';
-        card.style.borderRadius = '12px';
-        setTimeout(() => { card.style.outline = ''; }, 2800);
-      }
-    }, 100);
-  }
 }
 
 function renderGroupCard(p) {
@@ -835,7 +805,7 @@ function renderGroupCard(p) {
         ${variants ? `<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">規格：${esc(variants)}</div>` : ''}
         ${p.deadline ? `<div style="font-size:12px;color:${isExpired ? 'var(--red,#e53e3e)' : 'var(--muted)'};margin-bottom:6px;">⏰ 截止：${esc(dlLabel)}</div>` : ''}
         <div class="prod-meta">
-          <div class="prod-stats">${p.memberCount ?? p.totalOrders ?? 0}人已參團</div>
+          <div class="prod-stats">${p.totalOrders}人已參團</div>
         </div>
       </div>
       <div class="prod-footer">
@@ -924,11 +894,9 @@ async function loadMyOrders() {
     api({ action: 'get_my_orders', lineUserId: me.userId }),
     ensureProductsCache(),
   ]);
-  const all_orders = data.orders || [];
-  // 隱藏已收貨的訂單，只顯示進行中的
-  const orders = all_orders.filter(o => o.pay_status !== 'received');
+  const orders = (data.orders || []).filter(o => o.pay_status !== 'received');
   if (!orders.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>您還沒有進行中的參團紀錄</div>'; return;
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div>您還沒有進行中的參團</div>'; return;
   }
   el.innerHTML = orders.map(o => renderOrderCard(o, productVariantsCache[o.product_id] || [])).join('');
 }
@@ -1015,34 +983,27 @@ async function loadArrivals() {
   ]);
   const orders = data.orders || [];
   if (!orders.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div>目前沒有到貨通知<div style="font-size:11px;color:#999;margin-top:8px">userId: ${me.userId?.slice(0,12)}…</div></div>`;
-    return;
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>目前沒有到貨通知</div>'; return;
   }
   el.innerHTML = orders.map(o => {
-    const received = o.pay_status === 'received';
     const img = o.product_image
       ? `<img class="arrival-img" src="${esc(o.product_image)}" alt="" loading="lazy">`
       : `<div class="arrival-img" style="display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>`;
+    const variantText = formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || []);
     return `
       <div class="card arrival-card">
         <div class="arrival-top">
           ${img}
           <div class="arrival-info">
             <div class="arrival-name">${esc(o.product_name)}</div>
-            <div class="arrival-variant">${formatVariantDisplay(o.variant, productVariantsCache[o.product_id] || [])}</div>
-            <div style="margin-top:4px">
-              <span class="status-badge ${received ? 'st-received' : 'st-shipped'}">
-                ${received ? '🎉 已收貨' : '🚚 等待取貨'}
-              </span>
+            <div class="arrival-variant">${variantText}</div>
+            <div style="font-size:13px;color:#555;margin-top:3px">💰 NT$${(o.total || 0).toLocaleString()}</div>
+            <div style="margin-top:5px">
+              <span class="status-badge st-shipped">🚚 待取貨</span>
             </div>
           </div>
         </div>
-        ${!received ? `<div class="arrival-action">
-          <button class="btn-received" style="width:100%" onclick="confirmReceived('${esc(o.order_id)}')">
-            ✅ 確認收貨
-          </button>
-        </div>` : ''}
-        <div class="arrival-time">更新：${fmt(o.updated_at)}</div>
+        <div class="arrival-time">到貨通知：${fmt(o.updated_at)}</div>
       </div>`;
   }).join('');
 }
