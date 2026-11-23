@@ -157,7 +157,7 @@ function buildArrivalBubble(product) {
           action: {
             type: 'uri',
             label: '📲 點此查看到貨通知',
-            uri: `${LIFF_MEMBER}?liff.state=${encodeURIComponent('?tab=arrivals')}`,
+            uri: `${LIFF_MEMBER}?liff.state=${encodeURIComponent('#arrivals')}`,
           },
           style: 'primary',
           color: '#FF6B35',
@@ -665,6 +665,18 @@ async function handlePost(body, db, env) {
         orderCount: cntR?.cnt || 0,
         orderList:  ordR.results || [],
       });
+    }
+
+    case 'diagnose_arrivals': {
+      // 診斷用：查詢指定商品所有訂單的 product_status 和 pay_status
+      requireAdmin(body, env);
+      const { productId } = body;
+      if (!productId) return jsonErr('productId 必填');
+      const r = await db.prepare(`
+        SELECT order_id, line_user_id, pay_status, product_status, qty, variant
+        FROM orders WHERE product_id=? ORDER BY created_at DESC
+      `).bind(productId).all();
+      return jsonOk({ rows: r.results || [] });
     }
 
     case 'refresh_arrivals': {

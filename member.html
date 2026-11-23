@@ -669,9 +669,11 @@ async function api(body) {
 
 // ─── LIFF init ────────────────────────────────────────────
 async function initApp() {
-  // 在 liff.init() 前先讀 liff.state（init 後 URL 會被替換）
-  const preParams = new URLSearchParams(window.location.search);
-  const liffStateRaw = preParams.get('liff.state');
+  // 在 liff.init() 前先讀 hash（hash 不受 LIFF 處理影響，最可靠）
+  // liff.state=%23arrivals → LIFF 轉為 member.html#arrivals → hash='#arrivals'
+  const preHash = window.location.hash.replace(/^#/, '');
+  // 備用：解析 liff.state 中的 hash 或 tab 參數
+  const preStateRaw = new URLSearchParams(window.location.search).get('liff.state') || '';
 
   try {
     await liff.init({ liffId: LIFF_ID });
@@ -687,13 +689,15 @@ async function initApp() {
     me.name   = '訪客';
   }
 
-  // 讀 URL tab 參數：優先用 init 後的 URL，備用 init 前的 liff.state
-  const params = new URLSearchParams(window.location.search);
-  let initTab = params.get('tab');
-  if (!initTab && liffStateRaw) {
-    // liff.init() 未更新 URL 時，直接解析原始 liff.state
-    const sp = new URLSearchParams(liffStateRaw.startsWith('?') ? liffStateRaw.slice(1) : liffStateRaw);
-    initTab = sp.get('tab');
+  // 決定初始 tab（優先順序：hash → query tab → liff.state 備用）
+  let initTab = window.location.hash.replace(/^#/, '')  // init 後 hash
+    || preHash                                           // init 前 hash
+    || new URLSearchParams(window.location.search).get('tab');  // query param
+  if (!initTab && preStateRaw) {
+    // liff.state 備用解析
+    const st = preStateRaw.startsWith('#') ? preStateRaw.slice(1)
+             : new URLSearchParams(preStateRaw.startsWith('?') ? preStateRaw.slice(1) : preStateRaw).get('tab') || '';
+    initTab = st;
   }
   initTab = initTab || 'announcements';
 
@@ -1011,7 +1015,8 @@ async function loadArrivals() {
   ]);
   const orders = data.orders || [];
   if (!orders.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>目前沒有到貨通知</div>'; return;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div>目前沒有到貨通知<div style="font-size:11px;color:#999;margin-top:8px">userId: ${me.userId?.slice(0,12)}…</div></div>`;
+    return;
   }
   el.innerHTML = orders.map(o => {
     const received = o.pay_status === 'received';
