@@ -693,19 +693,6 @@ async function handlePost(body, db, env) {
       return jsonOk({ updated: r.meta?.changes ?? 0 });
     }
 
-    case 'diagnose_dev_orders': {
-      requireAdmin(body, env);
-      const devRows = await db.prepare(`
-        SELECT o.order_id, o.line_user_id, o.product_id,
-               p.name AS product_name,
-               o.qty, o.variant, o.pay_status, o.product_status, o.created_at
-        FROM orders o
-        LEFT JOIN products p ON o.product_id = p.product_id
-        WHERE o.line_user_id LIKE 'dev-%'
-        ORDER BY o.created_at DESC
-      `).all();
-      return jsonOk({ orders: devRows.results || [] });
-    }
 
     case 'notify_arrived': {
       requireAdmin(body, env);
