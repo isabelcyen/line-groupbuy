@@ -149,6 +149,22 @@ function buildArrivalBubble(product) {
         { type: 'text', text: '請儘量備好零錢與購物袋，謝謝您的體貼＆支持環保 ～', wrap: true, size: 'sm', color: '#888888' },
       ],
     },
+    footer: {
+      type: 'box', layout: 'vertical', paddingAll: '12px', paddingTop: '0px',
+      contents: [
+        {
+          type: 'button',
+          action: {
+            type: 'uri',
+            label: '📲 點此查看到貨通知',
+            uri: `${LIFF_MEMBER}?liff.state=${encodeURIComponent('?tab=arrivals')}`,
+          },
+          style: 'primary',
+          color: '#FF6B35',
+          height: 'sm',
+        },
+      ],
+    },
   };
   return bubble;
 }
@@ -651,6 +667,46 @@ async function handlePost(body, db, env) {
       });
     }
 
+    case 'diagnose_arrivals': {
+      // 診斷用：查詢指定商品所有訂單的 product_status 和 pay_status
+      requireAdmin(body, env);
+      const { productId } = body;
+      if (!productId) return jsonErr('productId 必填');
+      const r = await db.prepare(`
+        SELECT order_id, line_user_id, pay_status, product_status, qty, variant
+        FROM orders WHERE product_id=? ORDER BY created_at DESC
+      `).bind(productId).all();
+      return jsonOk({ rows: r.results || [] });
+    }
+
+    case 'refresh_arrivals': {
+      // 補標記：已 notified 的商品，把訂單的 product_status 也設成 notified（不重送訊息）
+      requireAdmin(body, env);
+      const { productId } = body;
+      if (!productId) return jsonErr('productId 必填');
+      const product = await db.prepare("SELECT product_id FROM products WHERE product_id=? AND status='notified'").bind(productId).first();
+      if (!product) return jsonErr('找不到已通知的商品', 404);
+      const r = await db.prepare(`
+        UPDATE orders SET product_status='notified'
+        WHERE product_id=? AND pay_status NOT IN ('cancelled','received')
+      `).bind(productId).run();
+      return jsonOk({ updated: r.meta?.changes ?? 0 });
+    }
+
+    case 'diagnose_dev_orders': {
+      requireAdmin(body, env);
+      const devRows = await db.prepare(`
+        SELECT o.order_id, o.line_user_id, o.product_id,
+               p.name AS product_name,
+               o.qty, o.variant, o.pay_status, o.product_status, o.created_at
+        FROM orders o
+        LEFT JOIN products p ON o.product_id = p.product_id
+        WHERE o.line_user_id LIKE 'dev-%'
+        ORDER BY o.created_at DESC
+      `).all();
+      return jsonOk({ orders: devRows.results || [] });
+    }
+
     case 'notify_arrived': {
       requireAdmin(body, env);
       const { productId } = body;
@@ -740,6 +796,9 @@ async function handlePost(body, db, env) {
     case 'get_active_groups_v2': {
       const r = await db.prepare(`
         SELECT p.*,
+               (SELECT COUNT(DISTINCT o.line_user_id)
+                FROM orders o
+                WHERE o.product_id = p.product_id AND o.pay_status != 'cancelled') AS memberCount,
                (SELECT COUNT(*)
                 FROM orders o
                 WHERE o.product_id = p.product_id AND o.pay_status != 'cancelled') AS totalOrders
@@ -756,6 +815,7 @@ async function handlePost(body, db, env) {
         deadline:    p.deadline,
         status:      (p.deadline && new Date(p.deadline) < new Date()) ? 'expired' : p.status,
         variants:    JSON.parse(p.variants || '[]'),
+        memberCount: p.memberCount || 0,
         totalOrders: p.totalOrders || 0,
       }));
 

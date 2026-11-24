@@ -350,6 +350,12 @@ tr:hover td { background: var(--green-bg); }
       <span class="ni">📱</span><span class="label">設定後三碼</span>
     </div>
   </div>
+  <div class="nav-section">
+    <div class="nav-label">維護</div>
+    <div class="nav-item" data-panel="maintenance">
+      <span class="ni">🔧</span><span class="label">維護工具</span>
+    </div>
+  </div>
   <div class="sidebar-logout">
     <button class="logout-btn" onclick="logout()">🔒 <span class="label">登出</span></button>
   </div>
@@ -544,6 +550,43 @@ tr:hover td { background: var(--green-bg); }
           </div>
           <div id="sp-btn-row" style="display:none;margin-top:4px">
             <button class="btn btn-primary btn-sm" onclick="spSave()">儲存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Panel: 維護工具 ─── -->
+    <div class="panel" id="panel-maintenance" style="display:none">
+      <h2>🔧 維護工具</h2>
+
+      <!-- dev- userId 訂單診斷 -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="margin:0;font-size:15px">dev- 訂單診斷</h3>
+          <button class="btn btn-ghost btn-sm" onclick="loadDevOrders()">🔄 載入</button>
+        </div>
+        <p style="font-size:13px;color:var(--text2,#666);margin:0 0 12px">
+          列出所有使用者 ID 以 <code>dev-</code> 開頭的訂單。這類訂單是在 LIFF 初始化失敗期間產生的，無法對應到真實的 LINE 使用者。
+        </p>
+        <div id="dev-orders-status" style="font-size:13px;color:var(--text2,#666);padding:8px 0;display:none"></div>
+        <div id="dev-orders-container" style="overflow-x:auto;display:none">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="background:var(--bg2,#f5f5f5);text-align:left">
+                <th style="padding:8px 10px;border-bottom:1px solid var(--border)">訂單 ID</th>
+                <th style="padding:8px 10px;border-bottom:1px solid var(--border)">dev- 使用者 ID</th>
+                <th style="padding:8px 10px;border-bottom:1px solid var(--border)">商品</th>
+                <th style="padding:8px 10px;border-bottom:1px solid var(--border)">規格</th>
+                <th style="padding:8px 10px;border-bottom:1px solid var(--border)">數量</th>
+                <th style="padding:8px 10px;border-bottom:1px solid var(--border)">付款</th>
+                <th style="padding:8px 10px;border-bottom:1px solid var(--border)">出貨</th>
+                <th style="padding:8px 10px;border-bottom:1px solid var(--border)">建立時間</th>
+              </tr>
+            </thead>
+            <tbody id="dev-orders-tbody"></tbody>
+          </table>
+          <div id="dev-orders-empty" style="text-align:center;padding:20px;color:var(--text2,#666);font-size:14px;display:none">
+            目前沒有 dev- 訂單 ✓
           </div>
         </div>
       </div>
@@ -1346,6 +1389,45 @@ async function refreshArrivals(pid) {
     const d = await api({ action: 'refresh_arrivals', productId: pid, adminSecret: secret });
     toast(`✅ 已補標記 ${d.updated} 筆訂單為到貨通知`);
   } catch(e) { toast('失敗：' + e.message); }
+}
+async function loadDevOrders() {
+  const secret = savedSecret || prompt('管理員密碼');
+  if (!secret) return;
+  const statusEl = document.getElementById('dev-orders-status');
+  const containerEl = document.getElementById('dev-orders-container');
+  const tbodyEl = document.getElementById('dev-orders-tbody');
+  const emptyEl = document.getElementById('dev-orders-empty');
+  statusEl.textContent = '載入中…';
+  statusEl.style.display = 'block';
+  containerEl.style.display = 'none';
+  try {
+    const d = await api({ action: 'diagnose_dev_orders', adminSecret: secret });
+    const orders = d.orders || [];
+    statusEl.style.display = 'none';
+    containerEl.style.display = 'block';
+    if (orders.length === 0) {
+      tbodyEl.innerHTML = '';
+      emptyEl.style.display = 'block';
+      return;
+    }
+    emptyEl.style.display = 'none';
+    tbodyEl.innerHTML = orders.map(o => `
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 10px;font-family:monospace;font-size:12px">${o.order_id||''}</td>
+        <td style="padding:7px 10px;font-family:monospace;font-size:12px;color:#e55">${o.line_user_id||''}</td>
+        <td style="padding:7px 10px">${o.product_name||o.product_id||''}</td>
+        <td style="padding:7px 10px">${o.variant||'-'}</td>
+        <td style="padding:7px 10px;text-align:center">${o.qty||0}</td>
+        <td style="padding:7px 10px">${o.pay_status||''}</td>
+        <td style="padding:7px 10px">${o.product_status||''}</td>
+        <td style="padding:7px 10px;font-size:12px;white-space:nowrap">${(o.created_at||'').replace('T',' ').slice(0,16)}</td>
+      </tr>`).join('');
+    statusEl.textContent = `共 ${orders.length} 筆 dev- 訂單`;
+    statusEl.style.display = 'block';
+  } catch(e) {
+    statusEl.textContent = '載入失敗：' + e.message;
+    statusEl.style.display = 'block';
+  }
 }
 async function notifyArrived(pid, pname) {
   if (!confirm(`確定發送「${pname}」到貨通知到群組？`)) return;
