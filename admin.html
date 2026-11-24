@@ -1061,7 +1061,7 @@ async function loadProducts() {
       <td>
         <div style="display:flex;gap:6px">
           ${(p.status === 'notified' || isSettled)
-            ? `${p.status === 'notified' ? `<button class="btn btn-primary btn-sm" onclick="copyShippingText(${pJson})">📦 出貨文案</button><button class="btn btn-ghost btn-sm" title="補標記到貨訂單" onclick="refreshArrivals('${esc(p.product_id)}')">🔄</button><button class="btn btn-ghost btn-sm" title="診斷訂單狀態" onclick="diagnoseArrivals('${esc(p.product_id)}')">🔍</button>` : ''}<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
+            ? `${p.status === 'notified' ? `<button class="btn btn-primary btn-sm" onclick="copyShippingText(${pJson})">📦 出貨文案</button>` : ''}<button class="btn btn-ghost btn-sm" onclick="copyProduct(${pJson})">複製開新團</button>`
             : isExpired
               ? `<button class="btn btn-primary btn-sm" onclick="notifyArrived('${esc(p.product_id)}','${esc(p.name)}')">📦出貨</button><button class="btn btn-ghost btn-sm" onclick="editProductGuarded(${pJson})">編輯</button>`
               : p.status === 'open'
