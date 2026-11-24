@@ -854,7 +854,7 @@ async function loadDashboard() {
     payments.filter(p => p.pay_status === 'reviewing').length;
   // 已通知到貨的訂單總數（含現場付款，以 product_status=notified 為準）
   document.getElementById('s-shipped').textContent =
-    members.reduce((sum, m) => sum + (m.orders || []).filter(o => o.product_status === 'notified').length, 0);
+    members.reduce((sum, m) => sum + (m.orders || []).filter(o => o.product_status === 'notified' && o.pay_status !== 'received' && o.pay_status !== 'shipped').length, 0);
 
   // ── 待審核付款訂單 ──
   const reviewing = payments.filter(p => p.pay_status === 'reviewing');
