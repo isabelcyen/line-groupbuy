@@ -843,6 +843,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 const titles = {
   dashboard: '總覽', announcements: '公告', products: '團購管理',
   shipping: '出貨管理', orders: '訂單管理', 'payment-summary': '收款', payments: '付款出貨紀錄', 'set-phone': '設定後三碼',
+  maintenance: '維護工具',
 };
 const loaded = {};
 document.querySelectorAll('.nav-item').forEach(el => {
@@ -867,6 +868,7 @@ function loadPanel(p) {
     'payment-summary': loadPaymentSummary,
     payments: loadPayments,
     'set-phone': () => Promise.resolve(),
+    maintenance: () => Promise.resolve(),
   }[p];
   if (fn) fn().catch(e => toast('載入失敗：' + e.message));
 }
