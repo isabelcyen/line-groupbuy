@@ -849,7 +849,7 @@ async function loadDashboard() {
   allProducts = prods;
 
   document.getElementById('s-active').textContent =
-    prods.filter(p => p.status === 'open').length;
+    prods.filter(p => p.status === 'open' && (!p.deadline || new Date(p.deadline) > new Date())).length;
   document.getElementById('s-reviewing').textContent =
     payments.filter(p => p.pay_status === 'reviewing').length;
   // 已通知到貨的訂單總數（含現場付款，以 product_status=notified 為準）
