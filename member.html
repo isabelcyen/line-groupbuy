@@ -681,6 +681,10 @@ async function initApp() {
     console.warn('LIFF init failed:', e);
     me.userId = 'dev-' + Math.random().toString(36).slice(2);
     me.name   = '訪客';
+    // 顯示 LIFF 錯誤訊息給 debug 用
+    const errCode = e.code || '';
+    const errMsg = e.message || String(e) || 'unknown error';
+    window._liffError = errCode + ': ' + errMsg;
   }
 
   // 讀 URL tab 參數
@@ -896,7 +900,7 @@ async function loadMyOrders() {
   ]);
   const orders = (data.orders || []).filter(o => o.pay_status !== 'received');
   if (!orders.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📦</div>您還沒有進行中的參團<div style="font-size:11px;margin-top:8px;color:#999;word-break:break-all">uid: ${me.userId}</div></div>`; return;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📦</div>您還沒有進行中的參團<div style="font-size:11px;margin-top:8px;color:#999;word-break:break-all">uid: ${me.userId}<br>err: ${window._liffError||'(none)'}</div></div>`; return;
   }
   el.innerHTML = orders.map(o => renderOrderCard(o, productVariantsCache[o.product_id] || [])).join('');
 }
